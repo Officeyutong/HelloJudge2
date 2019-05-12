@@ -20,6 +20,10 @@ REDIS_URI = "redis://localhost:6379"
 JUDGERS = {
     "UUID": "评测机名"
 }
+# 每页题目数量
+PROBLEMS_PER_PAGE = 50
+# 每页的提交数量
+SUBMISSIONS_PER_PAGE = 20
 # 支持的语言
 # 语言ID将会被直接发送给评测机
 SUPPORTED_LANGUAGES = [

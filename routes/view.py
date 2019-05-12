@@ -34,6 +34,15 @@ def view_login():
 def view_register():
     return render_template("register.html")
 
+@app.route("/problems")
+@app.route("/problems/<int:id>")
+def view_problems(id=-1):
+    return render_template("problems.html")
+@app.route("/submissions")
+@app.route("/submissions/<int:id>")
+def view_submissions(id=-1):
+    return render_template("submissions.html")
+
 
 @app.route("/problem_edit/<int:id>")
 def view_edit_problem(id):

@@ -301,11 +301,11 @@ def get_submission_info():
     }
     """
     if db.session.query(Submission).filter(Submission.id == request.form["submission_id"]).count() == 0:
-        return make_response(-1, message="提交ID不存在")
+        return "提交ID不存在", 404
     submit: Submission = db.session.query(Submission).filter(
         Submission.id == request.form["submission_id"]).one()
     if not submit.public and not session.get("userid"):
-        return make_response(-1, "你没有权限查看此提交")
+        return "你没有权限查看此提交", 403
     if session.get("userid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("userid")).one()
@@ -339,3 +339,111 @@ def get_judge_status():
         "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"}
     }
     return make_response(0, data=ret)
+
+
+@app.route("/api/problem_list", methods=["POST"])
+def problem_list():
+    """
+    获取题目列表
+    参数:
+    page:int 页数
+    返回:
+        {
+            "code":0,//非0表示调用成功
+            "message":"qwq",//调用失败时的信息
+            "data":[
+                {"id":-1,"title":"qwqqwq","submission":233,"status":"accepted","public":false,"total_submit":123,"accepted_submit":123}
+            ],
+            "total_pages":总页数,
+            "current_page":当前页(根据URL分析)
+        }
+    """
+    page = int(request.form.get("page", 1))
+    result = None
+    if not session.get("userid"):
+        result = db.session.query(Problem).filter(Problem.public == True)
+    else:
+        user: User = db.session.query(User).filter(
+            User.id == session.get("userid")).one()
+        if user.is_admin:
+            result = db.session.query(Problem)
+        else:
+            result = db.session.query(Problem).filter(
+                or_(Problem.public == True, Problem.uploader_id == user.id))
+    count = result.count()
+    import math
+    pages = int(math.ceil(count/config.PROBLEMS_PER_PAGE))
+    result = result.slice(
+        (page-1)*config.PROBLEMS_PER_PAGE, (page)*config.PROBLEMS_PER_PAGE).all()
+    ret = []
+    for item in result:
+        obj = {
+            "id": item.id,
+            "title": item.title,
+            "submission": -1,
+            "status": None,
+            "public": True,
+            "total_submit": db.session.query(Submission).filter(Submission.problem_id == item.id).count(),
+            "accepted_submit": db.session.query(Submission).filter(Submission.problem_id == item.id).filter(Submission.status == "accepted").count()
+        }
+        # accepted的字典序比其他三个状态都少，所以按照status升序排能优先排到ac
+        submit = db.session.query(Submission).filter(Submission.user_id == session.get(
+            "userid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).order_by(Submission.submit_time.desc())
+        if submit.count():
+            submit = submit.first()
+            obj["submission"] = submit.id
+            obj["status"] = submit.status
+        obj["public"] = item.public
+        ret.append(obj)
+    return make_response(0, data=ret, page_count=pages, current_page=page)
+
+
+@app.route("/api/submission_list", methods=["POST"])
+def submission_list():
+    """
+    获取提交列表
+    参数:
+    page:int 页数
+    返回:
+        {
+            "code":0,//非0表示调用成功
+            "message":"qwq",//调用失败时的信息
+            "data":[
+                {"id":-1,"problem_id":123,"problem_title":"qwq","status":"judging","score":-1,"contest":-1,"total_score":123}
+            ],
+            "total_pages":总页数,
+            "current_page":当前页(根据URL分析)
+        }
+    """
+    page = int(request.form.get("page", 1))
+    result = None
+    if not session.get("userid"):
+        result = db.session.query(Submission).filter(Submission.public == True)
+    else:
+        user: User = db.session.query(User).filter(
+            User.id == session.get("userid")).one()
+        if user.is_admin:
+            result = db.session.query(Submission)
+        else:
+            result = db.session.query(Submission).filter(
+                or_(Submission.public == True, Submission.user_id == user.id))
+    count = result.count()
+    import math
+    pages = int(math.ceil(count/config.SUBMISSIONS_PER_PAGE))
+    result = result.slice(
+        (page-1)*config.SUBMISSIONS_PER_PAGE, (page)*config.SUBMISSIONS_PER_PAGE).all()
+    ret = []
+    for submit in result:
+        obj = {
+            "id": submit.id,
+            "status": submit.status,
+            "score": submit.get_total_score(),
+            "contest": submit.contest_id
+        }
+        problem: Problem = db.session.query(Problem).filter(
+            Problem.id == submit.problem_id).one()
+        obj["problem_id"] = problem.id
+        obj["problem_title"] = problem.title
+        obj["total_score"] = problem.get_total_score()
+        ret.append(obj)
+    return make_response(0, data=ret, page_count=pages, current_page=page)
