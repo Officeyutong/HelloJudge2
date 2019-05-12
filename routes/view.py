@@ -6,7 +6,6 @@ from flask import render_template
 @app.context_processor
 def consts():
     return {
-        "USING_SSL": config.USING_SSL,
         "DEBUG": config.DEBUG,
         "APP_NAME": config.APP_NAME,
         "SALT": config.PASSWORD_SALT
