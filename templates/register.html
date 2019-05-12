@@ -71,7 +71,7 @@
                     </div>
                     <div class="field">
                         <label>重复密码</label>
-                        <input type="password" v-model="password2">
+                        <input type="password" v-model="password2" v-on:keyup.enter="register">
                     </div>
                 </div>
                 <div class="ui error message">

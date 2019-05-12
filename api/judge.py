@@ -1,5 +1,6 @@
 from main import db, config, queue
 from models import *
+from utils import *
 # 把提交加入到评测队列
 
 
@@ -18,16 +19,9 @@ def push_to_queue(submission_id):
                                              "testcases": list(map(lambda x: dict(**x, status="waiting", score=0, message="Judging.."), item["testcases"]))
                                              }
     submit.status = "waiting"
-    # print(submit.judge_result)
-    # print(problem.subtasks)
-    # print("Pushing...")
+    queue.send_task("task.judge", [submit.to_dict()])
     db.session.commit()
-    queue.send_task("task.judge", (
-        {"submission_id": submit.id},
-    ))
 # 更新评测状态
-
-
 def update_status(submission_id, judge_result, judger, message=""):
     """
     更新某个提交测评测状态

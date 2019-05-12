@@ -1,4 +1,5 @@
 
+
 import flask
 from flask_sqlalchemy import SQLAlchemy
 try:
@@ -20,7 +21,6 @@ db = SQLAlchemy(web_app)
 basedir = os.path.dirname(__file__)
 logger = web_app.logger
 socket = SocketIO(web_app)
-queue = celery.Celery(
-    "judge_queue",  broker=config.REDIS_URI)
+queue = celery.Celery(web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
 # logger.info("Starting server...")
 import routes

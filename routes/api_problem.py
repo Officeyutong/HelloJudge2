@@ -71,8 +71,6 @@ def get_problem_info():
     return make_response(0, data=result)
 
 
-
-
 @app.route("/api/upload_file/<int:id>", methods=["POST"])
 def upload_file(id):
     """
@@ -127,12 +125,13 @@ def download_file(id: int, filename: str):
     problem = problem.one()
     if not problem.public and not session.get("userid"):
         flask.abort(403)
-    user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
-    if not problem.public and not user.is_admin and user.id != problem.writer_id:
-        flask.abort(403)
-    if problem.public and not user.is_admin and user.id != problem.writer_id and filename not in problem.downloads:
-        flask.abort(403)
+    if session.get("userid"):
+        user: User = db.session.query(User).filter(
+            User.id == session.get("userid")).one()
+        if not problem.public and not user.is_admin and user.id != problem.writer_id:
+            flask.abort(403)
+        if problem.public and not user.is_admin and user.id != problem.writer_id and filename not in problem.downloads:
+            flask.abort(403)
     import os
     file = os.path.join(
         basedir, f"uploads/{id}/{filename}")
@@ -307,10 +306,11 @@ def get_submission_info():
         Submission.id == request.form["submission_id"]).one()
     if not submit.public and not session.get("userid"):
         return make_response(-1, "你没有权限查看此提交")
-    user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
-    if not submit.public and not user.is_admin and not user.id == submit.user_id:
-        return make_response(-1, "你没有权限查看此提交")
+    if session.get("userid"):
+        user: User = db.session.query(User).filter(
+            User.id == session.get("userid")).one()
+        if not submit.public and not user.is_admin and not user.id == submit.user_id:
+            return make_response(-1, "你没有权限查看此提交")
     ret = submit.to_dict()
     ret["score"] = submit.get_total_score()
     ret["submit_time"] = str(ret["submit_time"])
