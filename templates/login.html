@@ -1,0 +1,71 @@
+{%extends "base.html"%}
+{%block title%}
+登录
+{%endblock%}
+{%block body%}
+<script>
+    var login_frame;
+
+    $(document).ready(() => {
+        if (sidebar.is_login) {
+            window.location.href = "/";
+            return;
+        }
+        login_frame = new Vue({
+            el: "#login-frame",
+            delimiters: ['{[', ']}'],
+            data: {
+                error_message: "",
+                identifier: "",
+                password: ""
+            }, methods: {
+                login: function () {
+                    console.log("Logining..");
+                    this.error_message = "";
+                    if (this.identifier == "" || this.password == "") {
+                        this.error_message = "请输入用户名或密码";
+                        return;
+                    }
+                    $.post("/api/login", {
+                        identifier: login_frame.identifier, password: md5_with_salt(login_frame.password)
+                    }).done(function (ctx) {
+                        ctx = JSON.parse(ctx);
+                        console.log(ctx);
+                        if (ctx.code == 0) {
+                            window.location.href = "/";
+                        } else {
+                            login_frame.error_message = ctx.message;
+                        }
+
+                    });
+                }
+            }
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 500px;">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>Login</h1>
+        </div>
+        <div class="ui stack segment">
+            <div id="login-frame" class="ui form" v-bind:class="{error:error_message!=''}">
+                <div class="ui field">
+                    <label>用户名或邮箱:</label>
+                    <input type="text" placeholder="用户名或邮箱.." v-model="identifier">
+                </div>
+                <div class="field">
+                    <label>密码</label>
+                    <input type="password" v-model="password" placeholder="密码..">
+                </div>
+                <div class="ui error message">
+                    <div class="header">错误</div>
+                    <p>{[error_message]}</p>
+                </div>
+                <div class="ui green submit button" v-on:click="login">提交</div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

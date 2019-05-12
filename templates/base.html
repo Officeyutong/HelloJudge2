@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>{%block title %}{%endblock%} - {{APP_NAME}}</title>
+    <!-- <script src="https://cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script> -->
+    {%if DEBUG%}
+    <script src="/static/clipboard.js"></script>
+    <script src="/static/jquery-3.3.1.js"></script>
+    <script src="/static/vue.js"></script>
+    <script src="/static/semantic.js"></script>
+    <script src="/static/jquery.cookie.js"></script>
+    <link rel="stylesheet" href="/static/semantic.css">
+    {%else%}
+    <script src="/static/clipboard.min.js"></script>
+    <script src="//cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script>
+    <script src="//cdn.staticfile.org/vue/2.5.17/vue.min.js"></script>
+    <script src="//cdn.staticfile.org/semantic-ui/2.3.3/semantic.min.js"></script>
+    <script src="//cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+    <link href="//cdn.staticfile.org/semantic-ui/2.3.3/semantic.min.css" rel="stylesheet">
+    {%endif%}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/katex.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/katex.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/contrib/auto-render.min.js"></script>
+    <script src="//cdn.bootcss.com/showdown/1.9.0/showdown.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/md5.js"></script>
+    <script>
+        const md5_with_salt = function (password) {
+            return hex_md5(password + "{{SALT}}")
+        };
+        const copy_text = function (text) {
+            const elem = document.createElement("input");
+            $("body").append(elem);
+            elem.value = text;
+            elem.select();
+            document.execCommand("copy");
+            $(elem).remove();
+            return elem;
+        };
+        const show_error_modal = function (text, title = "错误") {
+            $("#global-error-header").text(title)
+            $("#global-error-text").text(text);
+            $("#global-error-model").modal("show");
+        };
+        $.ajaxSetup({
+            beforeSend: function (xhr, settings) {
+                xhr.setRequestHeader("X-CSRFtoken", "{{csrf_token()}}")
+            }, error: function (xhr, status, err) {
+                show_error_modal(xhr.responseText, xhr.status + " " + err);
+                console.log(status);
+                console.log(err);
+                console.log(xhr);
+            }
+        });
+
+        var sidebar;
+        $(document).ready(() => {
+            sidebar = new Vue({
+                delimiters: ['{[', ']}'],
+                el: "#main-sidebar",
+                data: {
+                    is_login: false,
+                    username: "",
+                    userid: -1,
+                    email: ""
+                }, methods: {
+                    logout: function () {
+                        $.post("/api/logout").done((ctx) => {
+                            ctx = JSON.parse(ctx);
+                            window.location.reload()
+                        })
+                    }, md5: hex_md5
+                }
+            })
+            $.post("/api/query_login_state").done((ctx) => {
+                ctx = JSON.parse(ctx);
+                sidebar.is_login = ctx.result;
+                sidebar.userid = ctx.userid;
+                if (ctx.result) {
+                    $.post("/api/get_user_profile", { user_id: ctx.userid }).done((ctx) => {
+                        ctx = JSON.parse(ctx).data;
+                        console.log(ctx);
+                        sidebar.username = ctx.username;
+                        sidebar.email = ctx.email;
+                    })
+
+                }
+            });
+
+        });
+    </script>
+    {%block head%}{%endblock%}
+</head>
+
+<body style="background-color: rgb(236, 233, 233)">
+    <div class="ui sidebar vertical labeled icon menu" id="main-sidebar">
+        <a class="item" href="/">
+            <i class="home icon"></i>
+            主页
+        </a>
+        <a class="item" href="/problems">
+            <i class="tasks icon"></i>
+            题库
+        </a>
+        <a class="item" href="/submissions">
+            <i class="hdd icon"></i>
+            评测
+        </a>
+        <a class="item" href="/login" v-if="!is_login">
+            请登录...
+        </a>
+        <a class="item" href="/register" v-if="!is_login">
+            或者注册...
+        </a>
+        <a class="item" :href="'/profile/'+userid" v-if="is_login">
+            <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(email)"></img>
+            <span>{[username]}</span>
+        </a>
+        <a class="item" v-on:click="logout" v-if="is_login"><i class="x icon"></i>登出</a>
+
+    </div>
+    <div class="pusher" style="background-color: rgb(236, 233, 233);">
+        <div class="ui" style="margin-top:50px;margin-left:50px;top:50px;position: fixed">
+            <button class="circular ui huge green floating icon button"
+                onclick="$('#main-sidebar').sidebar('toggle')"><i class="icon plus"></i></button>
+        </div>
+        <div class="ui main container" style="margin-top:70px;margin-bottom:70px">
+            {%block body%}{%endblock%}
+        </div>
+        <div class="ui center aligned  container">
+            <div style="color: darkgrey">
+                <a href="https://gitee.com/yutong_java/HelloJudge2">Gitee</a>
+            </div>
+        </div>
+    </div>
+    <div class="ui tiny modal" id="global-error-model">
+        <div class="ui header">
+            发生错误
+        </div>
+        <div class="content">
+            <div class="ui error message">
+                <div class="ui header">
+                    <h3 id="global-error-header"></h3>
+                </div>
+                <p id="global-error-text"></p>
+            </div>
+        </div>
+        <div class="actions">
+            <div class="ui green approve button">关闭</div>
+        </div>
+    </div>
+</body>
+
+</html>

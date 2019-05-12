@@ -1,0 +1,169 @@
+{%extends "base.html"%}
+
+{%block head%}
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+{%endblock%}
+{%block body%}
+<script>
+    var submission, socket;
+    Vue.component("judge-status", {
+        delimiters: ['{[', ']}'],
+        props: ["status", "judge_status"],
+        template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
+        methods: {
+            get_icon: function (x) {
+                return this.judge_status[x].icon;
+
+            }, get_color: function (x) {
+                return this.judge_status[x].color;
+            }, get_text(x) {
+                if (this.judge_status.hasOwnProperty(x))
+                    return this.judge_status[x].text;
+                else return x;
+            }
+        }
+    });
+    $(document).ready(() => {
+        const url = window.location.href.split("/");
+        const submission_id = url[url.length - 1];
+        $("title").text("查看提交 - " + submission_id + " - {{APP_NAME}}")
+        submission = new Vue({
+            delimiters: ['{[', ']}'],
+            el: "#submission",
+            data: {
+                done: false,
+                data: null,
+                user_profile: null,
+                problem_data: null,
+                judge_status: null
+            }, computed: {
+                problem_subtasks: function () {
+                    var obj = {};
+                    this.problem_data.subtasks.forEach((x) => {
+                        obj[x.name] = x;
+                    })
+                    return obj;
+                }
+            }, mounted: function () {
+                socket = io(window.location.origin + "/ws/submission");
+                console.log("WebSocket connected..");
+                socket.emit("init", { "submission_id": submission_id });
+                socket.on("update", (x) => {
+                    this.data.message = x.message;
+                    this.data.judge_result = x.judge_result;
+                });
+            }, methods: {
+                get_text_color(ratio) {
+                    ratio *= 100;
+                    if (ratio <= 50) return "red";
+                    else if (ratio <= 70) return "orange";
+                    else if (ratio < 100) return "yellow";
+                    else return "green";
+                }
+            }
+        })
+        $.post("/api/get_submission_info", { submission_id: submission_id }).done((ctx) => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                show_error_modal(ctx.message);
+                return;
+            }
+            submission.data = ctx.data;
+            $.post("/api/get_user_profile", { user_id: ctx.data.user_id }).done(ctx => {
+                submission.user_profile = JSON.parse(ctx).data;
+                $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(ctx => {
+                    submission.problem_data = JSON.parse(ctx).data;
+                    $.post("/api/get_judge_status").done(ctx => submission.judge_status = JSON.parse(ctx).data);
+                    submission.done = true;
+                });
+            });
+        });
+    });
+</script>
+<div id="submission" v-if="done">
+    <div class="ui header">
+        <h2>查看提交</h2>
+    </div>
+    <div class="ui stack segment">
+        <table class="ui very basic celled  table" style="max-width: 500px;">
+            <tbody>
+                <tr>
+                    <td>提交ID</td>
+                    <td>{[data.id]}</td>
+                </tr>
+                <tr>
+                    <td>题目</td>
+                    <td><a :href="'/show_problem/'+problem_data.id">{[problem_data.id]}</a></td>
+                </tr>
+                <tr>
+                    <td>提交者</td>
+                    <td><a :href="'/profile/'+user_profile.user_id">{[user_profile.username]}</a></td>
+                </tr>
+                <tr>
+                    <td>提交时间</td>
+                    <td>{[data.submit_time]}</td>
+                </tr>
+                <tr>
+                    <td>评测机</td>
+                    <td>{[data.judger]}</td>
+                </tr>
+                <tr>
+                    <td>附加信息</td>
+                    <td>{[data.message]}</td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="ui divider"></div>
+        <div v-for="val,key in data.judge_result">
+            <div class="ui header">
+                <h3>
+                    {[key]}
+                </h3>
+            </div>
+            <table class="ui very basic  celled  table" style="max-width: 5 00px;">
+                <tbody>
+                    <tr>
+                        <td>得分/总分</td>
+                        <td>
+                            <div v-bind:class="'ui '+get_text_color(val.score/problem_subtasks[key].score)+' label'">
+                                {[val.score]}/{[problem_subtasks[key].score]}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>状态</td>
+                        <td>
+                            <judge-status :judge_status="judge_status" :status="val.status"></judge-status>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="ui basic table" style="max-width: 700px">
+                <thead>
+                    <tr>
+                        <th>输入文件</th>
+                        <th>输出文件</th>
+                        <th>状态</th>
+                        <th>附加信息</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="testcase in val.testcases">
+                        <td><a :href="'/api/download_file/'+problem_data.id+'/'+testcase.input">{[testcase.input]}</a>
+                        </td>
+                        <td><a :href="'/api/download_file/'+problem_data.id+'/'+testcase.output">{[testcase.output]}</a>
+                        </td>
+                        <td>
+                            <judge-status :judge_status="judge_status" :status="testcase.status"></judge-status>
+                        </td>
+                        <td>
+                            {[testcase.message]}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="ui divider"></div>
+        </div>
+    </div>
+</div>
+{%endblock%}

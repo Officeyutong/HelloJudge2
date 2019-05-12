@@ -1,0 +1,428 @@
+{%extends "base.html"%}
+{%block title%}
+题目编辑
+{%endblock%}
+
+{%block body%}
+<script>
+    var problem_edit;
+    $(document).ready(() => {
+        problem_edit = new Vue({
+            el: "#problem-edit",
+            delimiters: ['{[', ']}'],
+            data: {
+                data: null,
+                error_message: "",
+                success_message: "",
+                files: null,
+                uploading: false,
+                done: false
+            },
+            computed: {
+                file_list: function () {
+                    const result = []
+                    for (i = 0; i < this.data.files.length; i++) {
+                        result.push(this.data.files[i].name);
+                    }
+                    return result;
+                }
+            },
+            methods: {
+                auto_generate: function () {
+                    $("#auto-generate-modal").modal({
+                        onApprove: function () {
+                            problem_edit.data.subtasks = [];
+                            const files = (problem_edit.file_list);
+                            console.log(files);
+                            const infiles = files.filter((x) => x.endsWith(".in"));
+                            const tasks = [];
+                            for (i in infiles) {
+                                const file = infiles[i];
+                                const name = file.substr(0, file.lastIndexOf("."));
+                                const find_result = files.find((x) => (x == name + ".out" || x == name + ".ans"));
+                                if (find_result) {
+                                    tasks.push({ input: file, output: find_result });
+                                }
+                            }
+                            const score = parseInt(100 / tasks.length);
+                            // var i = 0;
+                            for (var i = 0; i < tasks.length - 1; i++) {
+                                problem_edit.data.subtasks.push({ "name": "Subtask" + (i + 1), "score": score, "method": "sum", "testcases": [tasks[i]], "time_limit": 1000, memory_limit: 512 })
+                            }
+                            problem_edit.data.subtasks.push({ "name": "Subtask" + (tasks.length), "score": 100 - score * (tasks.length - 1), "method": "sum", "testcases": [tasks[tasks.length - 1]], "time_limit": 1000, memory_limit: 512 })
+                        },
+                        closable: false
+                    }).modal("show");
+                },
+                modify_all: function (key, val) {
+                    console.log("modifying " + key + " to " + val);
+                    console.log(val);
+                    for (i = 0; i < this.data.subtasks.length; i++) {
+                        // (key, val)
+                        Vue.set(this.data.subtasks[i], key, val)
+                    }
+                },
+                add_subtask: function () {
+                    this.data.subtasks.push({ 'name': 'Subtask', 'score': '30', 'method': 'sum', 'testcases': [], 'time_limit': 1000, 'memory_limit': 512 })
+                },
+                submit: function () {
+                    this.success_message = this.error_message = false;
+                    $.post("/api/update_problem", { id: this.data.id, data: JSON.stringify(this.data) }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code == 0) {
+                            problem_edit.success_message = "提交成功！";
+                        } else {
+                            problem_edit.error_message = ctx.message;
+                        }
+                        $("html,body").animate({
+                            scrollTop: 0
+                        });
+                    });
+                },
+                remove_file: function (evt) {
+                    this.success_message = this.error_message = "";
+                    const index = evt.target.getAttribute("data-index");
+                    $.post("/api/remove_file", {
+                        id: problem_edit.data.id,
+                        file: problem_edit.data.files[index].name
+                    }).done((ctx) => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            problem_edit.error_message = ctx.message;
+                            return;
+                        }
+                        problem_edit.data.files = ctx.file_list;
+                    });
+                }, get_file: function (evt) {
+                    this.files = evt.target.files;
+                }, upload: function () {
+                    var formdata = new FormData();
+                    for (i = 0; i < this.files.length; i++) {
+                        const val = this.files[i];
+                        // console.log(val);
+                        // console.log(val.name);
+                        formdata.append(val.name, val, val.name);
+                    }
+                    // console.log(formdata);
+                    this.uploading = true;
+                    this.success_message = this.error_message = false;
+                    $.ajax({
+                        url: "/api/upload_file/" + problem_edit.data.id,
+                        type: "POST",
+                        data: formdata,
+                        contentType: false,
+                        processData: false
+                    }).done((ctx) => {
+                        ctx = JSON.parse(ctx);
+                        problem_edit.uploading = false;
+                        if (ctx.code) {
+                            problem_edit.error_message = ctx.message;
+                            return;
+                        }
+                        problem_edit.success_message = "上传成功！";
+                        problem_edit.data.files = ctx.file_list;
+                        console.log(ctx.file_list);
+                    });
+
+                }
+            }
+        });
+        $.post("/api/get_problem_info", { id: parseInt(window.location.href.split("/").pop()) }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code != 0) {
+                console.log("Bad problem id");
+                console.log(ctx);
+                $("#no-perm-text").text(ctx.message);
+                $("#no-perm-modal").modal("show");
+                return;
+            }
+            problem_edit.data = ctx.data;
+            problem_edit.done = true;
+            problem_edit.$nextTick(() => {
+                $('.tabular.menu .item').tab();
+            });
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 1000px;">
+    <div class="ui left aligned container" id="problem-edit" v-if="done">
+        <div class="ui header">
+            <h1>{[data.id]} - {[data.title]} (编辑中)</h1>
+        </div>
+        <div class="ui error message" v-if="error_message!=''">
+            <div class="header">
+                发生错误
+            </div>
+            <p>{[error_message]}</p>
+        </div>
+        <div class="ui success message" v-if="success_message!=''">
+            <div class="header">
+                执行成功
+            </div>
+            <p>{[success_message]}</p>
+        </div>
+        <div>
+            <div class="ui top attached tabular menu">
+                <a class="item active" data-tab="tab1">题面</a>
+                <a class="item " data-tab="tab2">题目文件</a>
+                <a class="item " :href="'/show_problem/'+data.id">返回题目</a>
+
+            </div>
+            <div class="ui bottom attached tab segment active" data-tab="tab1">
+                <div class="ui equal width form">
+                    <div class="field">
+                        <label>题目ID</label>
+                        <div class="ui small label">{[data.id]}</div>
+                    </div>
+                    <div class="field">
+                        <label>题目名</label>
+                        <input type="text" v-model="data.title">
+                    </div>
+                    <div class="field">
+                        <label>题目背景</label>
+                        <textarea v-model="data.background" rows="5"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>题目内容</label>
+                        <textarea v-model="data.content" rows="5"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>输入格式</label>
+                        <textarea v-model="data.input_format" rows="5"></textarea>
+                    </div>
+                    <div class="field">
+                        <label>输出格式</label>
+                        <textarea v-model="data.output_format" rows="5"></textarea>
+                    </div>
+                    <div class="ui fields" v-for="k,v in data.example">
+                        <div class="ui field">
+                            <label>样例 {[v+1]} 输入</label>
+                            <textarea rows="5" v-model="k.input"></textarea>
+                            <div class="ui tiny red button" v-on:click="data.example.splice(v,1)">删除本组样例</div>
+                        </div>
+                        <div class="ui field">
+                            <label>样例 {[v+1]} 输出</label>
+                            <textarea rows="5" v-model="k.output"></textarea>
+                        </div>
+                    </div>
+                    <div class="ui green button" v-on:click="data.example.push({input:'qwq',output:'qwq'})">
+                        添加样例
+                    </div>
+                    <div class="field">
+                        <label>数据范围与提示</label>
+                        <textarea rows="5" v-model="data.hint"></textarea>
+                    </div>
+                    <div class="ui message">
+                        <div class="ui header">
+                            注意
+                        </div>
+                        <p>此处不应该填写数据范围等，那些应该填写在子任务的注释里。</p>
+                    </div>
+                    <div class="ui field">
+                        <div class="ui toggle checkbox">
+                            <input type="checkbox" class="hidden" v-model="data.public">
+                            <label @click="data.public=!data.public">公开</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ui bottom attached tab segment" data-tab="tab2">
+                <div class="ui header">
+                    <h3>文件列表</h3>
+                </div>
+                <table class="ui table">
+                    <thead>
+                        <tr>
+                            <th>编号</th>
+                            <th>文件名</th>
+                            <th>大小</th>
+                            <th>操作</th>
+                            <th>公开</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="val,i in data.files">
+                            <td style="width: 50px">{[i+1]}</td>
+                            <td>{[val.name]}</td>
+                            <td>{[val.size]}({[val.size/1024]} KB)</td>
+                            <td>
+                                <div class="ui buttons">
+                                    <a class="ui tiny green button" :href="'/api/download_file/'+data.id+'/'+val.name"
+                                        target="_blank">下载</a>
+                                    <button class="ui tiny red button" v-on:click="remove_file"
+                                        :data-index="i">删除</button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ui toggle checkbox">
+                                    <input type="checkbox" class="hidden"
+                                        :checked="data.downloads.includes(val.name)?1:null">
+                                    <label :data="val.name"
+                                        @click="data.downloads.includes(val.name)?(data.downloads.splice(data.downloads.indexOf(val.name),1)):data.downloads.push(val.name)">公开</label>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="ui form">
+                    <div class="ui field">
+                        <label>上传文件</label>
+                        <input type="file" multiple id="files" v-on:change="get_file">
+                    </div>
+                    <div class="ui small green submit button" v-on:click="upload" v-bind:class="{loading:uploading}">
+                        上传..
+                    </div>
+                </div>
+                <div class="ui header">
+                    <h3>子任务设定</h3>
+                </div>
+                <div class="ui container">
+                    <div class="ui form">
+                        <div class="ui fields">
+                            <div class="ui field">
+                                <label>统一修改内存</label>
+                                <input type="text" v-on:keyup.enter="modify_all('memory_limit',$event.target.value)"
+                                    placeholder="按回车生效..">
+                            </div>
+                            <div class="ui field">
+                                <label>统一修改时限</label>
+                                <input type="text" v-on:keyup.enter="modify_all('time_limit',$event.target.value)"
+                                    placeholder="按回车生效..">
+                            </div>
+                        </div>
+                        <div class="ui field">
+                            <label>SPJ文件名</label>
+                            <input type="text" v-model="data.spj_filename" placeholder="留空以不使用SPJ">
+                        </div>
+                        <div class="ui green button" @click="auto_generate">自动生成子任务</div>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+
+                <div v-for="subtask,index in data.subtasks">
+
+                    <div class="ui header">
+                        <h2>{[subtask.name]}</h2>
+                    </div>
+                    <div class="ui equal width form">
+                        <div class="ui fields">
+                            <div class="ui field">
+                                <label>子任务名</label>
+                                <input type="text" v-model="subtask.name">
+                            </div>
+                            <div class="ui field">
+                                <label>时间限制(ms,整数)</label>
+                                <input type="text" v-model="subtask.time_limit">
+                            </div>
+                            <div class="ui field">
+                                <label>内存限制(MB,整数)</label>
+                                <input type="text" v-model="subtask.memory_limit">
+                            </div>
+                        </div>
+
+                        <div class="ui fields">
+                            <div class="ui field">
+                                <label>计分方式</label>
+                                <select class="ui dropdown" v-model="subtask.method">
+                                    <option value="min">取最小值</option>
+                                    <option value="sum">取和</option>
+                                </select>
+                            </div>
+                            <div class="ui field">
+                                <label>子任务总分</label>
+                                <input type="text" v-model="subtask.score">
+                            </div>
+                        </div>
+                        <div class="ui field">
+                            <label>注释</label>
+                            <textarea rows="3" v-model="subtask.comment"></textarea>
+                        </div>
+                    </div>
+                    <table class="ui table">
+                        <thead>
+                            <tr>
+                                <th>测试点编号</th>
+                                <th>输入文件名</th>
+                                <th>输出文件名</th>
+                                <th>删除</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="testcase,index in subtask.testcases">
+                                <td>{[index+1]}</td>
+                                <td>
+                                    <select class="ui dropdown" v-model="testcase.input">
+                                        <option v-for="file in file_list" :value="file">{[file]}</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="ui dropdown" v-model="testcase.output">
+                                        <option v-for="file in file_list" :value=file>{[file]}</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="ui tiny red circular icon button"
+                                        v-on:click="subtask.testcases.splice(index,1)">
+                                        <i class="times icon"></i>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="ui buttons">
+                        <div class="ui red button" v-on:click="data.subtasks.splice(index,1)">删除子任务</div>
+                        <div class="ui blue button"
+                            v-on:click="data.subtasks[index].testcases.push({input:'qwq',output:'qwq'})">增加测试点</div>
+                    </div>
+                    <div class="ui divider"></div>
+                </div>
+
+                <div class="ui container">
+                    <div class="ui green button" @click="add_subtask">添加子任务</div>
+                </div>
+            </div>
+        </div>
+        <div class="ui left aligned container">
+            <div class="ui green button" v-on:click="submit">提交</div>
+        </div>
+
+    </div>
+    <div class="ui basic modal" id="no-perm-modal">
+        <div class="ui icon header">
+            <i class="error icon"></i>
+            错误
+        </div>
+        <div class="content">
+            <div class="ui center aligned container">
+                <p id="no-perm-text"></p>
+            </div>
+        </div>
+        <div class="actions">
+            <div class="ui green ok inverted button" onclick="window.location.href='/'">
+                <i class="checkmark icon"></i>
+                返回主页
+            </div>
+        </div>
+    </div>
+    <div class="ui modal" id="auto-generate-modal">
+        <div class="ui header">
+            警告
+        </div>
+        <div class="content">
+            <p>自动生成子任务将会删除现有的所有子任务，并且采取以下策略</p>
+            <p>对于文件列表中的任意一个文件[name].in,尝试在文件列表中找到[name].out或者[name].ans(两者都出现时取前者)</p>
+            <p>并且把这两个文件作为一个子任务的输入和输出。</p>
+            <p>假设得到的子任务个数为k，那么前k-1个子任务的分数均为floor(100/k),最后一个子任务的分数为100-(k-1)*floor(100/k),所有子任务的分数之和为100。</p>
+        </div>
+        <div class="actions">
+            <div class="ui green approve button">
+                确定
+            </div>
+            <div class="ui blue cancel button">
+                取消
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

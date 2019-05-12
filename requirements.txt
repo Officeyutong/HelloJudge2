@@ -1,0 +1,9 @@
+flask
+flask-migrate
+flask-sqlalchemy
+flask-script
+flask-wtf
+flask-socketio
+celery
+redis
+mysql-connector-python
