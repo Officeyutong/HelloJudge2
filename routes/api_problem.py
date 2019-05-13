@@ -34,7 +34,8 @@ def get_problem_info():
                 "last_code":"qwq"//上一次提交的代码,
                 "submit_count":0,//提交数
                 "accepted_count":0,//通过数
-                "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交
+                "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交,
+                "score":题目总分
             }
         }
     """
@@ -68,6 +69,7 @@ def get_problem_info():
                 Submission.user_id == session.get("userid")).order_by(Submission.submit_time.desc())
             if any_submit.count():
                 result["my_submission"] = any_submit.first().id
+    result["score"] = problem.get_total_score()
     return make_response(0, data=result)
 
 

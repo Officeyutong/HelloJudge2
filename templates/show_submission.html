@@ -49,8 +49,13 @@
                 console.log("WebSocket connected..");
                 socket.emit("init", { "submission_id": submission_id });
                 socket.on("update", (x) => {
+                    console.log("Websocket got ");
+                    console.log(x);
                     this.data.message = x.message;
                     this.data.judge_result = x.judge_result;
+                    this.data.status = x.status;
+                    this.data.score = x.score;
+
                 });
             }, methods: {
                 get_text_color(ratio) {
@@ -73,43 +78,69 @@
                 submission.user_profile = JSON.parse(ctx).data;
                 $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(ctx => {
                     submission.problem_data = JSON.parse(ctx).data;
-                    $.post("/api/get_judge_status").done(ctx => submission.judge_status = JSON.parse(ctx).data);
-                    submission.done = true;
+                    $.post("/api/get_judge_status").done(ctx => {
+                        submission.judge_status = JSON.parse(ctx).data;
+                        submission.done = true;
+                    });
+
                 });
             });
         });
     });
 </script>
+<style>
+    .first-column {
+        min-width: 70px;
+        width: 100px !important;
+    }
+</style>
 <div id="submission" v-if="done">
     <div class="ui header">
         <h2>查看提交</h2>
     </div>
     <div class="ui stack segment">
-        <table class="ui very basic celled  table" style="max-width: 500px;">
+        <table class="ui very basic celled  table" style="max-width: 700px;">
             <tbody>
                 <tr>
-                    <td>提交ID</td>
+                    <td class="first-column">提交ID</td>
                     <td>{[data.id]}</td>
                 </tr>
                 <tr>
-                    <td>题目</td>
+                    <td class="first-column">题目</td>
                     <td><a :href="'/show_problem/'+problem_data.id">{[problem_data.id]} {[problem_data.title]}</a></td>
                 </tr>
                 <tr>
-                    <td>提交者</td>
+                    <td class="first-column">提交者</td>
                     <td><a :href="'/profile/'+user_profile.user_id">{[user_profile.username]}</a></td>
                 </tr>
                 <tr>
-                    <td>提交时间</td>
+                    <td>状态</td>
+                    <td>
+                        <judge-status :judge_status="judge_status" :status="data.status"></judge-status>
+                    </td>
+                </tr>
+                <tr>
+                    <td>得分/总分</td>
+                    <td>
+                        <span :style="'font-color:'+get_text_color(data.score/problem_data.score)"
+                            style="font-weight: bold">
+                            {[data.score]}/{[problem_data.score]}
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="first-column">提交时间</td>
                     <td>{[data.submit_time]}</td>
                 </tr>
                 <tr>
-                    <td>评测机</td>
+                    <td class="first-column">评测机</td>
                     <td>{[data.judger]}</td>
                 </tr>
                 <tr>
-                    <td>附加信息</td>
-                    <td>{[data.message]}</td>
+                    <td class="first-column">附加信息</td>
+                    <td>
+                        <pre>{[data.message]}</pre>
+                    </td>
                 </tr>
             </tbody>
         </table>

@@ -5,5 +5,5 @@ from flask_socketio import emit, send, join_room
 
 
 @socket.on("init", namespace="/ws/submission")
-def handle_submission(submission_id):
-    join_room(str(submission_id))
+def handle_submission(data):
+    join_room(str(data["submission_id"]))

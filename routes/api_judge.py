@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, csrf
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models.user import *
@@ -9,7 +9,8 @@ from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
 
-@app.route("/api/judge/get_file_list")
+@csrf.exempt
+@app.route("/api/judge/get_file_list", methods=["POST"])
 def judge_get_file_list():
     """
     获取题目的文件列表
@@ -34,7 +35,8 @@ def judge_get_file_list():
     return make_response(0, data=generate_file_list(request.form["problem_id"]))
 
 
-@app.route("/api/judge/download_file")
+@csrf.exempt
+@app.route("/api/judge/download_file", methods=["POST"])
 def judge_download_file():
     """
     下载题目文件
@@ -55,13 +57,14 @@ def judge_download_file():
     problem: Problem = problem.one()
     path = os.path.join(basedir, f"uploads/{problem.id}")
     file = os.path.join(path, request.form["filename"])
+    import flask
     if not os.path.exists(file):
-        import flask
         flask.abort(404)
     return flask.send_file(file)
 
 
-@app.route("/api/judge/download_file")
+@csrf.exempt
+@app.route("/api/judge/get_problem_info", methods=["POST"])
 def judge_get_problem_info():
     """
     获取题目信息
@@ -85,3 +88,27 @@ def judge_get_problem_info():
         return make_response(-1, message="题目不存在")
     problem: Problem = problem.one()
     return make_response(0, data=problem.as_dict())
+
+
+@csrf.exempt
+@app.route("/api/judge/update", methods=["POST"])
+def judge_update():
+    """
+    更新评测状态
+    参数:
+    submission_id:int 提交ID
+    uuid:str 评测机uuid
+    judge_result:dict 评测结果
+    message:str 附加信息
+    返回
+    {
+        "code":-1,//0表示调用成功
+        "message":"qwq"
+    }
+    """
+    if request.form['uuid'] not in config.JUDGERS:
+        return make_response(-1, message="该评测机未认证")
+    from api.judge import update_status
+    update_status(int(request.form["submission_id"]), decode_json(request.form["judge_result"]),
+                  str(config.JUDGERS[request.form["uuid"]]), request.form.get("message", ""))
+    return make_response(0)

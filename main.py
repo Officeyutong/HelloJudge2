@@ -1,5 +1,6 @@
 
 
+
 import flask
 from flask_sqlalchemy import SQLAlchemy
 try:
@@ -16,11 +17,12 @@ web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 web_app.secret_key = config.SESSION_KEY
-CSRFProtect(web_app)
+csrf = CSRFProtect(web_app)
 db = SQLAlchemy(web_app)
 basedir = os.path.dirname(__file__)
 logger = web_app.logger
 socket = SocketIO(web_app)
-queue = celery.Celery(web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
+queue = celery.Celery(
+    web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
 # logger.info("Starting server...")
 import routes
