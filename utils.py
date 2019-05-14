@@ -11,6 +11,7 @@ def encode_json(obj):
     encoder = json.JSONEncoder()
     return encoder.encode(obj)
 
+
 def decode_json(obj):
     import json
     decoder = json.JSONDecoder()
@@ -22,10 +23,16 @@ def make_response(code, **data):
         "code": code
     }, **data))
 
+
 def generate_file_list(pid: int)->list:
     import os
     from main import basedir
     upload_path = os.path.join(basedir, "uploads/" + str(pid))
     os.makedirs(upload_path, exist_ok=True)
-    files = os.listdir(upload_path)
-    return list(map(lambda x: {"name": x, "last_modified_time": os.path.getsize(os.path.join(upload_path, x)), "size": os.path.getsize(os.path.join(upload_path, x))}, files))
+    files = filter(lambda x: not x.endswith(".lock"), os.listdir(upload_path))
+    files = filter(lambda x: os.path.exists(
+        os.path.join(upload_path, x+".lock")), files)
+    def read_file(x):
+        with open(x, "r") as f:
+            return f.read()
+    return list(map(lambda x: {"name": x, "last_modified_time": float(read_file(os.path.join(upload_path, x)+".lock")), "size": os.path.getsize(os.path.join(upload_path, x))}, files))

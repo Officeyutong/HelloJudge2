@@ -12,10 +12,14 @@
         template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
         methods: {
             get_icon: function (x) {
-                return this.judge_status[x].icon;
+                if (this.judge_status[x])
+                    return this.judge_status[x].icon;
+                else return "";
 
             }, get_color: function (x) {
-                return this.judge_status[x].color;
+                if (this.judge_status[x])
+                    return this.judge_status[x].color;
+                else return "black";
             }, get_text(x) {
                 if (this.judge_status.hasOwnProperty(x))
                     return this.judge_status[x].text;
@@ -45,7 +49,7 @@
                     return obj;
                 }
             }, mounted: function () {
-                socket = io(window.location.origin + "/ws/submission");
+                socket = io( "/ws/submission");
                 console.log("WebSocket connected..");
                 socket.emit("init", { "submission_id": submission_id });
                 socket.on("update", (x) => {

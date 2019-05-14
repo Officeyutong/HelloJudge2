@@ -103,7 +103,10 @@ def upload_file(id):
     os.makedirs(upload_path, exist_ok=True)
     for file in request.files:
         request.files[file].save(os.path.join(
-            upload_path, secure_filename(file)))
+            upload_path, file))
+        with open(os.path.join(upload_path, file)+".lock", "w") as file:
+            import time
+            file.write(f"{time.time()}")
     problem.files = generate_file_list(id)
     db.session.commit()
 
@@ -172,6 +175,8 @@ def remove_file():
     os.makedirs(upload_path, exist_ok=True)
     try:
         os.remove(os.path.join(upload_path, request.form["file"]))
+        os.remove(os.path.join(upload_path, request.form["file"]+".lock"))
+
     except Exception as ex:
         pass
     problem.files = generate_file_list(request.form["id"])
@@ -211,6 +216,8 @@ def update_problem():
             return make_response(-1, message="如果计分方式为取和，那么子任务分数必须为测试点个数的倍数")
     for k, v in data.items():
         setattr(problem, k, v)
+    for subtask in problem.subtasks:
+        subtask["score"] = int(subtask["score"])
     db.session.commit()
     return make_response(0)
 

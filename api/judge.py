@@ -19,7 +19,9 @@ def push_to_queue(submission_id):
                                              "testcases": list(map(lambda x: dict(**x, status="waiting", score=0, message="Judging.."), item["testcases"]))
                                              }
     submit.status = "waiting"
-    queue.send_task("task.judge", [submit.to_dict()])
+    queue.send_task("task.judge", [submit.to_dict(), {
+                    "compile_time_limit": config.COMPILE_TIME_LIMIT,
+                    "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT}])
     db.session.commit()
 # 更新评测状态
 
@@ -47,7 +49,10 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "unaccepted"
     print(
         f"Update judge status for {submission_id} to {judge_result} ,judger = {judger},message={message}")
-
+    for k, v in submit.judge_result.items():
+        v["score"] = int(v["score"])
+        for testcase in v["testcases"]:
+            testcase["score"] = int(testcase["score"])
     import flask_socketio
     flask_socketio.emit("update", {
         "judge_result": judge_result,
@@ -56,5 +61,6 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         "judger": submit.judger,
         "message": message
     }, room=str(submission_id), namespace="/ws/submission")
-    print(f"Submission {submission} status updated to \n{judge_result}\nmessage {message},judger {judger}")
+    print(
+        f"Submission {submission_id} status updated to \n{judge_result}\nmessage {message},judger {judger}")
     db.session.commit()

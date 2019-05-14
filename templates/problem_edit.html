@@ -295,6 +295,23 @@
                             <label>SPJ文件名</label>
                             <input type="text" v-model="data.spj_filename" placeholder="留空以不使用SPJ">
                         </div>
+                        <div class="ui fields">
+                            <div class="ui field" :class="{disabled:!data.using_file_io}">
+                                <label>输入文件</label>
+                                <input type="text" v-model="data.input_file_names">
+                            </div>
+                            <div class="ui field" :class="{disabled:!data.using_file_io}">
+                                <label>输出文件</label>
+                                <input type="text" v-model="data.output_file_names">
+                            </div>
+                        </div>
+                        <div class="ui field">
+                            <div class="ui toggle checkbox">
+                                <input type="checkbox" v-model="data.using_file_io"
+                                    @click="data.using_file_io=!data.using_file_io">
+                                <label>使用文件IO</label>
+                            </div>
+                        </div>
                         <div class="ui green button" @click="auto_generate">自动生成子任务</div>
                     </div>
                 </div>

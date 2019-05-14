@@ -28,13 +28,21 @@ class Problem(db.Model):
     # 可下载文件列表
     downloads = db.Column(db.PickleType, default=[])
     # 子任务安排
-    # testcases:[{"input":"a.in","output":"b.ins"}]
+    # testcases:[{"input":"a.in","output":"b.out"}]
     subtasks = db.Column(db.PickleType, default=[
                          {"name": "Subtask1", "score": 40, "method": "min", "testcases": [], "time_limit":1000, "memory_limit":512, "comment":"这里是注释"}])
     # 题目是否公开
     public = db.Column(db.Boolean, default=False)
     # spj文件名
     spj_filename = db.Column(db.String(20), default="")
+    # 使用文件输入输出
+    using_file_io = db.Column(db.Boolean, default=False)
+    # 输入文件名
+    input_file_name = db.Column(db.String(30), default="")
+    # 输出文件名
+    output_file_name = db.Column(db.String(30), default="")
+    # 题目类型
+    problem_type = db.Column(db.String(20), default="traditional")
 
     def as_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(

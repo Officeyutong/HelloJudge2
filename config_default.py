@@ -24,17 +24,21 @@ JUDGERS = {
 PROBLEMS_PER_PAGE = 50
 # 每页的提交数量
 SUBMISSIONS_PER_PAGE = 20
+# 编译时间限制，浮点数，单位s
+COMPILE_TIME_LIMIT = 10
+# 编译结果长度限制,单位字符
+COMPILE_RESULT_LENGTH_LIMIT = 500
 # 支持的语言
 # 语言ID将会被直接发送给评测机
 SUPPORTED_LANGUAGES = [
     {
-        "id": "c++11",
+        "id": "cpp11",
         "display": "C++ 11",
         "version": "G++ 8.3",
         "ace_mode": "c_cpp"
     },
     {
-        "id": "c++98",
+        "id": "cpp98",
         "display": "C++ 98",
         "version": "G++ 8.3",
         "ace_mode": "c_cpp"
