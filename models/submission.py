@@ -6,7 +6,7 @@ class Submission(db.Model):
     # 提交ID
     id = db.Column(db.Integer, primary_key=True)
     # 用户ID
-    user_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, index=True)
     # 语言ID
     language = db.Column(db.String(10))
     # 题目ID
@@ -23,6 +23,7 @@ class Submission(db.Model):
     # 形如{"subtask1":{"score":100,"status":"WA",testcases:[{"input":"1.in","output":"1.out","score":0,status:"WA","message":"","full_score":"测试点满分，对于取min，只有0或1"}]}}
     judge_result = db.Column(db.PickleType, default={})
     # 总分
+
     def get_total_score(self):
         return sum(map(lambda x: x["score"], self.judge_result.values()))
     # 评测状态
@@ -35,6 +36,7 @@ class Submission(db.Model):
     message = db.Column(db.Text, default="")
     # 评测机名
     judger = db.Column(db.String(20), default="")
+
     def to_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(
             "_"), self.__dict__.items()))

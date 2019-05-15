@@ -5,9 +5,9 @@ class Mail(db.Model):
     __tablename__ = "mails"
     id = db.Column(db.Integer, primary_key=True)
     # 发送者用户ID
-    from_id = db.Column(db.Integer)
+    from_id = db.Column(db.Integer, index=True)
     # 接收者用户ID
-    to_id = db.Column(db.Integer)
+    to_id = db.Column(db.Integer, index=True)
     # 发送时间
     time = db.Column(db.DateTime)
     # 内容

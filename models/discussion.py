@@ -10,12 +10,14 @@ class Discussion(db.Model):
     # discussion.problem 表示所有题目的讨论
     # discussion.problem.global 表示题目全局讨论
     # discussion.global 表示全局讨论
-    topic = db.Column(db.String(128))
+    path = db.Column(db.String(128), index=True, nullable=False)
     # 标题
-    title = db.Column(db.String(100))
+    title = db.Column(db.String(100), index=True, nullable=False)
     # 内容
-    content = db.Column(db.Text)
+    content = db.Column(db.Text, nullable=False)
     # 用户ID
-    user_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, nullable=False)
     # 是否置顶
-    top = db.Column(db.Boolean, default=False)
+    top = db.Column(db.Boolean, default=False, nullable=False)
+    # 发送时间
+    time = db.Column(db.DateTime, nullable=False)

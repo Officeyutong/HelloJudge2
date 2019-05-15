@@ -53,3 +53,11 @@ class Problem(db.Model):
 
     def get_total_score(self):
         return sum(map(lambda x: int(x["score"]), self.subtasks))
+
+    @staticmethod
+    def by_id(id):
+        return db.session.query(Problem).filter(Problem.id == id).one()
+    @staticmethod
+    def has(id):
+        return db.session.query(Problem).filter(Problem.id == id).exists()
+        
