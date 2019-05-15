@@ -19,19 +19,32 @@
     <script src="//cdn.staticfile.org/semantic-ui/2.3.3/semantic.min.js"></script>
     <script src="//cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
     <link href="//cdn.staticfile.org/semantic-ui/2.3.3/semantic.min.css" rel="stylesheet">
-    {%endif%} 
+    {%endif%}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/katex.min.css">
     <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/katex.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/contrib/auto-render.min.js"></script>
     <script src="//cdn.bootcss.com/showdown/1.9.0/showdown.min.js"></script>
+    <script src="//cdn.bootcss.com/SyntaxHighlighter/3.0.83/scripts/shCore.js"></script>
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/md5.js"></script>
     <script>
+        const GetRequest = function () {
+            var url = location.search; //获取url中"?"符后的字串  
+            var theRequest = new Object();
+            if (url.indexOf("?") != -1) {
+                var str = url.substr(1);
+                strs = str.split("&");
+                for (var i = 0; i < strs.length; i++) {
+                    theRequest[strs[i].split("=")[0]] = decodeURI(strs[i].split("=")[1]);
+                }
+            }
+            return theRequest;
+        }
         const md5_with_salt = function (password) {
             return hex_md5(password + "{{SALT}}")
         };
         const copy_text = function (text) {
-            const elem = document.createElement("input");
+            const elem = document.createElement("textarea");
             $("body").append(elem);
             elem.value = text;
             elem.select();
@@ -49,12 +62,50 @@
                 xhr.setRequestHeader("X-CSRFtoken", "{{csrf_token()}}")
             }, error: function (xhr, status, err) {
                 show_error_modal(xhr.responseText, xhr.status + " " + err);
-                console.log(status);
-                console.log(err);
-                console.log(xhr);
             }
         });
+        const judge_status = {
+            done: false, data: {}
+        };
+        Vue.component("score-label", {
+            delimiters: ["{[", "]}"],
+            props: ["score", "full_score"],
+            methods: {
+                get_text_color(ratio) {
+                    ratio *= 100;
+                    if (ratio <= 50) return "red";
+                    else if (ratio <= 70) return "orange";
+                    else if (ratio < 100) return "yellow";
+                    else return "green";
+                }
+            }, template: "<span :style=\"'font-weight: bold;color: '+get_text_color(score/full_score)\">{[score]}/{[full_score]}</span>"
+        });
 
+        Vue.component("judge-status", {
+            delimiters: ['{[', ']}'],
+            props: ["status"],
+            template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
+            methods: {
+                get_icon: function (x) {
+                    if (!judge_status.done) return "";
+                    return judge_status.data[x].icon;
+
+                }, get_color: function (x) {
+                    if (!judge_status.done) return "black";
+                    return judge_status.data[x].color;
+                }, get_text(x) {
+                    if (!judge_status.done) return x;
+                    if (judge_status.data.hasOwnProperty(x))
+                        return judge_status.data[x].text;
+                    else return x;
+                }
+            }
+        });
+        $.post("/api/get_judge_status").done(ctx => {
+            ctx = JSON.parse(ctx);
+            judge_status.done = true;
+            judge_status.data = ctx.data;
+        });
         var sidebar;
         $(document).ready(() => {
             sidebar = new Vue({
@@ -131,7 +182,7 @@
         </div>
         <div class="ui center aligned  container">
             <div style="color: darkgrey">
-                <a href="https://gitee.com/yutong_java/HelloJudge2">Gitee</a>
+                {{APP_NAME}} Powered by <a href="https://gitee.com/yutong_java/HelloJudge2">HelloJudgeV2</a>
             </div>
         </div>
     </div>

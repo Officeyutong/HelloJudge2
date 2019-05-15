@@ -357,7 +357,8 @@
                             <td>我的提交</td>
                             <td>
                                 <div v-if="data.my_submission==-1">尚未提交</div><a v-else
-                                    :href="'/show_submission/'+data.my_submission" target="_blank">{[data.my_submission]}</a>
+                                    :href="'/show_submission/'+data.my_submission"
+                                    target="_blank">{[data.my_submission]}</a>
                             </td>
                         </tr>
                         <tr>
@@ -369,12 +370,18 @@
                             <td>输入/输出文件</td>
                             <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
                         </tr>
+                        <tr>
+                            <td>操作</td>
+                            <td>
+                                <a :href="'/problem_edit/'+data.id" target="_blank">编辑</a>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-                <div class="ui header">
+                <div class="ui header" v-if="data.downloads.length!=0">
                     <h4>文件下载</h4>
                 </div>
-                <table class="ui very basic fluid collapsing celled table">
+                <table class="ui very basic fluid collapsing celled table" v-if="data.downloads.length!=0">
                     <tbody>
                         <tr v-for="file in data.downloads" style="width: 100%">
                             <td>

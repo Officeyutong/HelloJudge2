@@ -16,31 +16,6 @@
                 current_page: 0,
                 page_menu: [],
                 judge_status: null
-            }, methods: {
-                get_text_color(ratio) {
-                    ratio *= 100;
-                    if (ratio <= 50) return "red";
-                    else if (ratio <= 70) return "orange";
-                    else if (ratio < 100) return "yellow";
-                    else return "green";
-                }
-            }
-        });
-        Vue.component("judge-status", {
-            delimiters: ['{[', ']}'],
-            props: ["status", "judge_status"],
-            template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
-            methods: {
-                get_icon: function (x) {
-                    return this.judge_status[x].icon;
-
-                }, get_color: function (x) {
-                    return this.judge_status[x].color;
-                }, get_text(x) {
-                    if (this.judge_status.hasOwnProperty(x))
-                        return this.judge_status[x].text;
-                    else return x;
-                }
             }
         });
         $.post("/api/submission_list", { page: parseInt(window.location.href.split("/").pop()) || 1 }).done(ctx => {
@@ -84,8 +59,10 @@
                 <tr>
                     <th class="center aligned" style="max-width: 80px;width:80px;">提交编号</th>
                     <th class="center aligned">题目</th>
+                    <th class="center aligned">状态</th>
+
                     <th>分数</th>
-                    <th>状态</th>
+
                     <th>比赛</th>
                 </tr>
             </thead>
@@ -93,19 +70,19 @@
                 <tr v-for="item in data">
                     <td class="center aligned" style="max-width: 80px;width:80px;"><a
                             :href="'/show_submission/'+item.id" target="__blank">{[item.id]}</a></td>
-                    <td style="min-width: 350px;" class="center aligned"><a :href="'/show_problem/'+item.problem_id" >{[item.problem_id]}.
+                    <td style="max-width: 350px;" class="center aligned"><a
+                            :href="'/show_problem/'+item.problem_id">{[item.problem_id]}.
                             {[item.problem_title]}</a> </td>
-                    <td><a :href="'/show_submission/'+item.id" target="__blank">
-                            <span :style="'color:'+get_text_color(item.score/item.total_score)"
-                                style="font-weight: bold">{[item.score]} /
-                                {[item.total_score]}</span>
+                    <td class="center aligned">
+                        <a :href="'/show_submission/'+item.id" target="_blank">
+                            <judge-status  :status="item.status"></judge-status>
                         </a>
                     </td>
-                    <td >
-                        <a :href="'/show_submission/'+item.id" target="__blank">
-                            <judge-status :judge_status="judge_status" :status="item.status"></judge-status>
+                    <td><a :href="'/show_submission/'+item.id" target="_blank">
+                            <score-label :score="item.score" :full_score="item.total_score"></score-label>
                         </a>
                     </td>
+
                     <td>
                         <a v-if="item.contest!=-1" :href="'/contests/'+item.contest">{[item.contest]}</a>
                     </td>

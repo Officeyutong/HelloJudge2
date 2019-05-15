@@ -210,14 +210,8 @@
                         添加样例
                     </div>
                     <div class="field">
-                        <label>数据范围与提示</label>
+                        <label>提示</label>
                         <textarea rows="5" v-model="data.hint"></textarea>
-                    </div>
-                    <div class="ui message">
-                        <div class="ui header">
-                            注意
-                        </div>
-                        <p>此处不应该填写数据范围等，那些应该填写在子任务的注释里。</p>
                     </div>
                     <div class="ui field">
                         <div class="ui toggle checkbox">
@@ -268,7 +262,7 @@
                                     <input type="checkbox" class="hidden"
                                         :checked="data.provides.includes(val.name)?1:null">
                                     <label :data="val.name"
-                                        @click="data.provides.includes(val.name)?(data.provides.splice(data.downloads.indexOf(val.name),1)):data.provides.push(val.name)">公开</label>
+                                        @click="data.provides.includes(val.name)?(data.provides.splice(data.downloads.indexOf(val.name),1)):data.provides.push(val.name)">编译时提供</label>
                                 </div>
                             </td>
                         </tr>

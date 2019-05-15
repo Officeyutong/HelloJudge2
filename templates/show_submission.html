@@ -2,31 +2,21 @@
 
 {%block head%}
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
+<style>
+    pre>code {
+        font-family: "Sans Mono", "Consolas", "Courier", monospace;
+        font-size: 130% !important;
+        background-color: white !important;
+        line-height: 25px;
+    }
+</style>
 {%endblock%}
 {%block body%}
 <script>
     var submission, socket;
-    Vue.component("judge-status", {
-        delimiters: ['{[', ']}'],
-        props: ["status", "judge_status"],
-        template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
-        methods: {
-            get_icon: function (x) {
-                if (this.judge_status[x])
-                    return this.judge_status[x].icon;
-                else return "";
 
-            }, get_color: function (x) {
-                if (this.judge_status[x])
-                    return this.judge_status[x].color;
-                else return "black";
-            }, get_text(x) {
-                if (this.judge_status.hasOwnProperty(x))
-                    return this.judge_status[x].text;
-                else return x;
-            }
-        }
-    });
     $(document).ready(() => {
         const url = window.location.href.split("/");
         const submission_id = url[url.length - 1];
@@ -35,10 +25,15 @@
             delimiters: ['{[', ']}'],
             el: "#submission",
             data: {
+                //是否完成加载
                 done: false,
+                //提交数据
                 data: null,
+                //提交者个人信息
                 user_profile: null,
+                //题目数据
                 problem_data: null,
+                //评测状态列表
                 judge_status: null
             }, computed: {
                 problem_subtasks: function () {
@@ -49,26 +44,9 @@
                     return obj;
                 }
             }, mounted: function () {
-                socket = io(window.location.origin + "/ws/submission");
-                console.log("WebSocket connected..");
-                socket.emit("init", { "submission_id": submission_id });
-                socket.on("update", (x) => {
-                    console.log("Websocket got ");
-                    console.log(x);
-                    this.data.message = x.message;
-                    this.data.judge_result = x.judge_result;
-                    this.data.status = x.status;
-                    this.data.score = x.score;
 
-                });
             }, methods: {
-                get_text_color(ratio) {
-                    ratio *= 100;
-                    if (ratio <= 50) return "red";
-                    else if (ratio <= 70) return "orange";
-                    else if (ratio < 100) return "yellow";
-                    else return "green";
-                }
+                copy_text: copy_text
             }
         })
         $.post("/api/get_submission_info", { submission_id: submission_id }).done((ctx) => {
@@ -84,7 +62,24 @@
                     submission.problem_data = JSON.parse(ctx).data;
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;
+                        if (submission.data.status == "judging" || submission.data.status == "waiting") {
+                            socket = io(window.location.origin + "/ws/submission");
+                            console.log("WebSocket connected..");
+                            socket.emit("init", { "submission_id": submission_id });
+                            socket.on("update", (x) => {
+                                console.log("Websocket got ");
+                                console.log(x);
+                                submission.data.message = x.message;
+                                submission.data.judge_result = x.judge_result;
+                                submission.data.status = x.status;
+                                submission.data.score = x.score;
+                            });
+                        }
+
                         submission.done = true;
+                        submission.$nextTick(() => {
+                            hljs.highlightBlock(document.getElementsByTagName("code")[0]);
+                        });
                     });
 
                 });
@@ -120,16 +115,13 @@
                 <tr>
                     <td>状态</td>
                     <td>
-                        <judge-status :judge_status="judge_status" :status="data.status"></judge-status>
+                        <judge-status :status="data.status"></judge-status>
                     </td>
                 </tr>
                 <tr>
                     <td>得分/总分</td>
                     <td>
-                        <span :style="'font-color:'+get_text_color(data.score/problem_data.score)"
-                            style="font-weight: bold">
-                            {[data.score]}/{[problem_data.score]}
-                        </span>
+                        <score-label :score="data.score" :full_score="problem_data.score"></score-label>
                     </td>
                 </tr>
                 <tr>
@@ -160,25 +152,26 @@
                     <tr>
                         <td>得分/总分</td>
                         <td>
-                            <div v-bind:class="'ui '+get_text_color(val.score/problem_subtasks[key].score)+' label'">
-                                {[val.score]}/{[problem_subtasks[key].score]}
-                            </div>
+                            <score-label :score="val.score" :full_score="problem_subtasks[key].score"></score-label>
                         </td>
                     </tr>
                     <tr>
                         <td>状态</td>
                         <td>
-                            <judge-status :judge_status="judge_status" :status="val.status"></judge-status>
+                            <judge-status :status="val.status"></judge-status>
                         </td>
                     </tr>
                 </tbody>
             </table>
-            <table class="ui basic table" style="max-width: 700px">
+            <table class="ui basic table" style="max-width: 900px">
                 <thead>
                     <tr>
                         <th>输入文件</th>
                         <th>输出文件</th>
+                        <th>分数</th>
                         <th>状态</th>
+                        <th>时间</th>
+                        <th>内存</th>
                         <th>附加信息</th>
                     </tr>
                 </thead>
@@ -189,8 +182,13 @@
                         <td><a :href="'/api/download_file/'+problem_data.id+'/'+testcase.output">{[testcase.output]}</a>
                         </td>
                         <td>
-                            <judge-status :judge_status="judge_status" :status="testcase.status"></judge-status>
+                            <score-label :score="testcase.score" :full_score="val.full_score"></score-label>
                         </td>
+                        <td>
+                            <judge-status :status="testcase.status"></judge-status>
+                        </td>
+                        <td>{[testcase.time_cost]}ms</td>
+                        <td>{[testcase.memory_cost]} bytes</td>
                         <td>
                             {[testcase.message]}
                         </td>
@@ -198,6 +196,12 @@
                 </tbody>
             </table>
             <div class="ui divider"></div>
+        </div>
+        <div class="ui container" style="max-width: 500px;">
+            <div class="ui tiny orange circular icon button" @click="copy_text(data.code)"><i
+                    class="clipboard outline icon"></i></div>
+
+            <pre><code class="ui segment">{[data.code]}</code></pre>
         </div>
     </div>
 </div>

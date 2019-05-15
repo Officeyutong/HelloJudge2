@@ -35,6 +35,8 @@ def get_problem_info():
                 "submit_count":0,//提交数
                 "accepted_count":0,//通过数
                 "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交,
+                //我的提交状态
+                "my_submission_status":-1,
                 "score":题目总分
             }
         }
@@ -95,6 +97,8 @@ def upload_file(id):
     problem = problem.one()
     if not problem.public and not session.get("userid"):
         return make_response(-1, message="你没有权限执行此操作")
+    if not session.get("userid"):
+        return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("userid")).one()
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
@@ -138,6 +142,9 @@ def download_file(id: int, filename: str):
             flask.abort(403)
         if problem.public and not user.is_admin and user.id != problem.writer_id and filename not in problem.downloads:
             flask.abort(403)
+    else:
+        if not problem.public or filename not in problem.downloads:
+            flask.abort(403)
     import os
     file = os.path.join(
         basedir, f"uploads/{id}/{filename}")
@@ -166,6 +173,8 @@ def remove_file():
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
     if not problem.public and not session.get("userid"):
+        return make_response(-1, message="你没有权限执行此操作")
+    if not session.get("userid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("userid")).one()
@@ -306,7 +315,8 @@ def get_submission_info():
             "status":"状态",
             "message":"附加信息",
             "judger":"评测机名，非UUID",
-            "score":"总分"
+            "score":"总分",
+            "ace_mode":"ACE.js语言ID"
         }
     }
     """
@@ -324,6 +334,8 @@ def get_submission_info():
     ret = submit.to_dict()
     ret["score"] = submit.get_total_score()
     ret["submit_time"] = str(ret["submit_time"])
+    ret["ace_mode"] = next(filter(lambda x: x["id"] == submit.language,
+                                  config.SUPPORTED_LANGUAGES))["ace_mode"]
     print(ret)
     return make_response(0, data=ret)
 
@@ -346,7 +358,11 @@ def get_judge_status():
         "waiting": {"icon": "notched circle loading icon", "text": "等待评测中", "color": "blue"},
         "judging": {"icon": "notched circle loading icon", "text": "评测中", "color": "blue"},
         "accepted": {"icon": "check icon", "text": "通过", "color": "green"},
-        "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"}
+        "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"},
+        "wrong_answer": {"icon": "x icon", "text": "答案错误", "color": "red"},
+        "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
+        "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
+        "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"}
     }
     return make_response(0, data=ret)
 
@@ -357,6 +373,7 @@ def problem_list():
     获取题目列表
     参数:
     page:int 页数
+    search_keyword:str 题目名关键字
     返回:
         {
             "code":0,//非0表示调用成功
@@ -380,9 +397,12 @@ def problem_list():
         else:
             result = db.session.query(Problem).filter(
                 or_(Problem.public == True, Problem.uploader_id == user.id))
+    keyword = request.form.get("search_keyword", "")
+    result = result.filter(Problem.title.like(f"%{keyword}%"))
     count = result.count()
     import math
     pages = int(math.ceil(count/config.PROBLEMS_PER_PAGE))
+
     result = result.slice(
         (page-1)*config.PROBLEMS_PER_PAGE, (page)*config.PROBLEMS_PER_PAGE).all()
     ret = []
@@ -406,6 +426,46 @@ def problem_list():
         obj["public"] = item.public
         ret.append(obj)
     return make_response(0, data=ret, page_count=pages, current_page=page)
+
+
+@app.route("/api/ui_search_problem/", methods=["POST", "GET"])
+@app.route("/api/ui_search_problem/<string:search_keyword>", methods=["POST", "GET"])
+def search_problem(search_keyword=""):
+    """
+    搜索题目
+    参数:
+    search_keyword:str 题目名关键字
+    以Semantic UI的格式通讯
+    返回:
+        {
+            "success":true,
+            "results":[
+                {"name":"qwq","value":"1234","text":"1234.题目名"}
+            ]
+        }
+    """
+    result = None
+    if not session.get("userid"):
+        result = db.session.query(Problem).filter(Problem.public == True)
+    else:
+        user: User = db.session.query(User).filter(
+            User.id == session.get("userid")).one()
+        if user.is_admin:
+            result = db.session.query(Problem)
+        else:
+            result = db.session.query(Problem).filter(
+                or_(Problem.public == True, Problem.uploader_id == user.id))
+    result = result.filter(Problem.title.like(
+        f"%{search_keyword}%")).slice(0, 10)
+    ret = {
+        "success": True,
+        "results": [{"value": search_keyword, "name": f"搜索 {search_keyword}", "text": f"{search_keyword}"}]
+    }
+    for x in result:
+        ret["results"].append(
+            {"value": x.id, "name": f"{x.id}. {x.title}", "text": f"{x.id}"})
+    # print(f"search {search_keyword} = {ret}")
+    return encode_json(ret)
 
 
 @app.route("/api/submission_list", methods=["POST"])
