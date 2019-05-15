@@ -133,6 +133,10 @@
                     <td>{[data.judger]}</td>
                 </tr>
                 <tr>
+                    <td class="first-column">语言</td>
+                    <td>{[data.language_name]}</td>
+                </tr>
+                <tr>
                     <td class="first-column">附加信息</td>
                     <td>
                         <pre>{[data.message]}</pre>
@@ -182,7 +186,7 @@
                         <td><a :href="'/api/download_file/'+problem_data.id+'/'+testcase.output">{[testcase.output]}</a>
                         </td>
                         <td>
-                            <score-label :score="testcase.score" :full_score="val.full_score"></score-label>
+                            <score-label :score="testcase.score" :full_score="testcase.full_score"></score-label>
                         </td>
                         <td>
                             <judge-status :status="testcase.status"></judge-status>

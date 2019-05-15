@@ -14,17 +14,18 @@ def push_to_queue(submission_id):
     # {"subtask1":{"score":100,"status":"WA",testcases:[{"input":"1.in","output":"1.out","score":0,status:"WA","message":""}]}}
     submit.judge_result = dict()
     for item in problem.subtasks:
+        print(item)
         submit.judge_result[item["name"]] = {"score": 0,
                                              "status": "waiting",
-                                             "testcases": list(map(lambda x: dict(**x, status="waiting", score=0, message="Judging..", time_cost=0, memory_cost=0), item["testcases"])),
-                                             "full_score": 1 if item["method"] == "min" else item["score"]//len(item["testcases"])
+                                             "testcases": list(map(lambda x: dict(**x, status="waiting", score=0, message="Judging..", time_cost=0, memory_cost=0), item["testcases"]))
                                              }
 
     submit.status = "waiting"
     print(f"Push {submission_id} into queue..")
     queue.send_task("task.judge", [submit.to_dict(), {
                     "compile_time_limit": config.COMPILE_TIME_LIMIT,
-                    "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT}])
+                    "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
+                    "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT}])
     db.session.commit()
 # 更新评测状态
 

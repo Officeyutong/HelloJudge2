@@ -31,7 +31,8 @@ def get_problem_info():
                 "files":["a.in","a.out"],//不包括具体的二进制数据！
                 "subtasks":[
                          {"name": "Subtask1", "score": 40, "method": "min", "files": [], "time_limit":1000, "memory_limit":512}].
-                "last_code":"qwq"//上一次提交的代码,
+                "last_code":"qwq",//上一次提交的代码,
+                "last_lang":"qwq",//上一次选择的语言ID
                 "submit_count":0,//提交数
                 "accepted_count":0,//通过数
                 "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交,
@@ -54,9 +55,11 @@ def get_problem_info():
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.user_id == session.get("userid"))).order_by(Submission.submit_time.desc())
     if last_submission.count():
-        result["last_code"] = last_submission.first().code
+        submit = last_submission.first()
+        result["last_code"] = submit.code
+        result["last_lang"] = submit.language
     else:
-        result["last_code"] = ""
+        result["last_lang"] = result["last_code"] = ""
     result["submission_count"] = db.session.query(Submission).filter(
         Submission.problem_id == problem.id).count()
     result["accepted_count"] = db.session.query(
@@ -220,151 +223,28 @@ def update_problem():
         return make_response(-1, message="你没有权限执行此操作")
     data = decode_json(request.form["data"])
     for subtask in data["subtasks"]:
+        subtask["score"] = int(subtask["score"])
+    for subtask in data["subtasks"]:
         if len(subtask["testcases"]) == 0:
             return make_response(-1, message=f"子任务{subtask['name']}的测试点个数为0！")
         if subtask["method"] == "sum" and (int(subtask["score"]) % len(subtask["testcases"]) != 0):
             return make_response(-1, message="如果计分方式为取和，那么子任务分数必须为测试点个数的倍数")
+        if subtask["score"] < len(subtask["testcases"]):
+            return make_response(-1, message="测试点个数不得多于分数")
+        if subtask["method"] == "min":
+            list(map(lambda x: x.__setitem__(
+                "full_score", 1), subtask["testcases"]))
+        else:
+            score = subtask["score"]//len(subtask["testcases"])
+            for i in range(0, len(subtask["testcases"])-1):
+                subtask["testcases"][i]["full_score"] = score
+            subtask["testcases"][-1]["full_score"] = subtask["score"] - \
+                score*(len(subtask["testcases"])-1)
     for k, v in data.items():
         setattr(problem, k, v)
-    for subtask in problem.subtasks:
-        subtask["score"] = int(subtask["score"])
+
     db.session.commit()
     return make_response(0)
-
-
-@app.route("/api/get_supported_langs", methods=["POST", "GET"])
-def get_supported_lang():
-    """
-    获取支持的语言列表
-    参数:
-        无
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "list":[
-                {"id":"c++11","display":"C++ 11","version":"G++ 8.3"}
-            ]
-        }
-    """
-    return make_response(0, list=config.SUPPORTED_LANGUAGES)
-
-
-@app.route("/api/submit", methods=["POST"])
-def submit():
-    """
-    提交代码\答案
-    参数:
-        problem_id:int 题目ID
-        code:str 代码
-        language:str 语言ID
-        contest_id:int 比赛ID,设置为-1表示非比赛提交//目前尚未处理
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "message":"qwq",//调用失败时的信息
-            "submission_id":-1//调用成功时的提交ID
-        }
-    """
-    problem = db.session.query(Problem).filter(
-        Problem.id == request.form["problem_id"])
-    if problem.count() == 0:
-        return make_response(-1, message="题目ID不存在")
-    problem: Problem = problem.one()
-    if not session.get("userid"):
-        return make_response(-1, message="请先登录")
-    user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
-    if not problem.public:
-        if not user.is_admin and user.id != problem.writer_id:
-            return make_response(-1, message="你没有权限执行此操作")
-    if request.form["language"] not in map(lambda x: x["id"], config.SUPPORTED_LANGUAGES):
-        return make_response(-1, message="不支持的语言ID")
-    import datetime
-    submit = Submission(user_id=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
-                        code=request.form["code"], status="waiting")
-    db.session.add(submit)
-    db.session.commit()
-    from api.judge import push_to_queue
-    push_to_queue(submit.id)
-    return make_response(0, submission_id=submit.id)
-
-
-@app.route("/api/get_submission_info", methods=["POST"])
-def get_submission_info():
-    """
-    获取提交信息
-    参数
-    submission_id:int 提交ID
-    {
-        "code":0,//非0表示调用成功
-        "message":"qwq",//调用失败时的信息
-        "data":{
-            "id":-1,//提交ID
-            "user_id":-1,//用户ID
-            "language":"qwq",//语言ID
-            "problem_id":-1,//题目ID
-            "submit_time":"提交时间",
-            "public":"是否公开",
-            "contest_id":"比赛ID",
-            "code":"代码",
-            "judge_result":{
-                "subtask":{"score":100,"status":"WA","testcases":
-                    [{"input":"xxx","output":"xxx","score":0,"status":"WA"}]
-                    }
-            },
-            "status":"状态",
-            "message":"附加信息",
-            "judger":"评测机名，非UUID",
-            "score":"总分",
-            "ace_mode":"ACE.js语言ID"
-        }
-    }
-    """
-    if db.session.query(Submission).filter(Submission.id == request.form["submission_id"]).count() == 0:
-        return "提交ID不存在", 404
-    submit: Submission = db.session.query(Submission).filter(
-        Submission.id == request.form["submission_id"]).one()
-    if not submit.public and not session.get("userid"):
-        return "你没有权限查看此提交", 403
-    if session.get("userid"):
-        user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
-        if not submit.public and not user.is_admin and not user.id == submit.user_id:
-            return make_response(-1, "你没有权限查看此提交")
-    ret = submit.to_dict()
-    ret["score"] = submit.get_total_score()
-    ret["submit_time"] = str(ret["submit_time"])
-    ret["ace_mode"] = next(filter(lambda x: x["id"] == submit.language,
-                                  config.SUPPORTED_LANGUAGES))["ace_mode"]
-    print(ret)
-    return make_response(0, data=ret)
-
-
-@app.route("/api/get_judge_status", methods=["POST", "GET"])
-def get_judge_status():
-    """
-    获取评测状态列表
-    参数:无
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "message":"qwq",//调用失败时的信息
-            "data":{
-                "accepted":{"icon":"xxx","text":"xxx"}
-            }
-        }
-    """
-    ret = {
-        "waiting": {"icon": "notched circle loading icon", "text": "等待评测中", "color": "blue"},
-        "judging": {"icon": "notched circle loading icon", "text": "评测中", "color": "blue"},
-        "accepted": {"icon": "check icon", "text": "通过", "color": "green"},
-        "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"},
-        "wrong_answer": {"icon": "x icon", "text": "答案错误", "color": "red"},
-        "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
-        "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
-        "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"}
-    }
-    return make_response(0, data=ret)
 
 
 @app.route("/api/problem_list", methods=["POST"])
@@ -466,55 +346,3 @@ def search_problem(search_keyword=""):
             {"value": x.id, "name": f"{x.id}. {x.title}", "text": f"{x.id}"})
     # print(f"search {search_keyword} = {ret}")
     return encode_json(ret)
-
-
-@app.route("/api/submission_list", methods=["POST"])
-def submission_list():
-    """
-    获取提交列表
-    参数:
-    page:int 页数
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "message":"qwq",//调用失败时的信息
-            "data":[
-                {"id":-1,"problem_id":123,"problem_title":"qwq","status":"judging","score":-1,"contest":-1,"total_score":123}
-            ],
-            "total_pages":总页数,
-            "current_page":当前页(根据URL分析)
-        }
-    """
-    page = int(request.form.get("page", 1))
-    result = None
-    if not session.get("userid"):
-        result = db.session.query(Submission).filter(Submission.public == True)
-    else:
-        user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
-        if user.is_admin:
-            result = db.session.query(Submission)
-        else:
-            result = db.session.query(Submission).filter(
-                or_(Submission.public == True, Submission.user_id == user.id))
-    result = result.order_by(Submission.id.desc())
-    count = result.count()
-    import math
-    pages = int(math.ceil(count/config.SUBMISSIONS_PER_PAGE))
-    result = result.slice(
-        (page-1)*config.SUBMISSIONS_PER_PAGE, (page)*config.SUBMISSIONS_PER_PAGE).all()
-    ret = []
-    for submit in result:
-        obj = {
-            "id": submit.id,
-            "status": submit.status,
-            "score": submit.get_total_score(),
-            "contest": submit.contest_id
-        }
-        problem: Problem = db.session.query(Problem).filter(
-            Problem.id == submit.problem_id).one()
-        obj["problem_id"] = problem.id
-        obj["problem_title"] = problem.title
-        obj["total_score"] = problem.get_total_score()
-        ret.append(obj)
-    return make_response(0, data=ret, page_count=pages, current_page=page)

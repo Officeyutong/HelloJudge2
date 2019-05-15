@@ -213,12 +213,11 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
-            renderMathInElement(document.body, {
-                delimiters: [
-                    { left: "$$", right: "$$", display: true },
-                    { left: "$", right: "$", display: false }
-                ]
-            });
+            if (ctx.data.last_lang != "") {
+                show_problem.selected_id = ctx.data.last_lang;
+            } else {
+                show_problem.selected_id = ctx.list[0].id;
+            }
             $.post("/api/get_user_profile", { user_id: ctx.data.uploader_id }).done(ctx => {
                 ctx = JSON.parse(ctx);
                 show_problem.uploader_profile = ctx.data;
@@ -229,11 +228,7 @@
                         obj[x.id] = x;
                     })
                     show_problem.langs = obj;
-                    if ($.cookie("last_lang")) {
-                        show_problem.selected_id = $.cookie("last_lang");
-                    } else {
-                        show_problem.selected_id = ctx.list[0].id;
-                    }
+
                     show_problem.done = true;
                     show_problem.$nextTick(() => {
                         renderMathInElement(document.body, {
