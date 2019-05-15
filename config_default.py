@@ -24,8 +24,8 @@ JUDGERS = {
 PROBLEMS_PER_PAGE = 50
 # 每页的提交数量
 SUBMISSIONS_PER_PAGE = 20
-# 编译时间限制，浮点数，单位s
-COMPILE_TIME_LIMIT = 10
+# 编译时间限制,ms
+COMPILE_TIME_LIMIT = 10*1000
 # 编译结果长度限制,单位字符
 COMPILE_RESULT_LENGTH_LIMIT = 500
 # 支持的语言

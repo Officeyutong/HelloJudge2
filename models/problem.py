@@ -27,6 +27,9 @@ class Problem(db.Model):
     files = db.Column(db.PickleType, default=[])
     # 可下载文件列表
     downloads = db.Column(db.PickleType, default=[])
+    # 编译时提供的文件列表
+    provides = db.Column(db.PickleType, default=[])
+    
     # 子任务安排
     # testcases:[{"input":"a.in","output":"b.out"}]
     subtasks = db.Column(db.PickleType, default=[

@@ -40,7 +40,7 @@ def get_problem_info():
         }
     """
     problem = db.session.query(Problem).filter(
-        Problem.id == request.form["id"])
+        Problem.id == int(request.form["id"]))
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
@@ -55,18 +55,19 @@ def get_problem_info():
         result["last_code"] = last_submission.first().code
     else:
         result["last_code"] = ""
-    result["submission_count"] = db.session.query(Submission).count()
+    result["submission_count"] = db.session.query(Submission).filter(
+        Submission.problem_id == problem.id).count()
     result["accepted_count"] = db.session.query(
-        Submission).filter(Submission.status == "accepted").count()
+        Submission).filter(Submission.status == "accepted").filter(Submission.problem_id == problem.id).count()
     result["my_submission"] = -1
     if session.get("userid"):
         ac_submit = db.session.query(Submission).filter(
-            Submission.status == "accepted").filter(Submission.user_id == session.get("userid")).order_by(Submission.submit_time.desc())
+            Submission.status == "accepted").filter(Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
         if ac_submit.count():
             result["my_submission"] = ac_submit.first().id
         else:
             any_submit = db.session.query(Submission).filter(
-                Submission.user_id == session.get("userid")).order_by(Submission.submit_time.desc())
+                Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
             if any_submit.count():
                 result["my_submission"] = any_submit.first().id
     result["score"] = problem.get_total_score()
@@ -436,6 +437,7 @@ def submission_list():
         else:
             result = db.session.query(Submission).filter(
                 or_(Submission.public == True, Submission.user_id == user.id))
+    result = result.order_by(Submission.id.desc())
     count = result.count()
     import math
     pages = int(math.ceil(count/config.SUBMISSIONS_PER_PAGE))

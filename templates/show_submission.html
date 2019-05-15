@@ -49,7 +49,7 @@
                     return obj;
                 }
             }, mounted: function () {
-                socket = io( "/ws/submission");
+                socket = io(window.location.origin + "/ws/submission");
                 console.log("WebSocket connected..");
                 socket.emit("init", { "submission_id": submission_id });
                 socket.on("update", (x) => {

@@ -239,6 +239,7 @@
                             <th>大小</th>
                             <th>操作</th>
                             <th>公开</th>
+                            <th>编译时提供</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -260,6 +261,14 @@
                                         :checked="data.downloads.includes(val.name)?1:null">
                                     <label :data="val.name"
                                         @click="data.downloads.includes(val.name)?(data.downloads.splice(data.downloads.indexOf(val.name),1)):data.downloads.push(val.name)">公开</label>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ui toggle checkbox">
+                                    <input type="checkbox" class="hidden"
+                                        :checked="data.provides.includes(val.name)?1:null">
+                                    <label :data="val.name"
+                                        @click="data.provides.includes(val.name)?(data.provides.splice(data.downloads.indexOf(val.name),1)):data.provides.push(val.name)">公开</label>
                                 </div>
                             </td>
                         </tr>
@@ -298,11 +307,11 @@
                         <div class="ui fields">
                             <div class="ui field" :class="{disabled:!data.using_file_io}">
                                 <label>输入文件</label>
-                                <input type="text" v-model="data.input_file_names">
+                                <input type="text" v-model="data.input_file_name">
                             </div>
                             <div class="ui field" :class="{disabled:!data.using_file_io}">
                                 <label>输出文件</label>
-                                <input type="text" v-model="data.output_file_names">
+                                <input type="text" v-model="data.output_file_name">
                             </div>
                         </div>
                         <div class="ui field">
