@@ -64,3 +64,5 @@ SUPPORTED_LANGUAGES = [
         "ace_mode": "python"
     }
 ]
+SUPPORTED_LANGUAGES_DICT = dict(
+    map(lambda x: (x["id"], x), SUPPORTED_LANGUAGES))

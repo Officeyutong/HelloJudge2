@@ -62,6 +62,7 @@ def get_submission_info():
             "id":-1,//提交ID
             "user_id":-1,//用户ID
             "language":"qwq",//语言ID
+            "language_name":"语言名",
             "problem_id":-1,//题目ID
             "submit_time":"提交时间",
             "public":"是否公开",
@@ -96,7 +97,7 @@ def get_submission_info():
     ret["submit_time"] = str(ret["submit_time"])
     ret["ace_mode"] = next(filter(lambda x: x["id"] == submit.language,
                                   config.SUPPORTED_LANGUAGES))["ace_mode"]
-    print(ret)
+    ret["language_name"] = config.SUPPORTED_LANGUAGES_DICT[ret["language"]]["display"]
     return make_response(0, data=ret)
 
 
