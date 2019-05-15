@@ -16,3 +16,7 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     # 重置密码所需token
     reset_token = db.Column(db.String(128), default="")
+
+    @staticmethod
+    def by_id(id):
+        return db.session.query(User).filter(User.id == id).one()

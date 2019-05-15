@@ -353,7 +353,7 @@
                             <td>
                                 <div v-if="data.my_submission==-1">尚未提交</div><a v-else
                                     :href="'/show_submission/'+data.my_submission"
-                                    target="_blank">{[data.my_submission]}</a>
+                                    target="_blank"><judge-status :status="data.my_submission_status"></judge-status></a>
                             </td>
                         </tr>
                         <tr>

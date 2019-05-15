@@ -66,15 +66,15 @@ def get_problem_info():
         Submission).filter(Submission.status == "accepted").filter(Submission.problem_id == problem.id).count()
     result["my_submission"] = -1
     if session.get("userid"):
-        ac_submit = db.session.query(Submission).filter(
+        ac_submit = db.session.query(Submission.id, Submission.status).filter(
             Submission.status == "accepted").filter(Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
         if ac_submit.count():
-            result["my_submission"] = ac_submit.first().id
+            result["my_submission"], result["my_submission_status"] = ac_submit.first()
         else:
-            any_submit = db.session.query(Submission).filter(
+            any_submit = db.session.query(Submission.id, Submission.status).filter(
                 Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
             if any_submit.count():
-                result["my_submission"] = any_submit.first().id
+                result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
     return make_response(0, data=result)
 

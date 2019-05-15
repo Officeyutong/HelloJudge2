@@ -11,15 +11,6 @@ def consts():
         "SALT": config.PASSWORD_SALT
     }
 
-# 500错误处理
-
-# @app.errorhandler(Exception)
-# def internal_server_error(ex):
-#     import traceback
-#     traceback.print_exc()
-#     return f"{ex.__class__.__name__}: {ex}", 500
-
-
 @app.route("/")
 def view_index():
     return render_template("main.html")
