@@ -73,6 +73,7 @@
                                 submission.data.judge_result = x.judge_result;
                                 submission.data.status = x.status;
                                 submission.data.score = x.score;
+                                if (submission.data.status != "judging" && submission.data != "waiting") socket.close();
                             });
                         }
 
