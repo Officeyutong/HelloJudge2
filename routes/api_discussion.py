@@ -5,6 +5,7 @@ from utils import *
 from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+import math
 import re
 
 legal_paths = re.compile(
@@ -58,3 +59,53 @@ def discussion_post():
     db.session.add(discussion)
     db.session.commit()
     return make_response(0, discussion_id=discussion.id)
+
+
+@app.route("/api/get_discussion_list")
+def get_discussion_list():
+    """
+    获取讨论列表
+    参数:
+    path:str 讨论路径
+    page:id 页面ID
+    返回
+    {
+        "code":0,//调用失败返回-1 
+        "message":-1,
+        "total_pages":10,//总页数
+        "data":[
+                {
+                "user_id":"用户ID",
+                "username":"用户名",
+                "time":"发布时间",
+                "title":"讨论题目",
+                "comment_count":0,//评论数量
+                "last_comment_time":"最后评论时间",
+                "id":-1//讨论ID
+                }
+        ]
+    }
+    """
+    result = db.session.query(Discussion).filter(or_(
+        Discussion.path == request.form["path"], Discussion.path.like(f"{request.form['path']}.%")))
+    ret = {
+        "total_pages": int(math.ceil(result.count()/config.DISCUSSION_PER_PAGE)),
+        "data": []
+    }
+    page = request.form.get("page", 1)
+    result = result.order_by(Discussion.id.desc()).slice((page-1)*config.DISCUSSION_PER_PAGE,
+                                                         page*config.DISCUSSION_PER_PAGE)
+    for item in result:
+        user: User = User.by_id(item.user_id)
+        comments = db.session.query(Comment).filter(
+            Comment.discussion_id == item.id).order_by(Comment.id.desc())
+        ret["data"].append({
+            "user_id": user.id,
+            "username": user.username,
+            "time": str(item.time),
+            "title": item.title,
+            "comment_count": comments.count(),
+            "last_comment_time": None if not comments.exists() else comments.first().time,
+            "id": item.id
+        })
+    return make_response(0, **ret)

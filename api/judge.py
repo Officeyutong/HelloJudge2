@@ -28,8 +28,6 @@ def push_to_queue(submission_id):
                     "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT}])
     db.session.commit()
 # 更新评测状态
-
-
 def update_status(submission_id: int, judge_result: dict, judger: str, message=""):
     """
     更新某个提交测评测状态
