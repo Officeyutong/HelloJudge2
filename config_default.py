@@ -26,6 +26,8 @@ PROBLEMS_PER_PAGE = 50
 SUBMISSIONS_PER_PAGE = 20
 # 每页显示的讨论数量
 DISCUSSION_PER_PAGE = 30
+# 每页显示的评论数量
+COMMENTS_PER_PAGE = 30
 # 编译时间限制,ms
 COMPILE_TIME_LIMIT = 10*1000
 # 编译结果长度限制,单位字符

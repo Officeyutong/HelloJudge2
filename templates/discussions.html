@@ -1,0 +1,107 @@
+{%extends "base.html"%}
+
+{%block title%}
+查看讨论
+{%endblock%}
+{%block head%}
+<style>
+</style>
+{%endblock%}
+{%block body%}
+<script>
+    var discussion;
+    $(document).ready(() => {
+        discussion = new Vue({
+            el: "#discussion",
+            delimiters: ['{[', ']}'],
+            data: {
+                done: false,
+                data: null,
+                path_name: "",
+                current_page: 0,
+                page_count: 0,
+                path: ""
+            }, computed: {
+                page_menu() {
+                    const arr = new Array();
+                    for (var i = 1; i <= this.page_count; i++) arr.push(i);
+                    // console.log(problems);
+                    // console.log(arr);
+                    if (arr.indexOf(this.current_page) > 5) {
+                        arr.splice(1, arr.indexOf(this.current_page) - 4);
+                        arr.splice(1, 1, -1);
+                    }
+                    if (arr.indexOf(this.current_page) + 5 <= arr.length) {
+                        arr.splice(arr.indexOf(this.current_page) + 5, arr.length - 2 - (arr.indexOf(this.current_page) + 5) + 1);
+                        arr.splice(-2, 1, -1);
+                    }
+                    return arr;
+                }
+            }
+        });
+        const urlarr = window.location.href.split("/").reverse();
+        discussion.path = urlarr[1];
+        $.post("/api/get_discussion_list", { page: urlarr[0], path: urlarr[1] }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                show_modal_error(ctx.message);
+                return;
+            }
+            discussion.data = ctx.data;
+            discussion.page_count = ctx.page_count;
+            discussion.current_page = ctx.current_page;
+            $.post("/api/get_path_name", { path: urlarr[1] }).done(ctx => {
+                discussion.path_name = JSON.parse(ctx).name;
+                discussion.done = true;
+            });
+        });
+    });
+</script>
+<div id="discussion" v-if="done">
+    <div class="ui header">
+        <h2>{[path_name]}</h2>
+    </div>
+    <div class="ui segment stacked">
+
+        <table class="ui very basic table">
+            <thead>
+                <tr>
+                    <th class="center aligned">标题</th>
+                    <th class="center aligned">发布者</th>
+                    <th class="center aligned">时间</th>
+                    <th class="center aligned">回复数</th>
+                    <th class="center aligned">最新回复</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="data in data">
+                    <td class="center aligned" style="width:300px;">
+                        <a :href="'/show_discussion/'+data.id" target="_blank">{[data.title]}</a>
+                    </td>
+                    <td class="center aligned"><a :href="'/profile/'+data.user_id" target="_blank">{[data.username]}</a>
+                    </td>
+
+                    <td class="center aligned">
+                        {[data.time]}
+                    </td>
+                    <td class="center aligned">
+                        {[data.comment_count]}
+                    </td>
+                    <td class="center aligned">
+                        {[data.last_comment_time]}
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+        <div class="ui center aligned container">
+            <div class="ui pagination menu" v-if="page_menu.find(x=>x!=-1)">
+                <a class="item" v-for="item in page_menu"
+                    :class="{disabled:item==-1||item==current_page,active:item==current_page}"
+                    :href="(item==-1||item==current_page)?null:('/discussions/'+path+'/'+item)">{[
+                    item==-1?"...":item]}</a>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

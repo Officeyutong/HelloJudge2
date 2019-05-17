@@ -1,0 +1,124 @@
+{%extends "base.html"%}
+
+{%block title%}
+查看讨论
+{%endblock%}
+
+{%block body%}
+<script>
+    var discussion;
+    $(document).ready(() => {
+        const converter = new showdown.Converter();
+        Vue.component("discussion-item", {
+            methods: {
+                md5: hex_md5
+            },
+            delimiters: ['{[', ']}'],
+            props: ["data"],
+            computed: {
+                content() {
+                    return converter.makeHtml(this.data.content);
+                }
+            },
+            watch: {
+                content() {
+                    const comp = this;
+                    this.$nextTick(() => {
+                        renderMathInElement(comp.$el, {
+                            delimiters: [
+                                { left: "$$", right: "$$", display: true },
+                                { left: "$", right: "$", display: false }
+                            ]
+                        });
+                    });
+                }
+            },
+            template: `<div class="ui two column grid">
+            <div class="row">
+                <div class="column" style="width:65px;">
+                    <img :src="'https://www.gravatar.com/avatar/'+md5(data.email)" class="ui small circular image"></img>
+                </div>
+                <div class="column" style="max-width: 250px;width:250px;">
+                    <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.user_id">{[data.username]}</a></div>
+                    <div class="ui container" style="word-wrap: break-word;word-break: break-all">
+                        <div class="ui segment" v-html="content">
+                            
+                        </div>
+                        <div style="font-size: 10px;color:rgba(0,0,0,.6);top:3px">
+                             {[data.time]}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`
+
+        });
+        discussion = new Vue({
+            el: "#discussion",
+            delimiters: ['{[', ']}'],
+            data: {
+                data: null, done: false, current_page: 1, page_count: -1, comments: []
+            }, methods: {
+                change_comment_page(target) {
+                    this.current_page = target;
+                    console.log("changing to ", target);
+                    $.post("/api/get_comments", {
+                        discussion_id: discussion.data.id, page: target
+                    }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) return;
+                        discussion.current_page = target;
+                        discussion.page_count = ctx.page_count;
+                        discussion.comments = ctx.data;
+                    });
+                }
+            }, computed: {
+                page_menu() {
+                    const arr = new Array();
+                    for (var i = 1; i <= this.page_count; i++) arr.push(i);
+                    // console.log(problems);
+                    // console.log(arr);
+                    if (arr.indexOf(this.current_page) > 5) {
+                        arr.splice(1, arr.indexOf(this.current_page) - 4);
+                        arr.splice(1, 1, -1);
+                    }
+                    if (arr.indexOf(this.current_page) + 5 <= arr.length) {
+                        arr.splice(arr.indexOf(this.current_page) + 5, arr.length - 2 - (arr.indexOf(this.current_page) + 5) + 1);
+                        arr.splice(-2, 1, -1);
+                    }
+                    return arr;
+                }
+            }
+        });
+        $.post("/api/get_discussion", { id: window.location.href.split("/").pop() }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                show_error_modal(ctx.message);
+                return;
+            }
+            discussion.data = ctx.data;
+            discussion.done = true;
+            discussion.change_comment_page(1);
+        });
+
+    });
+</script>
+<div id="discussion" v-if="done" style="max-width: 700px;">
+    <div class="ui header" style="margin-bottom: 50px;">
+        <h2>{[data.title]}</h2>
+    </div>
+    <div style="width:500px;">
+
+        <discussion-item v-for="item in comments" :data="item"></discussion-item>
+
+    </div>
+    <div class="ui center aligned container" style="margin-top: 30px;">
+        <div class="ui pagination menu" v-if="page_menu.find(x=>x!=-1)">
+            <a class="item" v-for="item in page_menu"
+                :class="{disabled:item==-1||item==current_page,active:item==current_page}"
+                v-on:click="change_comment_page(item)">{[
+                item==-1?"...":item]}</a>
+        </div>
+    </div>
+</div>
+{%endblock%}

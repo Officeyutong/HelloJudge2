@@ -33,6 +33,9 @@ def view_problems(id=-1):
 @app.route("/submissions/<int:id>")
 def view_submissions(id=-1):
     return render_template("submissions.html")
+@app.route("/discussions/<string:path>/<int:page>")
+def view_discussions(path,page):
+    return render_template("discussions.html")
 
 
 @app.route("/problem_edit/<int:id>")
@@ -51,3 +54,7 @@ def view_show_problem(id):
 def view_show_submission(id):
     # print(id)
     return render_template("show_submission.html")
+@app.route("/show_discussion/<int:id>")
+def view_show_discussion(id):
+    # print(id)
+    return render_template("show_discussion.html")

@@ -3,6 +3,7 @@ uploads/
 migrations/
 data.db
 test/
+temp/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

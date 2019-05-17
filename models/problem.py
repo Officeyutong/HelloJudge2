@@ -57,7 +57,7 @@ class Problem(db.Model):
     @staticmethod
     def by_id(id):
         return db.session.query(Problem).filter(Problem.id == id).one()
+
     @staticmethod
     def has(id):
-        return db.session.query(Problem).filter(Problem.id == id).exists()
-        
+        return db.session.query(Problem.id).filter(Problem.id == id).count() != 0

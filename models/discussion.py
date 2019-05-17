@@ -21,3 +21,16 @@ class Discussion(db.Model):
     top = db.Column(db.Boolean, default=False, nullable=False)
     # 发送时间
     time = db.Column(db.DateTime, nullable=False)
+
+    def as_dict(self):
+        ret = dict(filter(lambda x: not x[0].startswith(
+            "_"), self.__dict__.items()))
+        return ret
+
+    @staticmethod
+    def by_id(id):
+        return db.session.query(Discussion).filter(Discussion.id == id).one()
+
+    @staticmethod
+    def has(id):
+        return db.session.query(Discussion.id).filter(Discussion.id == id).count() != 0

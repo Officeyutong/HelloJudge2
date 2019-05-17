@@ -25,9 +25,21 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0-rc.1/contrib/auto-render.min.js"></script>
     <script src="//cdn.bootcss.com/showdown/1.9.0/showdown.min.js"></script>
     <script src="//cdn.bootcss.com/SyntaxHighlighter/3.0.83/scripts/shCore.js"></script>
+    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/md5.js"></script>
+    {%if DEBUG%}
     <script>
+        const debug_post = function (url, data) {
+            $.post(url, data).done(ctx => console.log(JSON.parse(ctx))); 
+            // axios.post(url, data).then((ret) => {
+            //     console.log(JSON.parse(ret));
+            // });
+        }
+    </script>
+    {%endif%}
+    <script>
+
         const GetRequest = function () {
             var url = location.search; //获取url中"?"符后的字串  
             var theRequest = new Object();
@@ -64,9 +76,16 @@
                 show_error_modal(xhr.responseText, xhr.status + " " + err);
             }
         });
+        // axios.interceptors.request.use((config) => {
+        //     // config.headers['X-Requested-With'] = 'XMLHttpRequest';
+        //     // config.headers["content-type"] = "application/x-www-form-urlencoded";
+        //     config.headers["X-CSRFtoken"] = "{{csrf_token()}}";
+        //     return config;
+        // });
         const judge_status = {
             done: false, data: {}
         };
+        //用于显示分数的小标签
         Vue.component("score-label", {
             delimiters: ["{[", "]}"],
             props: ["score", "full_score"],
@@ -80,7 +99,7 @@
                 }
             }, template: "<span :style=\"'font-weight: bold;color: '+get_text_color(score/full_score)\">{[score]}/{[full_score]}</span>"
         });
-
+        //显示评测状态的标签
         Vue.component("judge-status", {
             delimiters: ['{[', ']}'],
             props: ["status"],
