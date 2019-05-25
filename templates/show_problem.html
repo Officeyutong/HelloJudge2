@@ -146,16 +146,16 @@
                     })
                 }
             }, watch: {
-                data: function () {
-                    this.$nextTick(() => {
-                        renderMathInElement(document.body, {
-                            delimiters: [
-                                { left: "$$", right: "$$", display: true },
-                                { left: "$", right: "$", display: false }
-                            ]
-                        });
-                    });
-                }
+                // data: function () {
+                //     this.$nextTick(() => {
+                //         renderMathInElement(document.body, {
+                //             delimiters: [
+                //                 { left: "$$", right: "$$", display: true },
+                //                 { left: "$", right: "$", display: false }
+                //             ]
+                //         });
+                //     });
+                // }
             }, computed: {
                 total_score: function () {
                     var result = 0;
@@ -193,7 +193,7 @@
             methods: {
                 copy_text: copy_text
             }, mounted() {
-                const converter = new showdown.Converter();
+                // const converter = new showdown.Converter();
                 if (this.render)
                     this.html_content = converter.makeHtml(this.value);
                 else {
@@ -352,8 +352,9 @@
                             <td>我的提交</td>
                             <td>
                                 <div v-if="data.my_submission==-1">尚未提交</div><a v-else
-                                    :href="'/show_submission/'+data.my_submission"
-                                    target="_blank"><judge-status :status="data.my_submission_status"></judge-status></a>
+                                    :href="'/show_submission/'+data.my_submission" target="_blank">
+                                    <judge-status :status="data.my_submission_status"></judge-status>
+                                </a>
                             </td>
                         </tr>
                         <tr>

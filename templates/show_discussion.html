@@ -3,12 +3,13 @@
 {%block title%}
 查看讨论
 {%endblock%}
+{%block head%}
 
+{%endblock%}
 {%block body%}
 <script>
-    var discussion;
+    var discussion, post;
     $(document).ready(() => {
-        const converter = new showdown.Converter();
         Vue.component("discussion-item", {
             methods: {
                 md5: hex_md5
@@ -20,26 +21,13 @@
                     return converter.makeHtml(this.data.content);
                 }
             },
-            watch: {
-                content() {
-                    const comp = this;
-                    this.$nextTick(() => {
-                        renderMathInElement(comp.$el, {
-                            delimiters: [
-                                { left: "$$", right: "$$", display: true },
-                                { left: "$", right: "$", display: false }
-                            ]
-                        });
-                    });
-                }
-            },
             template: `<div class="ui two column grid">
             <div class="row">
                 <div class="column" style="width:65px;">
                     <img :src="'https://www.gravatar.com/avatar/'+md5(data.email)" class="ui small circular image"></img>
                 </div>
-                <div class="column" style="max-width: 250px;width:250px;">
-                    <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.user_id">{[data.username]}</a></div>
+                <div class="column" style="max-width: 700px;">
+                    <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.user_id" target="_blank">{[data.username]}</a></div>
                     <div class="ui container" style="word-wrap: break-word;word-break: break-all">
                         <div class="ui segment" v-html="content">
                             
@@ -49,15 +37,17 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>`
+            </div> <div class="ui divider"></div>
+        </div>
+       
+        `
 
         });
         discussion = new Vue({
             el: "#discussion",
             delimiters: ['{[', ']}'],
             data: {
-                data: null, done: false, current_page: 1, page_count: -1, comments: []
+                data: null, done: false, current_page: 1, page_count: -1, comments: [], text: "", title: ""
             }, methods: {
                 change_comment_page(target) {
                     this.current_page = target;
@@ -71,6 +61,8 @@
                         discussion.page_count = ctx.page_count;
                         discussion.comments = ctx.data;
                     });
+                }, render(x) {
+                    return converter.makeHtml(x);
                 }
             }, computed: {
                 page_menu() {
@@ -87,6 +79,34 @@
                         arr.splice(-2, 1, -1);
                     }
                     return arr;
+                }
+            }
+        });
+        post = new Vue({
+            data: {
+                text: "", error_message: "", success_message: "", sending: false
+            },
+            el: "#post",
+            delimiters: ['{[', ']}'],
+            computed: {
+                preview_content() {
+                    return converter.makeHtml(this.text);
+                }
+            }, methods: {
+                send() {
+                    const comp = this;
+                    this.sending = true, this.error_message = "";
+                    $.post("/api/post_comment", {
+                        content: comp.text, discussion_id: discussion.data.id
+                    }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        comp.sending = false;
+                        if (ctx.code) {
+                            comp.error_message = ctx.message;
+                            return;
+                        }
+                        window.location.reload();
+                    });
                 }
             }
         });
@@ -107,7 +127,13 @@
     <div class="ui header" style="margin-bottom: 50px;">
         <h2>{[data.title]}</h2>
     </div>
-    <div style="width:500px;">
+    <div class="ui segment stacked">
+        <discussion-item :data="data"></discussion-item>
+    </div>
+    <div class="ui header">
+        <h4>评论</h4>
+    </div>
+    <div style="width:700px;" class="ui segment stacked">
 
         <discussion-item v-for="item in comments" :data="item"></discussion-item>
 
@@ -119,6 +145,32 @@
                 v-on:click="change_comment_page(item)">{[
                 item==-1?"...":item]}</a>
         </div>
+
+    </div>
+    <a :href="'/discussions/'+data.path+'/1'">返回目录</a>
+</div>
+<div class="ui divider"></div>
+<div id="post">
+    <div class="ui form" :class="{error:error_message!='',success:success_message!=''}">
+        <!-- <div class="ui header">
+            <h4>回复</h4>
+        </div> -->
+        <div class="ui field">
+            <label>内容</label>
+            <textarea v-model="text"></textarea>
+        </div>
+        <div class="ui error message">
+            {[error_message]}
+        </div>
+        <div class="ui success message">
+            {[success_message]}
+        </div>
+    </div>
+    <div class="ui segment" v-html="preview_content" v-if="preview_content!=''">
+
+    </div>
+    <div class="ui green icon button" v-on:click="send" v-bind:class="{loading:sending}">
+        <i class="send icon"></i>发送
     </div>
 </div>
 {%endblock%}

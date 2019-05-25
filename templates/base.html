@@ -31,7 +31,7 @@
     {%if DEBUG%}
     <script>
         const debug_post = function (url, data) {
-            $.post(url, data).done(ctx => console.log(JSON.parse(ctx))); 
+            $.post(url, data).done(ctx => console.log(JSON.parse(ctx)));
             // axios.post(url, data).then((ret) => {
             //     console.log(JSON.parse(ret));
             // });
@@ -159,6 +159,28 @@
                 }
             });
 
+        });
+        const converter = new showdown.Converter({
+            extensions: [
+                {
+                    type: 'lang', regex: /¨D¨D(.+)¨D¨D/g, replace: (x, y) => {
+                        // console.log(x);
+                        return katex.renderToString(y, {
+                            throwOnError: false,
+                            displayMode: true
+                        });
+                    }
+                },
+                {
+                    type: 'lang', regex: /¨D(.+)¨D/g, replace: (x, y) => {
+                        // console.log(x);
+                        return katex.renderToString(y, {
+                            throwOnError: false,
+                            displayMode: false
+                        });
+                    }
+                }
+            ]
         });
     </script>
     {%block head%}{%endblock%}

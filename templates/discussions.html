@@ -9,7 +9,7 @@
 {%endblock%}
 {%block body%}
 <script>
-    var discussion;
+    var discussion, post;
     $(document).ready(() => {
         discussion = new Vue({
             el: "#discussion",
@@ -54,6 +54,34 @@
                 discussion.path_name = JSON.parse(ctx).name;
                 discussion.done = true;
             });
+        });
+        post = new Vue({
+            data: {
+                text: "", error_message: "", success_message: "", sending: false, title: "", top: false
+            },
+            el: "#post",
+            delimiters: ['{[', ']}'],
+            computed: {
+                preview_content() {
+                    return converter.makeHtml(this.text);
+                }
+            }, methods: {
+                send() {
+                    const comp = this;
+                    this.sending = true, this.error_message = "";
+                    $.post("/api/post_discussion", {
+                        title: comp.title, content: comp.text, path: discussion.path, top: comp.top
+                    }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        comp.sending = false;
+                        if (ctx.code) {
+                            comp.error_message = ctx.message;
+                            return;
+                        }
+                        window.location.reload();
+                    });
+                }
+            }
         });
     });
 </script>
@@ -102,6 +130,43 @@
                     item==-1?"...":item]}</a>
             </div>
         </div>
+    </div>
+</div>
+<div class="ui divider"></div>
+<div id="post">
+    <div class="ui form" :class="{error:error_message!='',success:success_message!=''}">
+        <div class="ui header">
+            <h4>发送讨论</h4>
+        </div>
+        <div class="ui field">
+            <label>标题</label>
+            <input type="text" v-model="title">
+        </div>
+        <div class="ui field">
+            <label>内容</label>
+            <textarea v-model="text"></textarea>
+        </div>
+        <div class="ui field">
+            <div class="ui toggle checkbox">
+                <input type="checkbox" v-model='top'>
+                <label>置顶</label>
+            </div>
+        </div>
+        <div class="ui error message">
+            {[error_message]}
+        </div>
+        <div class="ui success message">
+            {[success_message]}
+        </div>
+        <div class="ui message">
+            支持 Markdown 与 Latex.
+        </div>
+    </div>
+    <div class="ui segment" v-html="preview_content">
+
+    </div>
+    <div class="ui green icon button" v-on:click="send" v-bind:class="{loading:sending}">
+        <i class="send icon"></i>发送
     </div>
 </div>
 {%endblock%}

@@ -51,6 +51,8 @@ def discussion_post():
         return make_response(-1, message="只有管理员才能发置顶讨论")
     if not can_post_at(user, request.form["path"]):
         return make_response(-1, message="你无权在这里发帖")
+    if not request.form.get("title", ""):
+        return make_response(-1, message="标题不得为空")
     discussion = Discussion()
     discussion.content = request.form["content"]
     discussion.title = request.form["title"]
@@ -192,7 +194,7 @@ def get_comments():
             "user_id": user.id,
             "content": item.content,
             "time": str(item.time),
-            "email":user.email
+            "email": user.email
         })
     return make_response(0, **ret)
 
@@ -230,7 +232,9 @@ def get_discussion():
         "code":1,
         "message":"",
         "data":{
-            "title":"讨论标题"
+            同数据模型,
+            "email":邮箱,
+            "username":"用户名"
         }
     }
     """
@@ -241,5 +245,9 @@ def get_discussion():
     ret = {
         "data": db.session.query(Discussion).filter(Discussion.id == id).one().as_dict()
     }
+    user = User.by_id(ret["data"]["user_id"])
+    ret["data"]["email"] = user.email
+    ret["data"]["username"] = user.username
+
     ret["data"]["time"] = str(ret["data"]["time"])
     return make_response(0, **ret)
