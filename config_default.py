@@ -51,6 +51,12 @@ SUPPORTED_LANGUAGES = [
         "ace_mode": "c_cpp"
     },
     {
+        "id": "cpp17",
+        "display": "C++ 17",
+        "version": "G++ 8.3",
+        "ace_mode": "c_cpp"
+    },
+    {
         "id": "java8",
         "display": "Java 8",
         "version": "OpenJDK8",

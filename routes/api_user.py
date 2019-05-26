@@ -107,30 +107,6 @@ def logout():
     return make_response(0)
 
 
-@app.route("/api/create_problem", methods=["POST"])
-def create_problem():
-    """
-    创建空题目
-    参数:
-        无
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "message":"qwq"//code非0的时候表示错误信息
-            "problem_id":-1//成功时表示题目ID
-        }
-    """
-    if session.get("userid") is None:
-        return make_response(-1, message="你尚未登录!")
-    user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
-    if not user.is_admin:
-        return make_response(-1, message="你没有权限进行此操作")
-    problem = Problem(uploader_id=user.id)
-    db.session.add(problem)
-    db.session.commit()
-    return make_response(0, problem_id=problem.id)
-
 
 @app.route("/api/get_user_profile", methods=["POST"])
 def get_user_profile():

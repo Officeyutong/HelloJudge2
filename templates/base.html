@@ -134,7 +134,8 @@
                     is_login: false,
                     username: "",
                     userid: -1,
-                    email: ""
+                    email: "",
+                    show_discussion_detail: false
                 }, methods: {
                     logout: function () {
                         $.post("/api/logout").done((ctx) => {
@@ -142,6 +143,11 @@
                             window.location.reload()
                         })
                     }, md5: hex_md5
+                }, mounted() {
+                    this.$nextTick(() => {
+                        // $(".dropdown").dropdown();
+                        $("#discussion-item").popup();
+                    });
                 }
             })
             $.post("/api/query_login_state").done((ctx) => {
@@ -200,7 +206,19 @@
             <i class="hdd icon"></i>
             提交记录
         </a>
-        <a class="item" href="/login" v-if="!is_login">
+        <a class="item" v-on:click="show_discussion_detail=!show_discussion_detail">
+            <i class="keyboard outline icon"></i>
+            <!-- <i class="left pointing icon"></i> -->
+            讨论
+
+        </a>
+        <a class="item" target="_blank" href="/discussions/discussion/1" v-if="show_discussion_detail">全部讨论</a>
+        <a class="item" target="_blank" href="/discussions/discussion.global/1" v-if="show_discussion_detail">全局讨论</a>
+        <a class="item" target="_blank" href="/discussions/discussion.problem.global/1"
+            v-if="show_discussion_detail">题目全局讨论</a>
+        <a class="item" target="_blank" href="/discussions/discussion.problem/1"
+            v-if="show_discussion_detail">全部题目讨论</a>
+        <a class="item" target="_blank" href="/login" v-if="!is_login">
             请登录...
         </a>
         <a class="item" href="/register" v-if="!is_login">

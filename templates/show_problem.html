@@ -128,7 +128,7 @@
                 selected_id: "",
                 code: "",
                 uploader_profile: {},
-                done: false
+                done: false, recent_discussion: []
             }, methods: {
                 submit: function () {
                     $.post("/api/submit", {
@@ -146,16 +146,6 @@
                     })
                 }
             }, watch: {
-                // data: function () {
-                //     this.$nextTick(() => {
-                //         renderMathInElement(document.body, {
-                //             delimiters: [
-                //                 { left: "$$", right: "$$", display: true },
-                //                 { left: "$", right: "$", display: false }
-                //             ]
-                //         });
-                //     });
-                // }
             }, computed: {
                 total_score: function () {
                     var result = 0;
@@ -213,11 +203,6 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
-            if (ctx.data.last_lang != "") {
-                show_problem.selected_id = ctx.data.last_lang;
-            } else {
-                show_problem.selected_id = ctx.list[0].id;
-            }
             $.post("/api/get_user_profile", { user_id: ctx.data.uploader_id }).done(ctx => {
                 ctx = JSON.parse(ctx);
                 show_problem.uploader_profile = ctx.data;
@@ -228,16 +213,23 @@
                         obj[x.id] = x;
                     })
                     show_problem.langs = obj;
+                    if (show_problem.data.last_lang != "") {
+                        show_problem.selected_id = show_problem.data.last_lang;
+                    } else {
+                        show_problem.selected_id = ctx.list[0].id;
+                    }
+                    $.post("/api/get_discussion_list", { path: "discussion.problem." + show_problem.data.id, page: 1, count_limit: 10 }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            show_error_modal(ctx.message);
+                            return;
+                        }
+                        show_problem.recent_discussion = ctx.data;
+                        console.log(ctx);
+                        show_problem.done = true;
 
-                    show_problem.done = true;
-                    show_problem.$nextTick(() => {
-                        renderMathInElement(document.body, {
-                            delimiters: [
-                                { left: "$$", right: "$$", display: true },
-                                { left: "$", right: "$", display: false }
-                            ]
-                        });
                     });
+
                 })
             });
         });
@@ -386,6 +378,22 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="ui stack segment" style="max-width: 300px">
+                <div class="ui header">
+                    <h4>讨论</h4>
+                </div>
+                <table class="ui very basic fluid collapsing celled table" v-if="recent_discussion.length!=0">
+                    <tbody>
+                        <tr v-for="item in recent_discussion">
+                            <td>
+                                <a :href="'/show_discussion/'+item.id" target="_blank">{[item.title]}</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-else>无</div>
+                <a :href="'/discussions/discussion.problem.'+data.id+'/1'" target="_blank">查看更多..</a>
             </div>
         </div>
     </div>

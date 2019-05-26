@@ -29,7 +29,7 @@ def can_post_at(user: User, path: str):
 
 
 @app.route("/api/post_discussion", methods=["POST"])
-def discussion_post():
+def post_discussion():
     """
     发送讨论
     参数:
@@ -59,7 +59,7 @@ def discussion_post():
     discussion.path = request.form["path"]
     import datetime
     discussion.time = datetime.datetime.now()
-    discussion.top = bool(request.form["top"])
+    discussion.top = request.form["top"].lower() == "true"
     discussion.user_id = user.id
     db.session.add(discussion)
     db.session.commit()
@@ -104,6 +104,7 @@ def get_discussion_list():
     参数:
     path:str 讨论路径
     page:id 页面ID
+    count_limit:int 数量限制
     返回
     {
         "code":0,//调用失败返回-1 
@@ -124,9 +125,6 @@ def get_discussion_list():
         ]
     }
     """
-    # print(request.form)
-    # import pdb
-    # pdb.set_trace()
     result = db.session.query(Discussion).filter(or_(
         Discussion.path == request.form["path"], Discussion.path.like(f"{request.form['path']}.%")))
     page = int(request.form.get("page", 1))
@@ -135,9 +133,11 @@ def get_discussion_list():
         "current_page": page,
         "data": []
     }
-
+    # print(f"range from {(page-1)*config.DISCUSSION_PER_PAGE} to {min(page*config.DISCUSSION_PER_PAGE, (page-1)*config.DISCUSSION_PER_PAGE+int(request.form.get('count_limit', 10**8)))}")
+    # for x in result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).all():
+    #     print(x.as_dict())
     result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSION_PER_PAGE,
-                                                                                         page*config.DISCUSSION_PER_PAGE)
+                                                                                         min(page*config.DISCUSSION_PER_PAGE, (page-1)*config.DISCUSSION_PER_PAGE+int(request.form.get("count_limit", 10**8))))
     for item in result:
         user: User = User.by_id(item.user_id)
         comments = db.session.query(Comment).filter(
