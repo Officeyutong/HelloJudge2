@@ -107,7 +107,6 @@ def logout():
     return make_response(0)
 
 
-
 @app.route("/api/get_user_profile", methods=["POST"])
 def get_user_profile():
     """
@@ -130,10 +129,7 @@ def get_user_profile():
     if user.count() == 0:
         return make_response(-1, message="未知用户ID")
     user: User = user.one()
-    return make_response(0, data={
-        "username": user.username,
-        "email": user.email,
-        "description": user.description,
-        "is_admin": user.is_admin,
-        "user_id": user.id
-    })
+    ret = user.as_dict()
+    del ret["password"]
+    del ret["reset_token"]
+    return make_response(0, data=ret)

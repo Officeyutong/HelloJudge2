@@ -58,3 +58,6 @@ def view_show_submission(id):
 def view_show_discussion(id):
     # print(id)
     return render_template("show_discussion.html")
+@app.route("/profile/<int:id>")
+def view_profile(id):
+    return render_template("profile.html")

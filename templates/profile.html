@@ -1,0 +1,35 @@
+{%extends "base.html"%}
+{%block title%}
+个人资料
+{%endblock%}
+{%block body%}
+<script>
+    var profile;
+
+    $(document).ready(() => {
+
+        profile = new Vue({
+            el: "#profile",
+            delimiters: ['{[', ']}'],
+            data: {
+                done: false, data: null
+            }, methods: {
+
+            }
+        });
+        $.post("/api/get_user_profile", { user_id: window.location.href.split("/").pop() }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                show_modal_error(ctx.message);
+                return;
+            }
+            profile.data = ctx.data;
+            $("title").text(`${profile.data.username} - ${profile.data.id} - 用户资料 - {{APP_NAME}}`);
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 500px;" v-if="done" id="profile">
+
+</div>
+{%endblock%}

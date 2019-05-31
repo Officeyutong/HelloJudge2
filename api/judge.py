@@ -62,7 +62,7 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         "score": submit.get_total_score(),
         "judger": submit.judger,
         "message": message
-    }, room=str(submission_id), namespace="/ws/submission")
+    }, room="judge:"+str(submission_id), namespace="/ws/submission")
     print(
         f"Submission {submission_id} status updated to \n{judge_result}\nmessage {message},judger {judger}")
     db.session.commit()

@@ -37,8 +37,7 @@
                         </div>
                     </div>
                 </div>
-            </div> <div class="ui divider"></div>
-        </div>
+            </div></div>
        
         `
 
@@ -49,6 +48,7 @@
             data: {
                 data: null, done: false, current_page: 1, page_count: -1, comments: [], text: "", title: ""
             }, methods: {
+                md5: hex_md5,
                 change_comment_page(target) {
                     this.current_page = target;
                     console.log("changing to ", target);
@@ -63,6 +63,10 @@
                     });
                 }, render(x) {
                     return converter.makeHtml(x);
+                }, reply(username) {
+                    post.text = "@" + username + " ";
+                    // window.scrollTo(0, 999999);
+                    $('body,html').animate({ scrollTop: 9999 }, 800);
                 }
             }, computed: {
                 page_menu() {
@@ -135,8 +139,24 @@
     </div>
     <div style="width:700px;" class="ui segment stacked">
 
-        <discussion-item v-for="item in comments" :data="item"></discussion-item>
-
+        <div class="ui comments">
+            <div class="comment" v-for="item in comments">
+                <!-- {[item]} -->
+                <a class="avatar" :href="'/profile/'+item.user_id"><img class="circular"
+                        :src="'https://www.gravatar.com/avatar/'+md5(item.email)"></a>
+                <div class="content">
+                    <a class="author" :href="'/profile/'+item.user_id">{[item.username]}</a>
+                    <div class="metadata">
+                        <div class="date">{[item.time]}</div>
+                    </div>
+                    <div class="text" v-html="render(item.content)"></div>
+                    <div class="actions">
+                        <a @click="reply(item.username)">回复</a>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+            </div>
+        </div>
     </div>
     <div class="ui center aligned container" style="margin-top: 30px;">
         <div class="ui pagination menu" v-if="page_menu.find(x=>x!=-1)">

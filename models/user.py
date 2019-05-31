@@ -20,3 +20,7 @@ class User(db.Model):
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one()
+    def as_dict(self):
+        ret = dict(filter(lambda x: not x[0].startswith(
+            "_"), self.__dict__.items()))
+        return ret

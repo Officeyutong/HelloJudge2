@@ -127,6 +127,9 @@
         });
         var sidebar;
         $(document).ready(() => {
+            // $("a").forEach((x) => {
+            //     if (!x.attr("no-new-tab")) x.attr("target", "_blank");
+            // });
             sidebar = new Vue({
                 delimiters: ['{[', ']}'],
                 el: "#main-sidebar",
@@ -141,7 +144,7 @@
                         $.post("/api/logout").done((ctx) => {
                             ctx = JSON.parse(ctx);
                             window.location.reload()
-                        })
+                        }) 
                     }, md5: hex_md5
                 }, mounted() {
                     this.$nextTick(() => {
