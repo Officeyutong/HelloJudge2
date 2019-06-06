@@ -5,6 +5,17 @@
 {%block body%}
 <script>
     $(document).ready(() => {
+        //这个东西不在vue里
+        $("#add-problem-button").click(() => {
+            $.post("/api/create_problem").done(ctx => {
+                ctx = JSON.parse(ctx);
+                if (ctx.code) {
+                    show_modal_error(ctx.message);
+                    return;
+                }
+                window.location.href = "/show_problem/" + ctx.problem_id;
+            });
+        })
         problems = new Vue({
             delimiters: ['{[', ']}'],
             el: "#problems",
@@ -77,7 +88,10 @@
     <h1>Problems</h1>
 </div>
 <div class="ui stacked segment">
-    <div class="ui right aligned container">
+    <div class="ui right aligned container" id="add-problem-button">
+        <div class="ui green icon button">
+            <i class="ui plus icon"></i>添加题目..
+        </div>
         <div class="ui search selection dropdown">
             <input type="hidden" id="search-input">
             <i class="search icon"></i>
