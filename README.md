@@ -101,3 +101,5 @@ ace_mode为ACE.js中这个语言所使用的渲染文件。
 |OUTPUT_FILE|目标文件名(包括后缀)|{filename}.out,{filename}.class|
 |COMPILE|编译命令行|使用{source}表示源文件,{output}表示目标文件|
 |RUN|运行命令行||
+#### 其他
+评测端部署指南见[https://gitee.com/yutong_java/HelloJudge2-Judger]()
