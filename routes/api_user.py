@@ -110,6 +110,29 @@ def logout():
     return make_response(0)
 
 
+@app.route("/api/reset_password", methods=["POST"])
+def reset_password():
+    """
+    重设密码
+    参数:
+        {
+            "identifier":"用户识别符"
+        }
+    返回:
+        {
+            "code":0,//非0表示调用成功
+            "message":"qwq"//code非0的时候表示错误信息
+        }
+    """
+    query = db.session.query(User).filter(or_(
+        User.email == request.form["identifier"], User.username == request.form["identifier"]))
+    if query.count() == 0:
+        return make_response(-1, message="用户名或邮箱错误")
+    email = query.one().email
+    # TODO: 发送邮件
+    return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")
+
+
 @app.route("/api/get_user_profile", methods=["POST"])
 def get_user_profile():
     """

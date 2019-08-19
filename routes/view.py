@@ -11,6 +11,7 @@ def consts():
         "SALT": config.PASSWORD_SALT
     }
 
+
 @app.route("/")
 def view_index():
     return render_template("main.html")
@@ -25,16 +26,21 @@ def view_login():
 def view_register():
     return render_template("register.html")
 
+
 @app.route("/problems")
 @app.route("/problems/<int:id>")
 def view_problems(id=-1):
     return render_template("problems.html")
+
+
 @app.route("/submissions")
 @app.route("/submissions/<int:id>")
 def view_submissions(id=-1):
     return render_template("submissions.html")
+
+
 @app.route("/discussions/<string:path>/<int:page>")
-def view_discussions(path,page):
+def view_discussions(path, page):
     return render_template("discussions.html")
 
 
@@ -54,10 +60,27 @@ def view_show_problem(id):
 def view_show_submission(id):
     # print(id)
     return render_template("show_submission.html")
+
+
 @app.route("/show_discussion/<int:id>")
 def view_show_discussion(id):
     # print(id)
     return render_template("show_discussion.html")
+
+
 @app.route("/profile/<int:id>")
 def view_profile(id):
     return render_template("profile.html")
+
+
+@app.route("/contest/<int:contest_id>/problem/<int:problem_id>")
+def view_contest_problem(contest_id, problem_id):
+    return render_template("show_problem_contest.html")
+
+
+@app.route("/contest/<int:contest_id>")
+def view_contest(contest_id):
+    return render_template("show_contest.html")
+@app.route("/contest")
+def view_contest(contest):
+    return render_template("contests.html")

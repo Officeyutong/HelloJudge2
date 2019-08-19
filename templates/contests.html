@@ -1,0 +1,141 @@
+{%extends "base.html"%}
+{%block title%}
+题目列表
+{%endblock%}
+{%block body%}
+<script>
+    $(document).ready(() => {
+        //这个东西不在vue里
+        $("#add-problem-button").click(() => {
+            $.post("/api/create_problem").done(ctx => {
+                ctx = JSON.parse(ctx);
+                if (ctx.code) {
+                    show_modal_error(ctx.message);
+                    return;
+                }
+                window.location.href = "/show_problem/" + ctx.problem_id;
+            });
+        })
+        problems = new Vue({
+            delimiters: ['{[', ']}'],
+            el: "#problems",
+            data: {
+                data: null,
+                page_count: 0,
+                done: false,
+                current_page: 0,
+                page_menu: [],
+                search_keyword: ""
+            }
+        });
+        args = GetRequest();
+        console.log(args);
+        if (args.search_keyword) problems.search_keyword = args.search_keyword;
+        $(".ui.selection.dropdown").dropdown({
+            apiSettings: {
+                url: "/api/ui_search_problem/{query}",
+                saveRemoteData: false
+            }
+        }).dropdown("setting", {
+
+            saveRemoteData: false,
+            selectOnKeydown: false, forceSelection: false
+        });
+
+        $(".ui.selection.dropdown").keyup((evt) => {
+            console.log(evt.which);
+            if (evt.which != 13) return;
+            var text = $(".ui.selection.dropdown .text").text();
+            if (text) {
+                if (text == "搜索") text = "";
+                console.log(text);
+                // return;
+                if (String(parseInt(text)) == text) {
+                    window.location.href = "/show_problem/" + text;
+                } else {
+                    // console.log("/problems/1?search_keyword=" + encodeURI(text));
+                    window.location.href = "/problems/1?search_keyword=" + (text);
+                }
+            }
+        });
+        $.post("/api/problem_list", { page: parseInt(window.location.href.split("/").pop()) || 1, search_keyword: problems.search_keyword }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                show_modal_error(ctx.message);
+                return;
+            }
+            problems.data = ctx.data;
+            problems.page_count = ctx.page_count;
+            problems.current_page = ctx.current_page;
+            var arr = problems.page_menu;
+            for (var i = 1; i <= problems.page_count; i++) problems.page_menu.push(i);
+            // console.log(problems);
+            // console.log(arr);
+            if (arr.indexOf(problems.current_page) > 5) {
+                arr.splice(1, arr.indexOf(problems.current_page) - 4);
+                arr.splice(1, 1, -1);
+            }
+            if (arr.indexOf(problems.current_page) + 5 <= arr.length) {
+                arr.splice(arr.indexOf(problems.current_page) + 5, arr.length - 2 - (arr.indexOf(problems.current_page) + 5) + 1);
+                arr.splice(-2, 1, -1);
+            }
+            problems.done = true;
+        });
+    });
+</script>
+
+<div class="ui header" style="margin-bottom: 50px;">
+    <h1>Problems</h1>
+</div>
+<div class="ui stacked segment">
+    <div class="ui right aligned container" id="add-problem-button">
+        <div class="ui green icon button">
+            <i class="ui plus icon"></i>添加题目..
+        </div>
+        <div class="ui search selection dropdown">
+            <input type="hidden" id="search-input">
+            <i class="search icon"></i>
+            <div class="default text">搜索..</div>
+            <div class="menu">
+                <!-- <div class="item">qwq</div> -->
+            </div>
+        </div>
+    </div>
+    <div id="problems" v-if="done">
+        <div class="ui divider"></div>
+        <table class="ui very basic table">
+            <thead>
+                <tr>
+                    <th class="center aligned" style="max-width: 80px;width:80px;">题目编号</th>
+                    <th>题目</th>
+                    <th>通过数</th>
+                    <th>提交数</th>
+                    <th>通过率</th>
+                    <th>我的提交</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in data"
+                    v-bind:class="{positive:item.status&&item.status=='accepted',negative:item.status&&item.status!='accepted'}">
+                    <td class="center aligned" style="max-width: 80px;width:80px;">{[item.id]}</td>
+                    <td style="min-width: 400px;"><a :href="'/show_problem/'+item.id">{[item.title]}</a> </td>
+                    <td>{[item.accepted_submit]} </td>
+                    <td>{[item.total_submit]}</td>
+                    <td>{[parseInt(item.accepted_submit/item.total_submit*100)]}%</td>
+                    <td><a :href="'/show_submission/'+item.submission"
+                            v-if="item.submission!=-1">{[item.submission]}</a></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="ui center aligned container">
+            <div class="ui pagination menu">
+                <a class="item" v-for="item in page_menu" :class="{disabled:item==-1,active:item==current_page}"
+                    :href="item==-1?null:('/problems/'+item+'?search_keyword='+encodeURI(search_keyword))"
+                    target="__blank">{[
+                    item==-1?"...":item]}</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{%endblock%}
