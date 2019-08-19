@@ -5,8 +5,10 @@ from utils import *
 from models.user import *
 from models.problem import *
 from models.submission import *
+from models.contest import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+from typing import Tuple
 
 
 @app.route("/api/query_login_state", methods=["POST"])
@@ -80,8 +82,9 @@ def register():
         User.email == request.form["email"], User.username == request.form["username"]))
     if query.count():
         return make_response(-1, message="此用户名或邮箱已被用于注册账号")
+    from datetime import datetime
     user = User(username=request.form["username"],
-                email=request.form["email"], password=request.form["password"])
+                email=request.form["email"], password=request.form["password"], register_time=datetime.now())
     db.session.add(user)
     db.session.commit()
     session.permanment = True
@@ -121,7 +124,9 @@ def get_user_profile():
                 "username":"用户名",
                 "email":"邮箱",
                 "description":"描述",
-                "is_admin":"是否为管理员"
+                "is_admin":"是否为管理员",
+                "ac_problems":"通过题目",
+                "rating_history":"rating历史"
             }
         }
     """
@@ -132,4 +137,15 @@ def get_user_profile():
     ret = user.as_dict()
     del ret["password"]
     del ret["reset_token"]
+    problems = db.session.query(Submission.problem_id).filter(
+        Submission.user_id == user.id and Submission.status == "AC").distinct().all()
+    ret["ac_problems"] = [x[0] for x in problems]
+    ret["rating"] = user.get_rating()
+    ret["register_time"] = str(ret["register_time"])
+    for item in ret["rating_history"]:
+        contest_name: Tuple[str] = db.session.query(Contest.name).filter(
+            Contest.id == item["contest_id"]).one_or_none()
+        if not contest_name:
+            contest_name = "比赛不存在"
+        item["contest_name"] = contest_name
     return make_response(0, data=ret)

@@ -69,6 +69,7 @@
             $("#global-error-text").text(text);
             $("#global-error-model").modal("show");
         };
+        const showErrorModal = show_error_modal;
         $.ajaxSetup({
             beforeSend: function (xhr, settings) {
                 xhr.setRequestHeader("X-CSRFtoken", "{{csrf_token()}}")
@@ -144,7 +145,7 @@
                         $.post("/api/logout").done((ctx) => {
                             ctx = JSON.parse(ctx);
                             window.location.reload()
-                        }) 
+                        })
                     }, md5: hex_md5
                 }, mounted() {
                     this.$nextTick(() => {

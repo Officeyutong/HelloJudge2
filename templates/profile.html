@@ -14,22 +14,77 @@
             data: {
                 done: false, data: null
             }, methods: {
-
+                md5: hex_md5
             }
         });
         $.post("/api/get_user_profile", { user_id: window.location.href.split("/").pop() }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
-                show_modal_error(ctx.message);
+                showErrorModal(ctx.message);
                 return;
             }
             profile.data = ctx.data;
             $("title").text(`${profile.data.username} - ${profile.data.id} - 用户资料 - {{APP_NAME}}`);
+            profile.done = true;
         });
     });
 
 </script>
-<div style="top:10%;max-width: 500px;" v-if="done" id="profile">
+<div style="top:10%;max-width: 1000px;" v-if="done" id="profile">
+    <div class="ui grid" style="width: 100%">
+        <div class="ui row">
+            <div class="ui four wide column">
+                <div class="ui card" style="width:100%">
+                    <div class="image">
+                        <img v-bind:src="'https://www.gravatar.com/avatar/'+md5(data.email)+'?s=200'">
+                    </div>
+                    <div class="content">
+                        <div class="header">{[data.username]}</div>
+                        <div class="meta">
+                            <span class="date">注册于 {[data.register_time]}</span>
+                        </div>
+                        <div class="meta">
+                            <span class="is-admin">{[data.is_admin?"管理员":"非管理员"]}</span>
+                        </div>
 
+                    </div>
+                    <div class="extra content">
+                        <span>Rating: {[data.rating]}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="ui twelve wide column">
+                <div class="ui grid">
+                    <div class="ui row">
+                        <div class="ui seven wide column">
+                            <div class="ui grid">
+                                <div class="ui row">
+                                    <div class="ui column">
+                                        <h4 class="ui block attached header">
+                                            邮箱
+                                        </h4>
+                                        <div class="ui bottom attached segment">
+                                            {[data.email]}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ui row">
+                                    <div class="ui column">
+                                        <h4 class="ui block attached header">
+                                            个人简介
+                                        </h4>
+                                        <div class="ui bottom attached segment">
+                                            {[data.description]}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {%endblock%}

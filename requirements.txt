@@ -7,3 +7,4 @@ flask-socketio
 celery
 redis
 mysql-connector-python
+jsonpickle

@@ -20,13 +20,10 @@ def handle_submission(data):
 def handle_mail(data):
     """
     用于实时聊天
-    每个用户和别人进入聊天时建立连接，然后扔到"mail:(用户1，用户2)"的房间里，其中前者数字较小
+    每个用户和别人进入聊天时建立连接，然后扔到"mail:接收者ID"的room中
     data:[userid1,userid2]
     """
-    if data[0] > data[1]:
-        data[0], data[1] = data[1], data[0]
-    ids = tuple(data[:2])
-    join_room("mail:"+str(ids))
+    join_room("mail:"+str(data["user_id"]))
 
 
 @socket.on("init", namespace="/ws/notification")
