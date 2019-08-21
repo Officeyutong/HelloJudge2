@@ -1,5 +1,6 @@
 from main import db
 
+from ormtypes.json_pickle import JsonPickle
 
 class Submission(db.Model):
     __tablename__ = "submissions"
@@ -21,7 +22,7 @@ class Submission(db.Model):
     code = db.Column(db.Text)
     # 评测结果
     # 形如{"subtask1":{"score":100,"status":"WA",testcases:[{"input":"1.in","output":"1.out","score":0,status:"WA","message":"","full_score":"测试点满分，对于取min，只有0或1"}]}}
-    judge_result = db.Column(db.PickleType, default={})
+    judge_result = db.Column(JsonPickle, default={})
     # 总分
 
     def get_total_score(self):

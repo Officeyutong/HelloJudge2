@@ -10,7 +10,7 @@
             $.post("/api/create_problem").done(ctx => {
                 ctx = JSON.parse(ctx);
                 if (ctx.code) {
-                    show_modal_error(ctx.message);
+                    showErrorModal(ctx.message);
                     return;
                 }
                 window.location.href = "/show_problem/" + ctx.problem_id;
@@ -61,7 +61,7 @@
         $.post("/api/problem_list", { page: parseInt(window.location.href.split("/").pop()) || 1, search_keyword: problems.search_keyword }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
-                show_modal_error(ctx.message);
+                showErrorModal(ctx.message);
                 return;
             }
             problems.data = ctx.data;

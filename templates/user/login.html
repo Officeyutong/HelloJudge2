@@ -17,11 +17,12 @@
             data: {
                 error_message: "",
                 identifier: "",
-                password: ""
+                password: "",
+                success_message: ""
             }, methods: {
                 login: function () {
                     console.log("Logining..");
-                    this.error_message = "";
+                    this.error_message = this.success_message = "";
                     if (this.identifier == "" || this.password == "") {
                         this.error_message = "请输入用户名或密码";
                         return;
@@ -39,7 +40,19 @@
 
                     });
                 }, resetPassword() {
-                    
+                    this.error_message = "";
+                    if (this.identifier == "") {
+                        this.error_message = "请输入用户名或电子邮件";
+                        return;
+                    }
+                    $.post("/api/require_reset_password", { identifier: login_frame.identifier }).done((ctx) => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code != 0) {
+                            this.error_message = ctx.message;
+                        } else {
+                            this.success_message = ctx.message;
+                        }
+                    })
                 }
             }
         });
@@ -52,7 +65,7 @@
             <h1>Login</h1>
         </div>
         <div class="ui stack segment">
-            <div id="login-frame" class="ui form" v-bind:class="{error:error_message!=''}">
+            <div id="login-frame" class="ui form" v-bind:class="{error:error_message!='',success:success_message!=''}">
                 <div class="ui field">
                     <label>用户名或邮箱:</label>
                     <input type="text" placeholder="用户名或邮箱.." v-model="identifier">
@@ -65,7 +78,11 @@
                     <div class="header">错误</div>
                     <p>{[error_message]}</p>
                 </div>
-                <div class="ui green submit button" v-on:click="login">提交</div><a href="/register">注册</a><a
+                <div class="ui success message">
+                    <div class="header">成功</div>
+                    <p>{[success_message]}</p>
+                </div>
+                <div class="ui green submit button" v-on:click="login">提交</div><a href="/register">注册</a> <a
                     v-on:click="resetPassword">重置密码</a>
             </div>
         </div>

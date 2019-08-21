@@ -1,5 +1,5 @@
 from main import db
-
+from ormtypes.json_pickle import JsonPickle
 
 class Problem(db.Model):
     __tablename__ = "problems"
@@ -20,18 +20,18 @@ class Problem(db.Model):
     hint = db.Column(db.Text, default="")
     # 样例
     # 使用list存储，每组形如[("输入","输出"),("输入","输出")]
-    example = db.Column(db.PickleType, default=[
+    example = db.Column(JsonPickle, default=[
                         {'input': "输入1", "output": "输出1"}, {'input': "输入2", "output": "输出2"}])
     # 文件列表
     # 形如[{"name":"a.in","size":123456},{"name":"a.out","size":233333}]
-    files = db.Column(db.PickleType, default=[])
+    files = db.Column(JsonPickle, default=[])
     # 可下载文件列表
-    downloads = db.Column(db.PickleType, default=[])
+    downloads = db.Column(JsonPickle, default=[])
     # 编译时提供的文件列表,这些文件将会在编译的时候和程序放在一起
-    provides = db.Column(db.PickleType, default=[])
+    provides = db.Column(JsonPickle, default=[])
     # 子任务安排
     # testcases:[{"input":"a.in","output":"b.out","full_score":"测试点满分"}]
-    subtasks = db.Column(db.PickleType, default=[
+    subtasks = db.Column(JsonPickle, default=[
                          {"name": "Subtask1", "score": 40, "method": "min", "testcases": [], "time_limit":1000, "memory_limit":512, "comment":"这里是注释"}])
     # 题目是否公开
     public = db.Column(db.Boolean, default=False)

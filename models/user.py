@@ -1,5 +1,6 @@
 from main import db
 
+from ormtypes.json_pickle import JsonPickle
 
 class User(db.Model):
     __tablename__ = "users"
@@ -20,7 +21,9 @@ class User(db.Model):
     register_time = db.Column(db.DateTime, nullable=False)
     # rating历史
     # [{"result":rating变化,"contest_id":"比赛ID"}]
-    rating_history = db.Column(db.PickleType, nullable=False, default=[])
+    rating_history = db.Column(JsonPickle, nullable=False, default=[])
+    # 所在团队列表
+    joined_teams = db.Column(JsonPickle, nullable=False, default=[])
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one()

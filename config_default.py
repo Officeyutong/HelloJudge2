@@ -77,3 +77,16 @@ SUPPORTED_LANGUAGES = [
 ]
 SUPPORTED_LANGUAGES_DICT = dict(
     map(lambda x: (x["id"], x), SUPPORTED_LANGUAGES))
+
+# 发信SMTP服务器
+SMTP_SERVER = "smtp.qwq.com"
+# 发信SMTP服务器端口
+SMTP_PORT = 25
+# SMTP账号
+SMTP_USER = "qwqqwq"
+# SMTP密码
+SMTP_PASSWORD = "password"
+# 发信账号
+EMAIL_SENDER = "qwq@qwq.com"
+# 重置密码邮件格式
+RESET_PASSWORD_EMAIL = "请前往 http://[此处替换为网站地址]/reset_password/{reset_token} 重置密码。此链接仅有效一次。"

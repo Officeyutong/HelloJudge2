@@ -1,6 +1,6 @@
 from main import db
 from typing import List, Mapping, Any
-
+from ormtypes.json_pickle import JsonPickle
 
 class Contest(db.Model):
     # 比赛ID
@@ -12,7 +12,7 @@ class Contest(db.Model):
     # 结束时间
     end_time = db.Column(db.DateTime, nullable=False)
     # 题目列表
-    problems = db.Column(db.PickleType, nullable=False, default=[])
+    problems = db.Column(JsonPickle, nullable=False, default=[])
     # 比赛时可否看到排行总榜
     ranklist_visible = db.Column(db.Boolean, nullable=False, default=False)
     # 比赛时可否得知评测结果
@@ -23,7 +23,7 @@ class Contest(db.Model):
     rank_criterion = db.Column(db.String(20), nullable=False, default="score")
     # 题目加权值，仅适用于rank_criterion为score
     # 格式为{"题目编号":"分数权值"}
-    score_weight = db.Column(db.PickleType, nullable=False, default=None)
+    score_weight = db.Column(JsonPickle, nullable=False, default=None)
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
     invite_code = db.Column(db.String(10), nullable=False, default="")
