@@ -1149,7 +1149,7 @@ var PgsqlHighlightRules = function() {
         "pg_stat_get_autovacuum_count|pg_stat_get_backend_activity|" +
         "pg_stat_get_backend_activity_start|pg_stat_get_backend_client_addr|" +
         "pg_stat_get_backend_client_port|pg_stat_get_backend_dbid|pg_stat_get_backend_idset|" +
-        "pg_stat_get_backend_pid|pg_stat_get_backend_start|pg_stat_get_backend_userid|" +
+        "pg_stat_get_backend_pid|pg_stat_get_backend_start|pg_stat_get_backend_uid|" +
         "pg_stat_get_backend_waiting|pg_stat_get_backend_xact_start|" +
         "pg_stat_get_bgwriter_buf_written_checkpoints|" +
         "pg_stat_get_bgwriter_buf_written_clean|pg_stat_get_bgwriter_maxwritten_clean|" +

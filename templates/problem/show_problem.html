@@ -203,7 +203,7 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
-            $.post("/api/get_user_profile", { user_id: ctx.data.uploader_id }).done(ctx => {
+            $.post("/api/get_user_profile", { uid: ctx.data.uploader_id }).done(ctx => {
                 ctx = JSON.parse(ctx);
                 show_problem.uploader_profile = ctx.data;
                 $.post("/api/get_supported_langs").done((ctx) => {

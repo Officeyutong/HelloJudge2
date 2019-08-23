@@ -16,7 +16,7 @@ class Discussion(db.Model):
     # 内容
     content = db.Column(db.Text, nullable=False)
     # 用户ID
-    user_id = db.Column(db.Integer, nullable=False)
+    uid = db.Column(db.Integer, nullable=False)
     # 是否置顶
     top = db.Column(db.Boolean, default=False, nullable=False)
     # 发送时间

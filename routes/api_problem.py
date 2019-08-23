@@ -47,13 +47,13 @@ def get_problem_info():
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not problem.public and not session.get("userid"):
+    if not problem.public and not session.get("uid"):
         return make_response(-1, message="你没有权限查看此题目")
-    if not problem.public and not db.session.query(User).filter(User.id == session.get("userid")).one().is_admin:
+    if not problem.public and not db.session.query(User).filter(User.id == session.get("uid")).one().is_admin:
         return make_response(-1, message="你没有权限查看此题目")
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
-        Submission.problem_id == problem.id, Submission.user_id == session.get("userid"))).order_by(Submission.submit_time.desc())
+        Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).order_by(Submission.submit_time.desc())
     if last_submission.count():
         submit = last_submission.first()
         result["last_code"] = submit.code
@@ -65,14 +65,14 @@ def get_problem_info():
     result["accepted_count"] = db.session.query(
         Submission).filter(Submission.status == "accepted").filter(Submission.problem_id == problem.id).count()
     result["my_submission"] = -1
-    if session.get("userid"):
+    if session.get("uid"):
         ac_submit = db.session.query(Submission.id, Submission.status).filter(
-            Submission.status == "accepted").filter(Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
+            Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
         if ac_submit.count():
             result["my_submission"], result["my_submission_status"] = ac_submit.first()
         else:
             any_submit = db.session.query(Submission.id, Submission.status).filter(
-                Submission.user_id == session.get("userid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
+                Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
             if any_submit.count():
                 result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
@@ -98,12 +98,12 @@ def upload_file(id):
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not problem.public and not session.get("userid"):
+    if not problem.public and not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
+        User.id == session.get("uid")).one()
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
@@ -136,11 +136,11 @@ def download_file(id: int, filename: str):
     if problem.count() == 0:
         flask.abort(404)
     problem = problem.one()
-    if not problem.public and not session.get("userid"):
+    if not problem.public and not session.get("uid"):
         flask.abort(403)
-    if session.get("userid"):
+    if session.get("uid"):
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
+            User.id == session.get("uid")).one()
         if not problem.public and not user.is_admin and user.id != problem.writer_id:
             flask.abort(403)
         if problem.public and not user.is_admin and user.id != problem.writer_id and filename not in problem.downloads:
@@ -175,12 +175,12 @@ def remove_file():
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not problem.public and not session.get("userid"):
+    if not problem.public and not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
+        User.id == session.get("uid")).one()
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
@@ -215,10 +215,10 @@ def update_problem():
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
+        User.id == session.get("uid")).one()
     if not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     data = decode_json(request.form["data"])
@@ -267,11 +267,11 @@ def problem_list():
     """
     page = int(request.form.get("page", 1))
     result = None
-    if not session.get("userid"):
+    if not session.get("uid"):
         result = db.session.query(Problem).filter(Problem.public == True)
     else:
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
+            User.id == session.get("uid")).one()
         if user.is_admin:
             result = db.session.query(Problem)
         else:
@@ -297,8 +297,8 @@ def problem_list():
             "accepted_submit": db.session.query(Submission).filter(Submission.problem_id == item.id).filter(Submission.status == "accepted").count()
         }
         # accepted的字典序比其他三个状态都少，所以按照status升序排能优先排到ac
-        submit = db.session.query(Submission).filter(Submission.user_id == session.get(
-            "userid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).order_by(Submission.submit_time.desc())
+        submit = db.session.query(Submission).filter(Submission.uid == session.get(
+            "uid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).order_by(Submission.submit_time.desc())
         if submit.count():
             submit = submit.first()
             obj["submission"] = submit.id
@@ -325,11 +325,11 @@ def search_problem(search_keyword=""):
         }
     """
     result = None
-    if not session.get("userid"):
+    if not session.get("uid"):
         result = db.session.query(Problem).filter(Problem.public == True)
     else:
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
+            User.id == session.get("uid")).one()
         if user.is_admin:
             result = db.session.query(Problem)
         else:
@@ -360,10 +360,10 @@ def create_problem():
             "problem_id":-1//成功时表示题目ID
         }
     """
-    if session.get("userid") is None:
+    if session.get("uid") is None:
         return make_response(-1, message="你尚未登录!")
     user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
+        User.id == session.get("uid")).one()
     if not user.is_admin:
         return make_response(-1, message="你没有权限进行此操作")
     problem = Problem(uploader_id=user.id)

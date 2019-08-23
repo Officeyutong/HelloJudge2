@@ -9,9 +9,75 @@
         team = new Vue({
             delimiters: ['{[', ']}'],
             el: "#team",
+            mixins: [baseMixin],
             data: {
                 data: null,
                 done: false,
+            }, methods: {
+                taskScores(task) {
+                    let result = [];
+                    for (let user of this.data.members) {
+                        let current = {
+                            username: user.username, uid: user.uid,
+                            status: [], totalScore: 0
+                        }
+                        // result.push(current);
+                        for (let problem of task.problems) {
+                            let score = problem.scores.find(x => x.uid == user.uid);
+                            current.status.push(score);
+                            current.totalScore += score.score;
+                        }
+                        result.push(current);
+                    }
+                    result.sort(x => -x.totalScore);
+                    return result;
+                },
+                setAdmin(uid, value) {
+                    $.post("/api/team/set_admin", { uid: uid, team_id: this.data.id, value: value }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        $.post("/api/team/show", { team_id: window.location.href.split("/").pop() }).done(ctx => {
+                            ctx = JSON.parse(ctx);
+                            if (ctx.code) {
+                                showErrorModal(ctx.message);
+                                return;
+                            }
+                            team.data = ctx.data;
+                            team.done = true;
+                        });
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+
+                    });
+                },
+                hasAdminPermission(uid) {
+                    return uid == this.data.owner_id || this.data.admins.includes(uid);
+                },
+                getPermissionText(uid) {
+                    if (uid == this.data.owner_id) return "团队所有者";
+                    if (this.data.admins.includes(uid)) return "管理员";
+                    return "";
+                }, quit(uid) {
+                    $.post("/api/team/quit", { uid: uid, team_id: this.data.id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        window.location.reload();
+                    });
+                }, join() {
+                    $.post("/api/team/join", { uid: this.base.uid, team_id: this.data.id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        window.location.reload();
+
+                    });
+                }
             }
         });
         $.post("/api/team/show", { team_id: window.location.href.split("/").pop() }).done(ctx => {
@@ -29,6 +95,109 @@
 <div id="team" v-if="done">
     <div class="ui header">
         <h1>{[data.name]}</h1>
+    </div>
+    <div class="ui two column grid">
+        <div class="ui row">
+            <div class="ui eleven wide column">
+                <div class="ui stacked segment" v-html="makeHTML(data.description)">
+                </div>
+                <div class="ui header">
+                    <h3>团队任务</h3>
+                </div>
+                <div v-for="task in data.tasks">
+                    <div class="ui header">
+                        <h4>{[task.name]}</h4>
+                    </div>
+                    <div class="ui stack segment">
+                        <table class="ui very basic celled table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th v-for="problem in task.problems"><a
+                                            :href="'/show_problem/'+problem.id">{[problem.name]}</a></th>
+                                    <th>总分</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user,i in taskScores(task)">
+                                    <td>
+                                        {[i+1]}
+                                    </td>
+                                    <td><a :href="'/profile/'+user.uid"> {[user.username]}</a></td>
+                                    <td v-for="status in user.status"
+                                        v-bind:class="{positive:status.status=='accepted',negative:status.status=='unaccepted'}">
+                                        <a :href="'/show_submission/'+status.submit_id">{[status.score]}</a>
+                                    </td>
+                                    <td>{[user.totalScore]}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="ui five wide column">
+                <div class="ui segment stacked">
+                    <table class="ui very basic celled table">
+                        <tr>
+                            <td>团队所有者</td>
+                            <td><a :href="'/profile/'+data.owner_id">{[data.owner_username]}</a></td>
+                        </tr>
+                        <tr>
+                            <td>创建时间</td>
+                            <td>{[data.create_time]}</td>
+                        </tr>
+                    </table>
+                    <div v-if="base.uid!=data.owner_id && base.isLogin">
+                        <div class="ui red button" v-on:click="quit(base.uid)"
+                            v-if="data.members.find((x)=>x.uid==base.uid)">
+                            退出团队
+                        </div>
+                        <div class="ui green button" v-on:click="join" v-else>
+                            加入团队
+                        </div>
+
+                    </div>
+                </div>
+                <div class="ui header">
+                    <h3>用户列表</h3>
+                </div>
+                <div class="ui segment stacked">
+                    <table class="ui very basic celled table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>用户名</th>
+                                <th>权限</th>
+                                <th v-if="hasAdminPermission(base.uid)">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="val,index in data.members">
+
+                                <td>{[index+1]}</td>
+                                <td><a :href="'/profile/'+val.uid">{[val.username]}</a></td>
+                                <td>
+                                    <div class="ui toggle checkbox" v-if="val.uid!=data.owner_id">
+                                        <input type="checkbox" v-bind:checked="data.admins.includes(val.uid)?true:null"
+                                            v-on:click="setAdmin(val.uid,!data.admins.includes(val.uid))">
+                                        <label>管理员</label>
+                                    </div>
+                                    <span v-else>团队所有者</span>
+                                </td>
+                                <td v-if="hasAdminPermission(base.uid)">
+                                    <div class="ui tiny circular red icon button" v-on:click="quit(val.uid)">
+                                        <i class="close icon"></i>
+                                    </div>
+                                </td>
+
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {%endblock%}

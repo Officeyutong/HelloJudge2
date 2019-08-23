@@ -44,9 +44,9 @@ def post_discussion():
         "message":"错误信息"
     }
     """
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="请登录")
-    user: User = User.by_id(int(session.get("userid")))
+    user: User = User.by_id(int(session.get("uid")))
     if not user.is_admin and bool(request.form["top"]):
         return make_response(-1, message="只有管理员才能发置顶讨论")
     if not can_post_at(user, request.form["path"]):
@@ -60,7 +60,7 @@ def post_discussion():
     import datetime
     discussion.time = datetime.datetime.now()
     discussion.top = request.form["top"].lower() == "true"
-    discussion.user_id = user.id
+    discussion.uid = user.id
     db.session.add(discussion)
     db.session.commit()
     return make_response(0, discussion_id=discussion.id)
@@ -85,13 +85,13 @@ def post_comment():
     content = request.form.get("content", "")
     if not content:
         return make_response(-1, message="内容不能为空")
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="请先登录")
     comment: Comment = Comment()
     comment.discussion_id = int(request.form.get("discussion_id"))
     comment.content = request.form["content"]
     comment.time = datetime.datetime.now()
-    comment.user_id = session.get("userid")
+    comment.uid = session.get("uid")
     db.session.add(comment)
     db.session.commit()
     return make_response(0, last_page=int(math.ceil(db.session.query(Comment.id).filter(Comment.discussion_id == int(request.form["discussion_id"])).count()/config.COMMENTS_PER_PAGE)))
@@ -113,7 +113,7 @@ def get_discussion_list():
         "current_page":10,//当前页 
         "data":[
                 {
-                "user_id":"用户ID",
+                "uid":"用户ID",
                 "username":"用户名",
                 "email":"电子邮件"
                 "time":"发布时间",
@@ -139,13 +139,13 @@ def get_discussion_list():
     result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSION_PER_PAGE,
                                                                                          min(page*config.DISCUSSION_PER_PAGE, (page-1)*config.DISCUSSION_PER_PAGE+int(request.form.get("count_limit", 10**8))))
     for item in result:
-        user: User = User.by_id(item.user_id)
+        user: User = User.by_id(item.uid)
         comments = db.session.query(Comment).filter(
             Comment.discussion_id == item.id).order_by(Comment.id.desc())
         # import pdb
         # pdb.set_trace()
         ret["data"].append({
-            "user_id": user.id,
+            "uid": user.id,
             "username": user.username,
             "email": user.email,
             "time": str(item.time),
@@ -168,7 +168,7 @@ def get_comments():
     {
         "code":0,//返回是否成功
         "data":[
-            {"id":"评论ID","user_name":"用户名","userid":"用户ID","content":"内容","time":"发布时间","email":"邮箱"}
+            {"id":"评论ID","user_name":"用户名","uid":"用户ID","content":"内容","time":"发布时间","email":"邮箱"}
         ],
         "page_count":"总页面数",
         "current_page":"当前页"
@@ -187,11 +187,11 @@ def get_comments():
     result = result.order_by(Comment.id.asc()).slice((page-1)*config.COMMENTS_PER_PAGE,
                                                      page*config.COMMENTS_PER_PAGE)
     for item in result:
-        user: User = User.by_id(item.user_id)
+        user: User = User.by_id(item.uid)
         ret["data"].append({
             "id": item.id,
             "username": user.username,
-            "user_id": user.id,
+            "uid": user.id,
             "content": item.content,
             "time": str(item.time),
             "email": user.email
@@ -245,7 +245,7 @@ def get_discussion():
     ret = {
         "data": db.session.query(Discussion).filter(Discussion.id == id).one().as_dict()
     }
-    user = User.by_id(ret["data"]["user_id"])
+    user = User.by_id(ret["data"]["uid"])
     ret["data"]["email"] = user.email
     ret["data"]["username"] = user.username
 

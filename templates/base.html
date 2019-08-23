@@ -127,49 +127,7 @@
             judge_status.data = ctx.data;
         });
         var sidebar;
-        $(document).ready(() => {
-            // $("a").forEach((x) => {
-            //     if (!x.attr("no-new-tab")) x.attr("target", "_blank");
-            // });
-            sidebar = new Vue({
-                delimiters: ['{[', ']}'],
-                el: "#main-sidebar",
-                data: {
-                    is_login: false,
-                    username: "",
-                    userid: -1,
-                    email: "",
-                    show_discussion_detail: false
-                }, methods: {
-                    logout: function () {
-                        $.post("/api/logout").done((ctx) => {
-                            ctx = JSON.parse(ctx);
-                            window.location.reload()
-                        })
-                    }, md5: hex_md5
-                }, mounted() {
-                    this.$nextTick(() => {
-                        // $(".dropdown").dropdown();
-                        $("#discussion-item").popup();
-                    });
-                }
-            })
-            $.post("/api/query_login_state").done((ctx) => {
-                ctx = JSON.parse(ctx);
-                sidebar.is_login = ctx.result;
-                sidebar.userid = ctx.userid;
-                if (ctx.result) {
-                    $.post("/api/get_user_profile", { user_id: ctx.userid }).done((ctx) => {
-                        ctx = JSON.parse(ctx).data;
-                        console.log(ctx);
-                        sidebar.username = ctx.username;
-                        sidebar.email = ctx.email;
-                    })
-
-                }
-            });
-
-        });
+        let baseObject;
         const converter = new showdown.Converter({
             extensions: [
                 {
@@ -192,6 +150,71 @@
                 }
             ]
         });
+        $(document).ready(() => {
+            // $("a").forEach((x) => {
+            //     if (!x.attr("no-new-tab")) x.attr("target", "_blank");
+            // });
+            baseMixin = {
+                data: {
+                    base: {
+                        isLogin: false, username: "", uid: -1, email: ""
+                    }
+                }, methods: {
+                    makeHTML(v) {
+                        return converter.makeHtml(v);
+                    }, md5: hex_md5,
+                    md5WithSalt(v) {
+                        return md5_with_salt(v);
+                    }
+                }
+            };
+            sidebar = new Vue({
+                delimiters: ['{[', ']}'],
+                el: "#main-sidebar",
+                data: {
+                    is_login: false,
+                    username: "",
+                    uid: -1,
+                    email: "",
+                    show_discussion_detail: false
+                }, methods: {
+                    logout: function () {
+                        $.post("/api/logout").done((ctx) => {
+                            ctx = JSON.parse(ctx);
+                            window.location.reload()
+                        })
+                    }, md5: hex_md5
+                }, mounted() {
+                    this.$nextTick(() => {
+                        // $(".dropdown").dropdown();
+                        $("#discussion-item").popup();
+                    });
+                }
+            })
+            $.post("/api/query_login_state").done((ctx) => {
+                ctx = JSON.parse(ctx);
+                sidebar.is_login = ctx.result;
+                sidebar.uid = ctx.uid;
+                if (ctx.result) {
+                    $.post("/api/get_user_profile", { uid: ctx.uid }).done((ctx) => {
+                        ctx = JSON.parse(ctx).data;
+                        console.log(ctx);
+                        sidebar.username = ctx.username;
+                        sidebar.email = ctx.email;
+                        baseMixin.data.base.username = ctx.username;
+                        baseMixin.data.base.email = ctx.email;
+                        baseMixin.data.base.uid = sidebar.uid;
+                        baseMixin.data.base.isLogin = sidebar.is_login;
+
+
+
+                    })
+
+                }
+            });
+
+        });
+
     </script>
     {%block head%}{%endblock%}
 </head>
@@ -234,7 +257,7 @@
         <a class="item" href="/register" v-if="!is_login">
             或者注册...
         </a>
-        <a class="item" :href="'/profile/'+userid" v-if="is_login">
+        <a class="item" :href="'/profile/'+uid" v-if="is_login">
             <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(email)"></img>
             <span>{[username]}</span>
         </a>

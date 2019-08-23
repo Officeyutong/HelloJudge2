@@ -7,7 +7,7 @@ class Comment(db.Model):
     # 内容
     content = db.Column(db.Text, nullable=False)
     # 用户ID
-    user_id = db.Column(db.Integer, nullable=False, index=True)
+    uid = db.Column(db.Integer, nullable=False, index=True)
     # 发送时间
     time = db.Column(db.DateTime, nullable=False)
     # 讨论ID

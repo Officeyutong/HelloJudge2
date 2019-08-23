@@ -19,17 +19,17 @@ def query_login_state():
         {
             "code":0,//0表示调用成功
             "result": true,//表示是否已登录
-            "userid":-1//如果已登录则表示用户ID
+            "uid":-1//如果已登录则表示用户ID
         }
 
     """
     result = {
-        "result": session.get("userid") is not None
+        "result": session.get("uid") is not None
     }
-    if session.get("userid"):
+    if session.get("uid"):
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
-        result["userid"] = user.id
+            User.id == session.get("uid")).one()
+        result["uid"] = user.id
     return make_response(0, **result)
 
 
@@ -46,13 +46,13 @@ def login():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
-    if session.get("userid") is not None:
+    if session.get("uid") is not None:
         return make_response(-1, message="你已经登录了！")
     query = db.session.query(User).filter(or_(
         User.email == request.form["identifier"], User.username == request.form["identifier"])).filter(User.password == request.form["password"])
     if query.count() == 0:
         return make_response(-1, message="用户名或密码错误")
-    session["userid"] = query.one().id
+    session["uid"] = query.one().id
     session.permanment = True
     return make_response(0)
 
@@ -71,7 +71,7 @@ def register():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
-    if session.get("userid") is not None:
+    if session.get("uid") is not None:
         return make_response(-1, message="你已经登录了！")
     import re
     if re.match(config.USRENAME_REGEX, request.form["username"]) is None:
@@ -86,7 +86,7 @@ def register():
     db.session.add(user)
     db.session.commit()
     session.permanment = True
-    session["userid"] = user.id
+    session["uid"] = user.id
     return make_response(0)
 
 
@@ -102,9 +102,9 @@ def logout():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
-    if session.get("userid") is None:
+    if session.get("uid") is None:
         return make_response(-1, message="你尚未登录!")
-    session.pop("userid")
+    session.pop("uid")
     return make_response(0)
 
 
@@ -180,7 +180,7 @@ def get_user_profile():
     """
     获取用户个人信息
     参数:
-        user_id:int 用户ID
+        uid:int 用户ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -198,7 +198,7 @@ def get_user_profile():
             }
         }
     """
-    user = db.session.query(User).filter(User.id == request.form["user_id"])
+    user = db.session.query(User).filter(User.id == request.form["uid"])
     if user.count() == 0:
         return make_response(-1, message="未知用户ID")
     user: User = user.one()
@@ -206,7 +206,7 @@ def get_user_profile():
     del ret["password"]
     del ret["reset_token"]
     problems = db.session.query(Submission.problem_id).filter(
-        Submission.user_id == user.id and Submission.status == "AC").distinct().all()
+        Submission.uid == user.id and Submission.status == "AC").distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
     ret["rating"] = user.get_rating()
     ret["register_time"] = str(ret["register_time"])

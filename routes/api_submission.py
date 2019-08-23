@@ -30,17 +30,17 @@ def submit():
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem: Problem = problem.one()
-    if not session.get("userid"):
+    if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = db.session.query(User).filter(
-        User.id == session.get("userid")).one()
+        User.id == session.get("uid")).one()
     if not problem.public:
         if not user.is_admin and user.id != problem.writer_id:
             return make_response(-1, message="你没有权限执行此操作")
     if request.form["language"] not in map(lambda x: x["id"], config.SUPPORTED_LANGUAGES):
         return make_response(-1, message="不支持的语言ID")
     import datetime
-    submit = Submission(user_id=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
+    submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
                         code=request.form["code"], status="waiting")
     db.session.add(submit)
     db.session.commit()
@@ -60,7 +60,7 @@ def get_submission_info():
         "message":"qwq",//调用失败时的信息
         "data":{
             "id":-1,//提交ID
-            "user_id":-1,//用户ID
+            "uid":-1,//用户ID
             "language":"qwq",//语言ID
             "language_name":"语言名",
             "problem_id":-1,//题目ID
@@ -85,12 +85,12 @@ def get_submission_info():
         return "提交ID不存在", 404
     submit: Submission = db.session.query(Submission).filter(
         Submission.id == request.form["submission_id"]).one()
-    if not submit.public and not session.get("userid"):
+    if not submit.public and not session.get("uid"):
         return "你没有权限查看此提交", 403
-    if session.get("userid"):
+    if session.get("uid"):
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
-        if not submit.public and not user.is_admin and not user.id == submit.user_id:
+            User.id == session.get("uid")).one()
+        if not submit.public and not user.is_admin and not user.id == submit.uid:
             return make_response(-1, "你没有权限查看此提交")
     ret = submit.to_dict()
     ret["score"] = submit.get_total_score()
@@ -120,16 +120,16 @@ def submission_list():
     """
     page = int(request.form.get("page", 1))
     result = None
-    if not session.get("userid"):
+    if not session.get("uid"):
         result = db.session.query(Submission).filter(Submission.public == True)
     else:
         user: User = db.session.query(User).filter(
-            User.id == session.get("userid")).one()
+            User.id == session.get("uid")).one()
         if user.is_admin:
             result = db.session.query(Submission)
         else:
             result = db.session.query(Submission).filter(
-                or_(Submission.public == True, Submission.user_id == user.id))
+                or_(Submission.public == True, Submission.uid == user.id))
     result = result.order_by(Submission.id.desc())
     count = result.count()
     import math

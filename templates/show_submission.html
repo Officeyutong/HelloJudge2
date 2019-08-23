@@ -56,7 +56,7 @@
                 return;
             }
             submission.data = ctx.data;
-            $.post("/api/get_user_profile", { user_id: ctx.data.user_id }).done(ctx => {
+            $.post("/api/get_user_profile", { uid: ctx.data.uid }).done(ctx => {
                 submission.user_profile = JSON.parse(ctx).data;
                 $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(ctx => {
                     submission.problem_data = JSON.parse(ctx).data;
@@ -111,7 +111,7 @@
                 </tr>
                 <tr>
                     <td class="first-column">提交者</td>
-                    <td><a :href="'/profile/'+user_profile.user_id">{[user_profile.username]}</a></td>
+                    <td><a :href="'/profile/'+user_profile.id">{[user_profile.username]}</a></td>
                 </tr>
                 <tr>
                     <td>状态</td>

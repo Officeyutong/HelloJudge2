@@ -21,9 +21,9 @@ def handle_mail(data):
     """
     用于实时聊天
     每个用户和别人进入聊天时建立连接，然后扔到"mail:接收者ID"的room中
-    data:[userid1,userid2]
+    data:[uid1,uid2]
     """
-    join_room("mail:"+str(data["user_id"]))
+    join_room("mail:"+str(data["uid"]))
 
 
 @socket.on("init", namespace="/ws/notification")
@@ -31,6 +31,6 @@ def handle_notification(data):
     """
     用于接收实时通知
     每个用户扔到"notification:用户id"的房间里
-    data:{"user_id":用户ID}
+    data:{"uid":用户ID}
     """
-    join_room("notification:"+str(data["user_id"]))
+    join_room("notification:"+str(data["uid"]))

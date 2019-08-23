@@ -7,7 +7,7 @@ class Submission(db.Model):
     # 提交ID
     id = db.Column(db.Integer, primary_key=True)
     # 用户ID
-    user_id = db.Column(db.Integer, index=True)
+    uid = db.Column(db.Integer, index=True)
     # 语言ID
     language = db.Column(db.String(10))
     # 题目ID

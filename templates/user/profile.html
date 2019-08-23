@@ -17,7 +17,7 @@
                 md5: hex_md5
             }
         });
-        $.post("/api/get_user_profile", { user_id: window.location.href.split("/").pop() }).done(ctx => {
+        $.post("/api/get_user_profile", { uid: window.location.href.split("/").pop() }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
                 showErrorModal(ctx.message);

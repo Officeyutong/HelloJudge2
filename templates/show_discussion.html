@@ -27,7 +27,7 @@
                     <img :src="'https://www.gravatar.com/avatar/'+md5(data.email)" class="ui small circular image"></img>
                 </div>
                 <div class="column" style="max-width: 700px;">
-                    <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.user_id" target="_blank">{[data.username]}</a></div>
+                    <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.uid" target="_blank">{[data.username]}</a></div>
                     <div class="ui container" style="word-wrap: break-word;word-break: break-all">
                         <div class="ui segment" v-html="content">
                             
@@ -142,10 +142,10 @@
         <div class="ui comments">
             <div class="comment" v-for="item in comments">
                 <!-- {[item]} -->
-                <a class="avatar" :href="'/profile/'+item.user_id"><img class="circular"
+                <a class="avatar" :href="'/profile/'+item.uid"><img class="circular"
                         :src="'https://www.gravatar.com/avatar/'+md5(item.email)"></a>
                 <div class="content">
-                    <a class="author" :href="'/profile/'+item.user_id">{[item.username]}</a>
+                    <a class="author" :href="'/profile/'+item.uid">{[item.username]}</a>
                     <div class="metadata">
                         <div class="date">{[item.time]}</div>
                     </div>
