@@ -101,3 +101,8 @@ def view_team_list():
 @app.route("/team/<int:id>")
 def view_team(id):
     return render_template("/team/team.html")
+
+
+@app.route("/edit_team/<int:id>")
+def view_edit_team(id):
+    return render_template("/team/edit_team.html")

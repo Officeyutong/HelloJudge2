@@ -26,7 +26,7 @@ class User(db.Model):
     joined_teams = db.Column(JsonPickle, nullable=False, default=[])
     @staticmethod
     def by_id(id):
-        return db.session.query(User).filter(User.id == id).one()
+        return db.session.query(User).filter(User.id == id).one_or_none()
 
     def get_rating(self) -> int:
         result = 1500

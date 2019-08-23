@@ -26,4 +26,4 @@ class Team(db.Model):
             "_"), self.__dict__.items()))
         return ret
     def by_id(id):
-        return db.session.query(Team).filter(Team.id == id).one()
+        return db.session.query(Team).filter(Team.id == id).one_or_none()

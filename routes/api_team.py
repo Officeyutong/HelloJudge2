@@ -269,3 +269,65 @@ def show_team():
     result["members"] = list(map(lambda x: {"username": User.by_id(
         x).username, "uid": x}, result["members"]))
     return make_response(0, message="操作完成", data=result)
+
+
+@app.route("/api/team/raw_data", methods=["POST"])
+def team_raw_data():
+    """
+    获取团队原始信息
+    {
+        "team_id":"团队ID"
+    }
+    {
+        "code":-1,
+        "data":{
+            "id":团队ID,
+            "name":"团队名",
+            "description":"团队描述",
+            "tasks":[
+                {"name":"任务名","problems":[1,2,3]}
+            ]
+        }
+    }
+    """
+    team: Team = Team.by_id(request.form["team_id"])
+    if not team:
+        return make_response(-1, message="团队ID不存在")
+    return make_response(0, data={
+        "id": team.id, "name": team.name, "description": team.description, "tasks": team.tasks
+    })
+
+
+@app.route("/api/team/update", methods=["POST"])
+def team_update():
+    """
+    更新团队信息
+    {
+        "team_id":"团队ID",
+        "data":{
+            "id":团队ID,
+            "name":"团队名",
+            "description":"团队描述",
+            "tasks":[
+                {"name":"任务名","problems":[1,2,3]}
+            ]
+        }
+    }
+
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    team: Team = Team.by_id(request.form["team_id"])
+    user: User = User.by_id(session.get("uid"))
+    if user.id != team.owner_id and user.id not in team.admins:
+        return make_response(-1, message="你没有权限进行此操作")
+    data: dict = decode_json(request.form["data"])
+    team.name = data["name"]
+    team.description = data["description"]
+    team.tasks = data["tasks"]
+    for task in team.tasks:
+        for problem in task["problems"]:
+            if not Problem.has(problem):
+                return make_response(-1, message=f"任务 {task['name']} 中的题目 {problem}不存在！")
+    db.session.commit()
+    return make_response(0, message="保存成功")

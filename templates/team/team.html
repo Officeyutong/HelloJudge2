@@ -115,7 +115,7 @@
                                     <th></th>
                                     <th></th>
                                     <th v-for="problem in task.problems"><a
-                                            :href="'/show_problem/'+problem.id">{[problem.name]}</a></th>
+                                            :href="'/show_problem/'+problem.id">{[problem.id]}. {[problem.name]}</a></th>
                                     <th>总分</th>
                                 </tr>
                             </thead>
@@ -156,8 +156,10 @@
                         <div class="ui green button" v-on:click="join" v-else>
                             加入团队
                         </div>
-
                     </div>
+                    <a class="ui green button" :href="'/edit_team/'+data.id" v-if="base.uid==data.owner_id||data.admins.includes(base.uid)">
+                        编辑团队信息
+                    </a>
                 </div>
                 <div class="ui header">
                     <h3>用户列表</h3>
