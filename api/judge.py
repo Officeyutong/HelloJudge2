@@ -25,7 +25,8 @@ def push_to_queue(submission_id):
     queue.send_task("task.judge", [submit.to_dict(), {
                     "compile_time_limit": config.COMPILE_TIME_LIMIT,
                     "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
-                    "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT}])
+                    "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT,
+                    "extra_compile_parameter": problem.extra_compile_parameter}])
     db.session.commit()
 # 更新评测状态
 

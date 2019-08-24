@@ -69,14 +69,7 @@ Web端认可的评测机列表。
 发送给前端的编译结果的大小上限(bytes)
 ##### SPJ_EXECUTE_TIME_LIMIT
 SPJ的执行时间上限(ms)
-##### SUPPORTED_LANGUAGES
-支持的语言列表。
 
-每一项为一个dict，其中id表示这个语言的ID(所有语言必须两两不同),display表示这个语言在前端显示的名字，同理version表示显示的版本。
-
-ace_mode为ACE.js中这个语言所使用的渲染文件。
-
-```/static/ace/mode-xxx.js```
 
 如何添加语言请参考下文。
 
@@ -91,8 +84,7 @@ ace_mode为ACE.js中这个语言所使用的渲染文件。
 ##### uWSGI
 请把主文件指定为main.py,uWSGI实例指定为web_app。
 #### 如何添加语言
-1. 在配置文件的```SUPPORTED_LANGUAGES```中添加好对应的项。
-2. 在langs中新建```语言ID.py```，其中需要有以下四个字符串常量。
+在langs中新建```语言ID.py```，其中需要有以下七个字符串常量。
 
 
 | 常量名 | 意义 | 例 |

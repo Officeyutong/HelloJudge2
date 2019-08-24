@@ -38,7 +38,8 @@ def get_problem_info():
                 "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交,
                 //我的提交状态
                 "my_submission_status":-1,
-                "score":题目总分
+                "score":题目总分,
+                "extra_compile_parameter":"附加编译参数"
             }
         }
     """

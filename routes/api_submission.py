@@ -37,8 +37,12 @@ def submit():
     if not problem.public:
         if not user.is_admin and user.id != problem.writer_id:
             return make_response(-1, message="你没有权限执行此操作")
-    if request.form["language"] not in map(lambda x: x["id"], config.SUPPORTED_LANGUAGES):
+    import importlib
+    try:
+        importlib.import_module("langs."+request.form["language"])
+    except:
         return make_response(-1, message="不支持的语言ID")
+        
     import datetime
     submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
                         code=request.form["code"], status="waiting")
@@ -95,9 +99,11 @@ def get_submission_info():
     ret = submit.to_dict()
     ret["score"] = submit.get_total_score()
     ret["submit_time"] = str(ret["submit_time"])
-    ret["ace_mode"] = next(filter(lambda x: x["id"] == submit.language,
-                                  config.SUPPORTED_LANGUAGES))["ace_mode"]
-    ret["language_name"] = config.SUPPORTED_LANGUAGES_DICT[ret["language"]]["display"]
+    import importlib
+    ret["ace_mode"] = importlib.import_module(
+        "langs."+submit.language).ACE_MODE
+    ret["language_name"] = importlib.import_module(
+        "langs."+ret["language"]).DISPLAY
     return make_response(0, data=ret)
 
 
@@ -149,7 +155,7 @@ def submission_list():
         "max_score": lambda x, y: x.filter(Submission.score <= int(y)),
         "problem": lambda x, y: x.filter(Submission.problem_id == y),
         "contest": lambda x, y: x.filter(Submission.contest_id == y),
-        
+
     }
 
     for f in filter:

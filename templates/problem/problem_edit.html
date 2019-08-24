@@ -165,7 +165,7 @@
         <div>
             <div class="ui top attached tabular menu">
                 <a class="item active" data-tab="tab1">题面</a>
-                <a class="item " data-tab="tab2">题目文件</a>
+                <a class="item " data-tab="tab2">题目数据</a>
                 <a class="item " :href="'/show_problem/'+data.id">返回题目</a>
 
             </div>
@@ -277,9 +277,12 @@
                         上传..
                     </div>
                 </div>
-                <div class="ui header">
-                    <h3>子任务设定</h3>
-                </div>
+            </div>
+            <div class="ui header">
+                <h2>子任务设定</h2>
+            </div>
+            <div class="ui stacked segment">
+
                 <div class="ui container">
                     <div class="ui form">
                         <div class="ui fields">
@@ -314,6 +317,10 @@
                                     @click="data.using_file_io=!data.using_file_io">
                                 <label>使用文件IO</label>
                             </div>
+                        </div>
+                        <div class="ui field">
+                            <label>附加编译参数</label>
+                            <input type="text" v-model="data.extra_compile_parameter">
                         </div>
                         <div class="ui green button" @click="auto_generate">自动生成子任务</div>
                     </div>

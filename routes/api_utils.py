@@ -8,6 +8,7 @@ from models.submission import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
+
 @app.route("/api/get_judge_status", methods=["POST", "GET"])
 def get_judge_status():
     """
@@ -31,9 +32,10 @@ def get_judge_status():
         "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
         "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
         "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
-        "unknown":{"icon":"question circle icon","text":"未知","color":"black"}
+        "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"}
     }
     return make_response(0, data=ret)
+
 
 @app.route("/api/get_supported_langs", methods=["POST", "GET"])
 def get_supported_lang():
@@ -49,5 +51,12 @@ def get_supported_lang():
             ]
         }
     """
-    return make_response(0, list=config.SUPPORTED_LANGUAGES)
-
+    result = []
+    import os
+    import importlib
+    for file in filter(lambda x:x.endswith(".py"),os.listdir("langs")):
+        module = importlib.import_module("langs."+file.replace(".py", ""))
+        result.append({
+            "id": file.replace(".py", ""), "display": module.DISPLAY, "version": module.VERSION, "ace_mode": module.ACE_MODE
+        })
+    return make_response(0, list=result)

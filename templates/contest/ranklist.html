@@ -1,0 +1,43 @@
+{%extends "base.html"%}
+{%block title%}
+编辑比赛
+{%endblock%}
+{%block body%}
+<script>
+    let ranklist;
+    $(document).ready(() => {
+        ranklist = new Vue({
+            delimiters: ['{[', ']}'],
+            el: "#ranklist",
+            mixins: [baseMixin],
+            data: {
+                data: null,
+                done: false,
+            }, methods: {
+                
+            }
+        });
+        $.post("/api/contest/ranklist", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                showErrorModal(ctx.message);
+                return;
+            }
+            contest.data = ctx.data;
+            contest.data.start_time = contest.makeTimeString(new Date(contest.data.start_time * 1000));
+            contest.data.end_time = contest.makeTimeString(new Date(contest.data.end_time * 1000));
+            contest.done = true;
+        });
+    });
+</script>
+
+
+
+<div id="contest" v-if="done">
+    <div class="ui header ">
+        <h1>{[data.name]} - 排行榜</h1>
+    </div>
+    
+</div>
+
+{%endblock%}

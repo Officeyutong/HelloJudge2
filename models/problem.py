@@ -1,6 +1,7 @@
 from main import db
 from ormtypes.json_pickle import JsonPickle
 
+
 class Problem(db.Model):
     __tablename__ = "problems"
     # 题目ID
@@ -45,6 +46,8 @@ class Problem(db.Model):
     output_file_name = db.Column(db.String(30), default="")
     # 题目类型
     problem_type = db.Column(db.String(20), default="traditional")
+    # 附加编译参数
+    extra_compile_parameter = db.Column(db.Text, default="", nullable=False)
 
     def as_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(

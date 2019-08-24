@@ -38,48 +38,6 @@ COMPILE_TIME_LIMIT = 10*1000
 COMPILE_RESULT_LENGTH_LIMIT = 500
 # SPJ运行时间限制
 SPJ_EXECUTE_TIME_LIMIT = 3000
-# 支持的语言
-# 语言ID将会被直接发送给评测机
-SUPPORTED_LANGUAGES = [
-    {
-        "id": "cpp11",
-        "display": "C++ 11",
-        "version": "G++ 8.3",
-        "ace_mode": "c_cpp"
-    },
-    {
-        "id": "cpp98",
-        "display": "C++ 98",
-        "version": "G++ 8.3",
-        "ace_mode": "c_cpp"
-    },
-    {
-        "id": "cpp17",
-        "display": "C++ 17",
-        "version": "G++ 8.3",
-        "ace_mode": "c_cpp"
-    },
-    {
-        "id": "java8",
-        "display": "Java 8",
-        "version": "OpenJDK8",
-        "ace_mode": "java"
-    },
-    {
-        "id": "python2",
-        "display": "Python 2.7",
-        "version": "CPython 2.7",
-        "ace_mode": "python"
-    },
-    {
-        "id": "python3",
-        "display": "Python 3.7",
-        "version": "CPython 3.7",
-        "ace_mode": "python"
-    }
-]
-SUPPORTED_LANGUAGES_DICT = dict(
-    map(lambda x: (x["id"], x), SUPPORTED_LANGUAGES))
 
 # 发信SMTP服务器
 SMTP_SERVER = "smtp.qwq.com"

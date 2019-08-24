@@ -86,9 +86,17 @@ def view_contest_list(id=None):
 @app.route("/contest/<string:name>/problem/<string:problem>")
 def view_contest_problem(name, problem):
     return render_template("/contest/problem.html")
+
+
 @app.route("/contest/edit/<int:id>")
 def view_contest_edit(id):
     return render_template("contest/edit.html")
+
+
+@app.route("/contest/ranklist/<int:id>")
+def view_contest_ranklist(id):
+    return render_template("contest/ranklist.html")
+
 
 @app.route("/reset_password/<string:token>")
 def view_reset_password(token):
