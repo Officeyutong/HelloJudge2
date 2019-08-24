@@ -2,16 +2,19 @@ from main import db
 from typing import List, Mapping, Any
 from ormtypes.json_pickle import JsonPickle
 
+
 class Contest(db.Model):
     # 比赛ID
     id = db.Column(db.Integer, primary_key=True)
+    # 所有者ID
+    owner_id = db.Column(db.Integer, nullable=False)
     # 比赛名称
     name = db.Column(db.String(128), nullable=False, default="新建比赛")
     # 开始时间
     start_time = db.Column(db.DateTime, nullable=False)
     # 结束时间
     end_time = db.Column(db.DateTime, nullable=False)
-    # 题目列表
+    # 题目列表,[1,2,3]
     problems = db.Column(JsonPickle, nullable=False, default=[])
     # 比赛时可否看到排行总榜
     ranklist_visible = db.Column(db.Boolean, nullable=False, default=False)

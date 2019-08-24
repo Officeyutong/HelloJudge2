@@ -83,8 +83,8 @@ def view_contest(contest_id):
     return render_template("contest/show_contest.html")
 
 
-@app.route("/contest")
-def view_contest_list():
+@app.route("/contests/<int:id>")
+def view_contest_list(id=None):
     return render_template("contest/contests.html")
 
 

@@ -3,6 +3,25 @@
 主页
 {%endblock%}
 {%block body%}
+<div>
+    <script>
+        let a;
+        $(document).ready(() => {
+            a = new Vue({
+                el: "#A", data: {
+                    page: 1,
+                    func(x) {
+                        console.log(x);
+                        this.page = x;
+                    }
+                }
+            });
+        });
+    </script>
+    <div id="A">
+        <page-menu v-bind:page-count="20" v-bind:current-page="page" v-bind:callback="func"></page-menu>
+    </div>
+</div>
 <br>
 <br>
 <br>

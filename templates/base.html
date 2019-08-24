@@ -39,7 +39,9 @@
     </script>
     {%endif%}
     <script>
-
+        const renderLatex = function (str) {
+            return katex.renderToString(String(str), { throwOnError: false });
+        };
         const GetRequest = function () {
             var url = location.search; //获取url中"?"符后的字串  
             var theRequest = new Object();
@@ -100,6 +102,41 @@
                 }
             }, template: "<span :style=\"'font-weight: bold;color: '+get_text_color(score/full_score)\">{[score]}/{[full_score]}</span>"
         });
+        Vue.component("page-menu", {
+            delimiters: ["{[", "]}"],
+            props: {
+                pageCount: Number, callback: Function, currentPage: Number
+            }, data() {
+                return { page: 1 }
+            },
+            mounted() {
+                this.page = this.currentPage;
+            },
+            computed: {
+                pages() {
+                    const arr = new Array();
+                    for (var i = 1; i <= this.pageCount; i++) arr.push(i);
+                    if (arr.indexOf(this.page) > 5) {
+                        arr.splice(1, arr.indexOf(this.page) - 4);
+                        arr.splice(1, 1, -1);
+                    }
+                    if (arr.indexOf(this.page) + 5 <= arr.length) {
+                        arr.splice(arr.indexOf(this.page) + 5, arr.length - 2 - (arr.indexOf(this.page) + 5) + 1);
+                        arr.splice(-2, 1, -1);
+                    }
+                    return arr;
+                }
+            },
+            template: `<div class="ui center aligned container">
+            <div class="ui pagination menu" v-if="pages.find(x=>x!=-1)">
+                <a class="item" v-for="item in pages"
+                    :class="{disabled:item==-1||item==page,active:item==page}"
+                    v-on:click="(item==-1)?null:(page=item,callback(item))"
+                    >{[
+                    item==-1?"...":item]}</a>
+            </div>
+        </div>`
+        });
         //显示评测状态的标签
         Vue.component("judge-status", {
             delimiters: ['{[', ']}'],
@@ -132,8 +169,10 @@
             extensions: [
                 {
                     type: 'lang', regex: /¨D¨D(.+)¨D¨D/g, replace: (x, y) => {
-                        // console.log(x);
-                        return katex.renderToString(y, {
+                        console.log(x);
+                        console.log(y);
+
+                        return katex.renderToString(x.replace(/¨D/g, ""), {
                             throwOnError: false,
                             displayMode: true
                         });
@@ -141,8 +180,9 @@
                 },
                 {
                     type: 'lang', regex: /¨D(.+)¨D/g, replace: (x, y) => {
-                        // console.log(x);
-                        return katex.renderToString(y, {
+                        console.log(x);
+                        console.log(y);
+                        return katex.renderToString(x.replace(/¨D/g, ""), {
                             throwOnError: false,
                             displayMode: false
                         });
@@ -205,9 +245,6 @@
                         baseMixin.data.base.email = ctx.email;
                         baseMixin.data.base.uid = sidebar.uid;
                         baseMixin.data.base.isLogin = sidebar.is_login;
-
-
-
                     })
 
                 }
@@ -235,15 +272,11 @@
         </a>
         <a class="item" href="/team">
             <i class="address book icon"></i>
-            <!-- <i class="left pointing icon"></i> -->
             团队列表
-
         </a>
-        <a class="item" v-on:click="show_discussion_detail=!show_discussion_detail">
-            <i class="keyboard outline icon"></i>
-            <!-- <i class="left pointing icon"></i> -->
-            讨论
-
+        <a class="item" href="/contests/1">
+            <i class="chart line icon"></i>
+            比赛
         </a>
         <a class="item" target="_blank" href="/discussions/discussion/1" v-if="show_discussion_detail">全部讨论</a>
         <a class="item" target="_blank" href="/discussions/discussion.global/1" v-if="show_discussion_detail">全局讨论</a>

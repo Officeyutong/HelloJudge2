@@ -90,9 +90,9 @@
 
                 <div class="ui divider"></div>
             </div>
-            <div class="ui submit button" v-on:click="submit">提交</div>
+            <div class="ui green submit button" v-on:click="submit">提交</div>
             <div class="ui blue button" v-on:click="data.tasks.push({name:'新任务',problems:[]})">添加任务</div>
-
+            <a :href="'/team/'+data.id" class="ui yellow button">返回</a>
         </div>
     </div>
 </div>

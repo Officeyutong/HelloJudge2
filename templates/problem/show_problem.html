@@ -122,6 +122,7 @@
         show_problem = new Vue({
             el: "#show-problem",
             delimiters: ['{[', ']}'],
+            mixins:[baseMixin],
             data: {
                 data: {},
                 langs: {},
@@ -282,7 +283,7 @@
                         <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
                         <td>{[subtask.time_limit]} ms</td>
                         <td>{[subtask.memory_limit]} MB</td>
-                        <td class="latex">{[subtask.comment]}</td>
+                        <td v-html="makeHTML(subtask.comment)"></td>
                         <td>{[subtask.score]}</td>
                     </tr>
                 </tbody>
@@ -312,7 +313,7 @@
                 <div class="twelve wide stretched column" style="padding-left: 0;">
                     <div class="ui container">
                         <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                            style="left:30px;">
+                            style="left:30px;min-height: 500px;">
                         </editor>
                     </div>
                 </div>
