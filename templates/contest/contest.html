@@ -3,4 +3,122 @@
 比赛
 {%endblock%}
 {%block body%}
+<script>
+    let contest;
+    $(document).ready(() => {
+        contest = new Vue({
+            delimiters: ['{[', ']}'],
+            el: "#contest",
+            mixins: [baseMixin],
+            data: {
+                data: null,
+                done: false,
+            }, methods: {
+                updateProgressBar() {
+                    $("#progress").progress({
+                        value: (new Date()).getTime() / 1000 - contest.data.start_time,
+                        total: contest.data.end_time - contest.data.start_time
+                    });
+                    $("#progress").progress("set label", "qwq");
+
+                }, makeTime(timestamp) {
+                    return String(new Date(timestamp).toLocaleString());
+                }, status(begin, end) {
+                    let current = (new Date()).getTime() / 1000;
+                    if (current < begin) return -1;
+                    else if (current >= begin && current <= end) return 0;
+                    else return 1;
+                    // return current >= begin && current <= end;
+
+                }, getRemainedTimeString() {
+                    let seconds = parseInt((new Date() - new Date(this.data.start_time * 1000)) / 1000);
+                    return `${parseInt(seconds / 3600)}:${parseInt(seconds / 60) % 60}:${seconds % 60}`;
+                }
+            }
+        });
+        $.post("/api/contest/show", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                showErrorModal(ctx.message);
+                return;
+            }
+            contest.data = ctx.data;
+            contest.done = true;
+            $("#contest-name").text(contest.data.name);
+            contest.updateProgressBar();
+            setInterval(() => { contest.updateProgressBar(); contest.$forceUpdate(); }, 1);
+        });
+    });
+</script>
+
+<div class="ui header ">
+    <h1 id="contest-name"></h1>
+</div>
+
+<div class="ui stack segment">
+    <div class="ui progress success active" id="progress">
+        <div class="bar">
+            <div class="progress"></div>
+        </div>
+    </div>
+</div>
+<div id="contest" v-if="done">
+    <div class="ui stack segment">
+        <table class="ui very basic celled table">
+            <tbody>
+                <tr>
+                    <td>开始时间</td>
+                    <td>{[makeTime(data.start_time*1000)]}</td>
+                </tr>
+                <tr>
+                    <td>结束时间</td>
+                    <td>{[makeTime(data.end_time*1000)]}</td>
+                </tr>
+                <tr>
+                    <td>状态</td>
+                    <td v-if="status(data.start_time,data.end_time)==0" class="positive">
+                        剩余{[getRemainedTimeString()]}
+                    </td>
+                    <td v-else-if="status(data.start_time,data.end_time)<0">尚未开始</td>
+                    <td v-else class="negative">已结束</td>
+                </tr>
+
+            </tbody>
+        </table>
+        <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button">排行榜</a>
+        <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id">编辑</a>
+        
+        <div class="ui divider" v-if="data.description!=''"></div>
+        <div v-html="makeHTML(data.description)" v-if="data.description!=''"></div>
+    </div>
+    <div class="ui segment stacked">
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th style="max-width: 100px;">我的提交</th>
+                    <th>题目</th>
+                    <th>统计信息</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="problem in data.problems"
+                    v-bind:class="{positive:problem.status=='accepted',negative:problem.status=='unaccepted'}">
+                    <td style="max-width: 100px;">
+                        <a :href="'/show_submision/'+problem.my_submit" style="max-width: 100px;">
+                            <judge-status v-bind:status="problem.status"></judge-status>
+                        </a>
+                    </td>
+                    <td><a :href="'/contest/'+data.id+'/problem/'+problem.id">{[problem.id]}. {[problem.title]}</a></td>
+                    <td>
+                        <div v-if="problem.accepted_submit!=-1">
+                            {[problem.accepted_submit]} / {[problem.total_submit]} /
+                            {[parseInt(problem.accepted_submit/problem.total_submit*100)]}%
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 {%endblock%}

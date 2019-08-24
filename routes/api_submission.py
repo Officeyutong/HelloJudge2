@@ -107,6 +107,16 @@ def submission_list():
     获取提交列表
     参数:
     page:int 页数
+    filter:str 过滤器
+    过滤器格式:
+    若干个形如K=V的条件以逗号分隔，条件之间关系为与
+    比如uid=1,status=accepted
+    支持以下Key值
+    uid:用户ID
+    status:评测状态,accepted,unaccepted,judging,waiting
+    min_score:分数下界
+    max_score:分数下界
+    problem:题目ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -130,6 +140,26 @@ def submission_list():
         else:
             result = db.session.query(Submission).filter(
                 or_(Submission.public == True, Submission.uid == user.id))
+    filter = request.form["filter"].split(",")
+    filters = {
+        "uid": lambda x, y: x.filter(Submission.uid == y),
+        "status": lambda x, y: x.filter(Submission.status == y),
+        "min_score": lambda x, y: x.filter(Submission.score >= int(y)),
+        "max_score": lambda x, y: x.filter(Submission.score <= int(y)),
+        "problem": lambda x, y: x.filter(Submission.problem_id == y)
+    }
+
+    for f in filter:
+        if not f:
+            continue
+        print(f)
+        key, value = f.split("=")
+        key = key.strip()
+        if not key:
+            continue
+        if key not in filters:
+            return make_response(-1, message=f"过滤器{key}={value}未知")
+        result = filters[key](result, value)
     result = result.order_by(Submission.id.desc())
     count = result.count()
     import math
@@ -142,7 +172,10 @@ def submission_list():
             "id": submit.id,
             "status": submit.status,
             "score": submit.get_total_score(),
-            "contest": submit.contest_id
+            "contest": submit.contest_id,
+            "uid": submit.uid,
+            "username": User.by_id(submit.uid).username,
+            "submit_time": str(submit.submit_time)
         }
         problem: Problem = db.session.query(Problem).filter(
             Problem.id == submit.problem_id).one()

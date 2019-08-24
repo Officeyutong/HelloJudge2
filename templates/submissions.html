@@ -4,21 +4,96 @@
 {%endblock%}
 {%block body%}
 <script>
-    var submissions;
+    Vue.component("filter-input", {
+        delimiters: ["{[", "]}"],
+        data() {
+            return {
+                filters: ["uid", "status", "min_score", "max_score", "problem"],
+                selectedFilter: "uid",
+                value: ""
+            }
+        },
+        props: ["callback"],
+        template: `
+        <div class="ui three column grid">
+    <div class="ui row">
+
+        <div class="ui five wide right aligned column">
+            <div class="ui compact menu">
+                <div class="ui simple dropdown item">
+                    {[selectedFilter]}
+                    <i class="dropdown icon"></i>
+                    <div class="menu">
+                        <div class="item" v-for="item in filters" v-on:click="selectedFilter=item">{[item]}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui ten wide column">
+            <div class="ui fluid input">
+                <input placeholder="按回车确认" type="text" v-model="value"
+                    v-on:keyup.enter="callback(selectedFilter,value)">
+            </div>
+        </div>
+        <div class="ui one wide column">
+
+        </div>
+    </div>
+
+</div>
+`
+    })
+    let submissions;
+    let currentPage = parseInt(window.location.href.split("/").pop()) || 1;
+    let filter = GetRequest().filter || "";
+    let obj = {};
+    for (let str of filter.split(",")) {
+        let [k, v] = str.split("=");
+        if (k)
+            obj[k] = v;
+    }
+    filter = obj;
     $(document).ready(() => {
         submissions = new Vue({
             delimiters: ['{[', ']}'],
             el: "#submissions",
+            methods: {
+                removeKey(obj, key) {
+                    Vue.delete(obj, key);
+                }, go() {
+                    window.location.href = "/submissions/" + this.currentPage + (this.encodedFilter ? "?filter=" + encodeURIComponent(this.encodedFilter) : "");
+
+                }, addFilter(key, val) {
+                    Vue.set(this.filter, key, val);
+                    // this.filter[key] = val;
+                }
+            },
+            computed: {
+                encodedFilter() {
+                    let string = "";
+                    for (let key of Object.keys(this.filter)) {
+                        string += key + "=" + this.filter[key] + ",";
+                    }
+
+                    return string.substr(0, string.length - 1);
+                }
+            },
             data: {
+
                 data: null,
-                page_count: 0,
                 done: false,
-                current_page: 0,
-                page_menu: [],
-                judge_status: null
+                judge_status: null,
+                currentPage: currentPage,
+                filter: filter,
+
+                callback(x) {
+                    // console.log(x);
+                    // console.log(filterString);
+                    window.location.href = "/submissions/" + x + (this.encodedFilter ? "?filter=" + encodeURIComponent(this.encodedFilter) : "");
+                }
             }
         });
-        $.post("/api/submission_list", { page: parseInt(window.location.href.split("/").pop()) || 1 }).done(ctx => {
+        $.post("/api/submission_list", { page: currentPage, filter: (submissions.encodedFilter || "") }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
                 show_modal_error(ctx.message);
@@ -26,32 +101,48 @@
             }
             submissions.data = ctx.data;
             submissions.page_count = ctx.page_count;
-            submissions.current_page = ctx.current_page;
-            var arr = submissions.page_menu;
-            for (var i = 1; i <= submissions.page_count; i++) submissions.page_menu.push(i);
-            // console.log(problems);
-            // console.log(arr);
-            if (arr.indexOf(submissions.current_page) > 5) {
-                arr.splice(1, arr.indexOf(submissions.current_page) - 4);
-                arr.splice(1, 1, -1);
-            }
-            if (arr.indexOf(submissions.current_page) + 5 <= arr.length) {
-                arr.splice(arr.indexOf(submissions.current_page) + 5, arr.length - 2 - (arr.indexOf(submissions.current_page) + 5) + 1);
-                arr.splice(-2, 1, -1);
-            }
-            $.post("/api/get_judge_status").done(ctx => {
-                submissions.judge_status = JSON.parse(ctx).data;
-                submissions.done = true;
-            });
-
-
-
+            submissions.currentPage = ctx.current_page;
+            submissions.done = true;
         });
     });
 </script>
+
 <div id="submissions" v-if="done">
     <div class="ui header" style="margin-bottom: 50px;">
         <h1>Submissions</h1>
+    </div>
+    <div class="ui header">
+        <h3>筛选</h3>
+    </div>
+    <div class="ui stacked segment">
+        <div class="ui label" v-for="val,key in filter">
+            {[key]}: {[val]}
+            <i class="delete icon" v-on:click="removeKey(filter,key)"></i>
+        </div>
+        <div class="ui divider"></div>
+        <table class="ui very basic celled table">
+            <tbody>
+                <tr>
+                    <td style="width: 100px">
+                        <div class="ui green tiny button" v-on:click="go">执行</div>
+                    </td>
+                    <td>
+                        <filter-input v-bind:callback="addFilter"></filter-input>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="ui divider"></div>
+        <div class="ui message">
+            <div class="ui header">帮助</div>
+            status的取值有以下四种:
+            <list>
+                <li>accepted:通过</li>
+                <li>unaccepted:未通过</li>
+                <li>judging:评测中</li>
+                <li>waiting:等待评测中</li>
+            </list>
+        </div>
     </div>
     <div class="ui stacked segment">
         <table class="ui very basic table">
@@ -59,10 +150,10 @@
                 <tr>
                     <th class="center aligned" style="max-width: 80px;width:80px;">提交编号</th>
                     <th class="center aligned">题目</th>
+                    <th>用户</th>
+                    <th>时间</th>
                     <th class="center aligned">状态</th>
-
                     <th>分数</th>
-
                     <th>比赛</th>
                 </tr>
             </thead>
@@ -73,9 +164,11 @@
                     <td style="max-width: 350px;" class="center aligned"><a
                             :href="'/show_problem/'+item.problem_id">{[item.problem_id]}.
                             {[item.problem_title]}</a> </td>
+                    <td><a :href="'/profile/'+item.uid">{[item.username]}</a></td>
+                    <td>{[item.submit_time]}</td>
                     <td class="center aligned">
                         <a :href="'/show_submission/'+item.id" target="_blank">
-                            <judge-status  :status="item.status"></judge-status>
+                            <judge-status :status="item.status"></judge-status>
                         </a>
                     </td>
                     <td><a :href="'/show_submission/'+item.id" target="_blank">
@@ -89,13 +182,8 @@
                 </tr>
             </tbody>
         </table>
-        <div class="ui center aligned container">
-            <div class="ui pagination menu">
-                <a class="item" v-for="item in page_menu" :class="{disabled:item==-1,active:item==current_page}"
-                    :href="item==-1?null:('/submissions/'+item)">{[
-                    item==-1?"...":item]}</a>
-            </div>
-        </div>
+        <page-menu v-bind:page-count="page_count" v-bind:current-page="currentPage" v-bind:callback="callback">
+        </page-menu>
     </div>
 </div>
 {%endblock%}

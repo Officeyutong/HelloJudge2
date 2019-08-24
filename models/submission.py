@@ -2,6 +2,7 @@ from main import db
 
 from ormtypes.json_pickle import JsonPickle
 
+
 class Submission(db.Model):
     __tablename__ = "submissions"
     # 提交ID
@@ -17,13 +18,14 @@ class Submission(db.Model):
     # 是否公开
     public = db.Column(db.Boolean, default=True)
     # 所属的比赛ID,-1表示非比赛
-    contest_id = db.Column(db.Integer, default=-1)
+    contest_id = db.Column(db.Integer, nullable=False, default=-1, index=True)
     # 代码
     code = db.Column(db.Text)
     # 评测结果
     # 形如{"subtask1":{"score":100,"status":"WA",testcases:[{"input":"1.in","output":"1.out","score":0,status:"WA","message":"","full_score":"测试点满分，对于取min，只有0或1"}]}}
     judge_result = db.Column(JsonPickle, default={})
     # 总分
+    score = db.Column(db.Integer, default=0, nullable=False, index=True)
 
     def get_total_score(self):
         return sum(map(lambda x: x["score"], self.judge_result.values()))

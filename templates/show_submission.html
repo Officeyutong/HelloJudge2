@@ -157,7 +157,12 @@
                     <tr>
                         <td>得分/总分</td>
                         <td>
-                            <score-label :score="val.score" :full_score="problem_subtasks[key].score"></score-label>
+                            <!-- {[val]} -->
+                            <!-- {[problem_subtasks[key]]} -->
+                            <div v-if="!problem_subtasks[key]">
+                                测试点不存在
+                            </div>
+                            <score-label v-else :score="val.score" :full_score="problem_subtasks[key].score" ></score-label>
                         </td>
                     </tr>
                     <tr>

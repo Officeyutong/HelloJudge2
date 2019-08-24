@@ -73,20 +73,22 @@ def view_profile(id):
     return render_template("user/profile.html")
 
 
-@app.route("/contest/<int:contest_id>/problem/<int:problem_id>")
-def view_contest_problem(contest_id, problem_id):
-    return render_template("contest/show_problem_contest.html")
-
-
 @app.route("/contest/<int:contest_id>")
 def view_contest(contest_id):
-    return render_template("contest/show_contest.html")
+    return render_template("contest/contest.html")
 
 
 @app.route("/contests/<int:id>")
 def view_contest_list(id=None):
     return render_template("contest/contests.html")
 
+
+@app.route("/contest/<string:name>/problem/<string:problem>")
+def view_contest_problem(name, problem):
+    return render_template("/contest/problem.html")
+@app.route("/contest/edit/<int:id>")
+def view_contest_edit(id):
+    return render_template("contest/edit.html")
 
 @app.route("/reset_password/<string:token>")
 def view_reset_password(token):

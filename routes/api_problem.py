@@ -107,7 +107,7 @@ def upload_file(id):
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
-    upload_path = os.path.join(basedir, "uploads/%d" % id)
+    upload_path = os.path.join(basedir, "{config.UPLOAD_DIR}/%d" % id)
     os.makedirs(upload_path, exist_ok=True)
     for file in request.files:
         request.files[file].save(os.path.join(
@@ -150,7 +150,7 @@ def download_file(id: int, filename: str):
             flask.abort(403)
     import os
     file = os.path.join(
-        basedir, f"uploads/{id}/{filename}")
+        basedir, f"{config.UPLOAD_DIR}/{id}/{filename}")
     if not os.path.exists(file):
         flask.abort(404)
     return send_file(file, as_attachment=True)
@@ -184,7 +184,7 @@ def remove_file():
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
-    upload_path = os.path.join(basedir, f"uploads/{request.form['id']}")
+    upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/{request.form['id']}")
     os.makedirs(upload_path, exist_ok=True)
     try:
         os.remove(os.path.join(upload_path, request.form["file"]))

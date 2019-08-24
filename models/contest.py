@@ -10,6 +10,8 @@ class Contest(db.Model):
     owner_id = db.Column(db.Integer, nullable=False)
     # 比赛名称
     name = db.Column(db.String(128), nullable=False, default="新建比赛")
+    # 比赛描述
+    description = db.Column(db.Text, nullable=False, default="")
     # 开始时间
     start_time = db.Column(db.DateTime, nullable=False)
     # 结束时间
@@ -30,3 +32,5 @@ class Contest(db.Model):
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
     invite_code = db.Column(db.String(10), nullable=False, default="")
+    def by_id(id):
+        return db.session.query(Contest).filter(Contest.id == id).one_or_none()

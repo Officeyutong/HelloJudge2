@@ -55,7 +55,7 @@ def judge_download_file():
         return make_response(-1, message="题目不存在")
     import os
     problem: Problem = problem.one()
-    path = os.path.join(basedir, f"uploads/{problem.id}")
+    path = os.path.join(basedir, f"{config.UPLOAD_DIR}/{problem.id}")
     file = os.path.join(path, request.form["filename"])
     import flask
     if not os.path.exists(file):

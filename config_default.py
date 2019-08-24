@@ -4,6 +4,8 @@ SESSION_KEY = "qwkqpoksqi0xoqwkqpoksqi0xoqwkqpoksqi0xoqwkqpoksqi0xo"
 DATABASE_URI = "sqlite:///data.db"
 # 调试模式
 DEBUG = False
+# 文件上传目录
+UPLOAD_DIR = "uploads"
 # 端口
 PORT = 8080
 # 监听地址

@@ -1,4 +1,4 @@
-
+from main import config
 def md5_with_salt(text: str, salt: str)->str:
     import hashlib
     md5 = hashlib.md5()
@@ -27,7 +27,7 @@ def make_response(code, **data):
 def generate_file_list(pid: int)->list:
     import os
     from main import basedir
-    upload_path = os.path.join(basedir, "uploads/" + str(pid))
+    upload_path = os.path.join(basedir, "{config.UPLOAD_DIR}/" + str(pid))
     os.makedirs(upload_path, exist_ok=True)
     files = filter(lambda x: not x.endswith(".lock"), os.listdir(upload_path))
     files = filter(lambda x: os.path.exists(

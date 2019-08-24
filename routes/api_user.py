@@ -135,12 +135,15 @@ def require_reset_password():
     from email.header import Header
     content = MIMEText(config.RESET_PASSWORD_EMAIL.format(
         reset_token=user.reset_token), "plain", "utf-8")
-    content["From"] = Header("HelloJudgeV2", "utf-8")
+    # content["From"] = Header("HelloJudgeV2", "utf-8")
     content["Subject"] = Header("重置密码", "utf-8")
     smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
     smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
-    smtp_client.sendmail(config.EMAIL_SENDER, user.email,
-                         content.as_string())
+    try:
+        smtp_client.sendmail(config.EMAIL_SENDER, user.email,
+                             content.as_string())
+    except smtplib.SMTPException as ex:
+        return make_response(-1, message="发送失败！\n"+str(ex))
     smtp_client.close()
     db.session.commit()
     return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")

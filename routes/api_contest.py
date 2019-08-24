@@ -85,3 +85,81 @@ def contest_list():
 
         })
     return make_response(0, data=ret)
+
+
+@app.route("/api/contest/show", methods=["POST"])
+def show_contest():
+    """
+    参数:
+    {
+        "contest_id"
+    }
+    {
+        "code":0,
+        "message":"",
+        "data":{
+            "name":"比赛名",
+            "description":"说明",
+            "id":"比赛ID",
+            "owner_id":"所有者ID",
+            "owner_username":"所有者用户名",
+            "start_time":"开始时间(timestampm,s)",
+            "end_time":"结束时间",
+            "problems":[
+                {
+                    "title":"题目标题",
+                    "id":"题目ID(比赛中的)"
+                    "total_submit":"总提交数",//-1表示不可见
+                    "accepted_submit":"通过提交数",//-1表示不可见
+                    "my_submit":"我的提交最高分提交",
+                    "status":"我的状态"
+                }
+            ]
+        }
+    }
+    """
+    import time
+    can_see_ranks = False
+    contest: Contest = Contest.by_id(request.form["contest_id"])
+    can_see_ranks = can_see_ranks or contest.ranklist_visible
+    has_login = False
+    if session.get("uid"):
+        has_login = True
+        user: User = User.by_id(session.get("uid"))
+        if user.is_admin or user.id == contest.owner_id:
+            can_see_ranks = True
+    result = {
+        "id": contest.id,
+        "name": contest.name,
+        "description": contest.description,
+        "owner_id": user.id,
+        "owner_username": user.username,
+        "start_time": int(time.mktime(contest.start_time.timetuple())),
+        "end_time": int(time.mktime(contest.end_time.timetuple())),
+        "problems": []
+    }
+    problems = result["problems"]
+    for i,problem_id in enumerate(contest.problems):
+        problem: Problem = Problem.by_id(problem_id)
+        current = {
+            "title": problem.title,
+            "id": i,
+            "total_submit": -1,
+            "accepted_submit": -1,
+            "my_submit": -1,
+            "status": "unknown"
+        }
+        if can_see_ranks:
+            submit_query = db.session.query(Submission).filter(
+                Submission.contest_id == contest.id)
+            current["total_submit"] = submit_query.count()
+            current["accepted_submit"] = submit_query.filter(
+                Submission.status == "accepted").count()
+        if has_login:
+            my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
+                Submission.contest_id == contest.id).filter(Submission.uid == user.id).order_by(Submission.status.desc()).one_or_none()
+            if my_best_submit:
+                current["my_submit"] = my_best_submit.id
+                current["status"] = my_best_submit.status
+        problems.append(current)
+    return make_response(0, data=result)
