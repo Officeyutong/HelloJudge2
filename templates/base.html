@@ -244,6 +244,8 @@
                         baseMixin.data.base.email = ctx.email;
                         baseMixin.data.base.uid = sidebar.uid;
                         baseMixin.data.base.isLogin = sidebar.is_login;
+                        baseMixin.data.base.isAdmin = ctx.is_admin;
+                        
                     })
 
                 }
@@ -277,6 +279,10 @@
             <i class="chart line icon"></i>
             比赛
         </a>
+        <div class="item" v-on:click="show_discussion_detail=!show_discussion_detail">
+            <!-- <i class="chart line icon"></i> -->
+            讨论
+        </div>
         <a class="item" target="_blank" href="/discussions/discussion/1" v-if="show_discussion_detail">全部讨论</a>
         <a class="item" target="_blank" href="/discussions/discussion.global/1" v-if="show_discussion_detail">全局讨论</a>
         <a class="item" target="_blank" href="/discussions/discussion.problem.global/1"

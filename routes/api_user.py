@@ -19,7 +19,8 @@ def query_login_state():
         {
             "code":0,//0表示调用成功
             "result": true,//表示是否已登录
-            "uid":-1//如果已登录则表示用户ID
+            "uid":-1//如果已登录则表示用户ID,
+            "is_admin":"是否是管理员"
         }
 
     """
@@ -30,6 +31,7 @@ def query_login_state():
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
         result["uid"] = user.id
+        result["is_admin"] = user.is_admin
     return make_response(0, **result)
 
 

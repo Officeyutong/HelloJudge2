@@ -117,6 +117,7 @@ def submission_list():
     min_score:分数下界
     max_score:分数下界
     problem:题目ID
+    contest:比赛ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -146,7 +147,9 @@ def submission_list():
         "status": lambda x, y: x.filter(Submission.status == y),
         "min_score": lambda x, y: x.filter(Submission.score >= int(y)),
         "max_score": lambda x, y: x.filter(Submission.score <= int(y)),
-        "problem": lambda x, y: x.filter(Submission.problem_id == y)
+        "problem": lambda x, y: x.filter(Submission.problem_id == y),
+        "contest": lambda x, y: x.filter(Submission.contest_id == y),
+        
     }
 
     for f in filter:

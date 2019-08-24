@@ -31,7 +31,7 @@
                     // return current >= begin && current <= end;
 
                 }, getRemainedTimeString() {
-                    let seconds = parseInt((new Date() - new Date(this.data.start_time * 1000)) / 1000);
+                    let seconds = parseInt((new Date(this.data.end_time * 1000) - new Date()) / 1000);
                     return `${parseInt(seconds / 3600)}:${parseInt(seconds / 60) % 60}:${seconds % 60}`;
                 }
             }
@@ -67,6 +67,10 @@
         <table class="ui very basic celled table">
             <tbody>
                 <tr>
+                    <td>比赛组织者</td>
+                    <td><a :href="'/profile/'+data.owner_id">{[data.owner_username]}</a></td>
+                </tr>
+                <tr>
                     <td>开始时间</td>
                     <td>{[makeTime(data.start_time*1000)]}</td>
                 </tr>
@@ -86,8 +90,9 @@
             </tbody>
         </table>
         <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button">排行榜</a>
-        <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id">编辑</a>
-        
+        <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id"
+            target="_blank">编辑</a>
+
         <div class="ui divider" v-if="data.description!=''"></div>
         <div v-html="makeHTML(data.description)" v-if="data.description!=''"></div>
     </div>
@@ -97,6 +102,7 @@
                 <tr>
                     <th style="max-width: 100px;">我的提交</th>
                     <th>题目</th>
+                    <th v-if="data.rank_criterion=='score'">分数权值</th>
                     <th>统计信息</th>
                 </tr>
             </thead>
@@ -109,6 +115,7 @@
                         </a>
                     </td>
                     <td><a :href="'/contest/'+data.id+'/problem/'+problem.id">{[problem.id]}. {[problem.title]}</a></td>
+                    <td v-if="data.rank_criterion=='score'">{[problem.weight]}</td>
                     <td>
                         <div v-if="problem.accepted_submit!=-1">
                             {[problem.accepted_submit]} / {[problem.total_submit]} /

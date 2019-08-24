@@ -16,7 +16,7 @@ class Contest(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     # 结束时间
     end_time = db.Column(db.DateTime, nullable=False)
-    # 题目列表,[1,2,3]
+    # 题目列表,[{"id":1,"weight":1}]
     problems = db.Column(JsonPickle, nullable=False, default=[])
     # 比赛时可否看到排行总榜
     ranklist_visible = db.Column(db.Boolean, nullable=False, default=False)
@@ -26,11 +26,12 @@ class Contest(db.Model):
     # 如果排行依据为score，则按照题目总分高低排序
     # 如果排行依据为penalty，则每道题AC即通过，非AC即未通过，首先按照通过题目数排名，题目数相同按照罚时排名
     rank_criterion = db.Column(db.String(20), nullable=False, default="score")
-    # 题目加权值，仅适用于rank_criterion为score
-    # 格式为{"题目编号":"分数权值"}
-    score_weight = db.Column(JsonPickle, nullable=False, default=None)
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
     invite_code = db.Column(db.String(10), nullable=False, default="")
     def by_id(id):
         return db.session.query(Contest).filter(Contest.id == id).one_or_none()
+    def as_dict(self):
+        ret = dict(filter(lambda x: not x[0].startswith(
+            "_"), self.__dict__.items()))
+        return ret
