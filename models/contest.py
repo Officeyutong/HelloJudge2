@@ -23,9 +23,10 @@ class Contest(db.Model):
     # 比赛时可否得知评测结果
     judge_result_visible = db.Column(db.Boolean, nullable=False, default=False)
     # 排行依据
-    # 如果排行依据为score，则按照题目总分高低排序
+    # 如果排行依据为max_score，则按照题目最高分
+    # 如果排行依据为last_submit，则按照最后一次提交的分数排序
     # 如果排行依据为penalty，则每道题AC即通过，非AC即未通过，首先按照通过题目数排名，题目数相同按照罚时排名
-    rank_criterion = db.Column(db.String(20), nullable=False, default="score")
+    rank_criterion = db.Column(db.String(20), nullable=False, default="max_score")
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
     invite_code = db.Column(db.String(10), nullable=False, default="")

@@ -108,7 +108,7 @@ def upload_file(id):
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
-    upload_path = os.path.join(basedir, "{config.UPLOAD_DIR}/%d" % id)
+    upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/%d" % id)
     os.makedirs(upload_path, exist_ok=True)
     for file in request.files:
         request.files[file].save(os.path.join(
@@ -125,7 +125,7 @@ def upload_file(id):
 @app.route("/api/download_file/<int:id>/<string:filename>", methods=["POST", "GET"])
 def download_file(id: int, filename: str):
     """
-    下载题目文件
+    下载题目文件 
     参数:
         无
     返回:
@@ -185,7 +185,8 @@ def remove_file():
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
-    upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/{request.form['id']}")
+    upload_path = os.path.join(
+        basedir, f"{config.UPLOAD_DIR}/{request.form['id']}")
     os.makedirs(upload_path, exist_ok=True)
     try:
         os.remove(os.path.join(upload_path, request.form["file"]))
@@ -194,6 +195,17 @@ def remove_file():
     except Exception as ex:
         pass
     problem.files = generate_file_list(request.form["id"])
+
+    def remove_and_return(seq, val):
+        seq = seq.copy()
+        if val in seq:
+            seq.remove(val)
+        return seq
+    problem.downloads = remove_and_return(
+        problem.downloads, request.form["file"])
+    problem.provides = remove_and_return(
+        problem.provides, request.form["file"])
+
     db.session.commit()
     return make_response(0, file_list=generate_file_list(request.form["id"]))
 
@@ -348,6 +360,7 @@ def search_problem(search_keyword=""):
     # print(f"search {search_keyword} = {ret}")
     return encode_json(ret)
 
+
 @app.route("/api/create_problem", methods=["POST"])
 def create_problem():
     """
@@ -371,4 +384,3 @@ def create_problem():
     db.session.add(problem)
     db.session.commit()
     return make_response(0, problem_id=problem.id)
-

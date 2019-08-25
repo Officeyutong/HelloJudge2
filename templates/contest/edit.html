@@ -142,8 +142,10 @@
             <div class="ui field">
                 <label>排名依据</label>
                 <div class="ui tiny buttons">
-                    <div class="ui button" v-bind:class="{active:data.rank_criterion=='score'}"
-                        v-on:click="data.rank_criterion='score'">题目得分</div>
+                    <div class="ui button" v-bind:class="{active:data.rank_criterion=='max_score'}"
+                        v-on:click="data.rank_criterion='max_score'">题目最高得分</div>
+                    <div class="ui button" v-bind:class="{active:data.rank_criterion=='last_submit'}"
+                        v-on:click="data.rank_criterion='last_submit'">题目最后一次提交</div>
                     <div class="ui button" v-bind:class="{active:data.rank_criterion=='penalty'}"
                         v-on:click="data.rank_criterion='penalty'">罚时</div>
                 </div>

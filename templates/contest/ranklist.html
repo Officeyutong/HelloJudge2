@@ -23,10 +23,8 @@
                 showErrorModal(ctx.message);
                 return;
             }
-            contest.data = ctx.data;
-            contest.data.start_time = contest.makeTimeString(new Date(contest.data.start_time * 1000));
-            contest.data.end_time = contest.makeTimeString(new Date(contest.data.end_time * 1000));
-            contest.done = true;
+            ranklist.data = ctx.data;
+            ranklist.done = true;
         });
     });
 </script>
