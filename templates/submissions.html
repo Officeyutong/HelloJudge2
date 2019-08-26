@@ -79,17 +79,16 @@
                 }
             },
             data: {
-
                 data: null,
                 done: false,
                 judge_status: null,
                 currentPage: currentPage,
                 filter: filter,
-
                 callback(x) {
                     // console.log(x);
                     // console.log(filterString);
-                    window.location.href = "/submissions/" + x + (this.encodedFilter ? "?filter=" + encodeURIComponent(this.encodedFilter) : "");
+                    console.log(this.encodedFilter);
+                    window.location.href = "/submissions/" + x + (submissions.encodedFilter ? "?filter=" + encodeURIComponent(submissions.encodedFilter) : "");
                 }
             }
         });

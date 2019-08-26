@@ -47,7 +47,7 @@ def post_discussion():
     if not session.get("uid"):
         return make_response(-1, message="请登录")
     user: User = User.by_id(int(session.get("uid")))
-    if not user.is_admin and bool(request.form["top"]):
+    if not user.is_admin and request.form["top"].lower() == "true":
         return make_response(-1, message="只有管理员才能发置顶讨论")
     if not can_post_at(user, request.form["path"]):
         return make_response(-1, message="你无权在这里发帖")

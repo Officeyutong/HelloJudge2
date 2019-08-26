@@ -31,9 +31,9 @@ def remove_contest():
         return make_response(-1, message="只有管理员或比赛创建者才可进行此操作")
     db.session.query(Submission).filter(
         Submission.contest_id == contest.id).delete()
-    for userx in db.session.query(User).all():
-        userx.rating_history = list(
-            filter(lambda x: x['contest_id'] != contest.id, userx.rating_history.copy()))
+    # for userx in db.session.query(User).all():
+    #     userx.rating_history = list(
+    #         filter(lambda x: x['contest_id'] != contest.id, userx.rating_history.copy()))
     db.session.query(Contest).filter(Contest.id == contest.id).delete()
     db.session.commit()
     return make_response(0, message="成功")
@@ -152,6 +152,8 @@ def show_contest():
     """
     import time
     contest: Contest = Contest.by_id(request.form["contest_id"])
+    if not contest:
+        return make_response(-1, message="比赛ID不存在！")
     can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
     can_see_judge_result = contest.can_see_judge_result(session.get("uid"))
     has_login = bool(session.get("uid"))
@@ -381,6 +383,7 @@ def contest_ranklist():
     {
         "code":0,
         "data":{
+            "name":'比赛名',
             "ranklist":[
                 {
                     "uid":"用户ID",
@@ -497,7 +500,7 @@ def contest_ranklist():
     else:
         ranklist.sort(key=lambda x: x["total"]["score"], reverse=True)
     problems = []
-    result = {"ranklist": ranklist, "problems": problems}
+    result = {"ranklist": ranklist, "problems": problems, "name": contest.name}
     for i, x in enumerate(contest.problems):
         problem: Problem = Problem.by_id(x["id"])
         problems.append({

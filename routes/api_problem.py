@@ -54,7 +54,7 @@ def get_problem_info():
         return make_response(-1, message="你没有权限查看此题目")
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
-        Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).order_by(Submission.submit_time.desc())
+        Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
     if last_submission.count():
         submit = last_submission.first()
         result["last_code"] = submit.code
@@ -68,12 +68,12 @@ def get_problem_info():
     result["my_submission"] = -1
     if session.get("uid"):
         ac_submit = db.session.query(Submission.id, Submission.status).filter(
-            Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
+            Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
         if ac_submit.count():
             result["my_submission"], result["my_submission_status"] = ac_submit.first()
         else:
             any_submit = db.session.query(Submission.id, Submission.status).filter(
-                Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).order_by(Submission.submit_time.desc())
+                Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
             if any_submit.count():
                 result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
@@ -311,7 +311,7 @@ def problem_list():
         }
         # accepted的字典序比其他三个状态都少，所以按照status升序排能优先排到ac
         submit = db.session.query(Submission).filter(Submission.uid == session.get(
-            "uid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).order_by(Submission.submit_time.desc())
+            "uid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
         if submit.count():
             submit = submit.first()
             obj["submission"] = submit.id

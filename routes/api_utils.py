@@ -34,7 +34,7 @@ def get_judge_status():
         "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
         "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"},
         "invisible": {"icon": "times icon", "text": "不可见", "color": "black"},
-        "unsubmitted": {"icon": "notched circle loading icon", "text": "未提交", "color": "red"}
+        "unsubmitted": {"icon": "code icon", "text": "未提交", "color": "yellow"}
     }
     return make_response(0, data=ret)
 
