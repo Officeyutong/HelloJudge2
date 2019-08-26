@@ -10,6 +10,31 @@ from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
 
+@app.route("/api/rejudge", methods=["POST"])
+def rejudge():
+    """ 
+    重测提交
+    参数:
+    submission_id:int 提交ID
+    {
+        "code","message"
+    }
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    user: User = User.by_id(session.get("uid"))
+    if not user.is_admin:
+        return make_response(-1, message="你没有权限这样做")
+    submit: Submission = Submission.by_id(request.form["submission_id"])
+    if not submit:
+        return make_response(-1, message="提交不存在")
+    from api.judge import push_to_queue
+    submit.status = "waiting"
+    db.session.commit()
+    push_to_queue(submit.id)
+    return make_response(0, message="ok")
+
+
 @app.route("/api/submit", methods=["POST"])
 def submit():
     """
@@ -204,7 +229,7 @@ def submission_list():
             if not contest.can_see_judge_result(session.get("uid")):
                 obj["status"] = "invisible"
                 obj["score"] = 0
-        
+
         problem: Problem = db.session.query(Problem).filter(
             Problem.id == submit.problem_id).one()
         obj["problem_id"] = problem.id

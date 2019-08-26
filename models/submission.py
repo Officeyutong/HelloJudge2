@@ -44,3 +44,7 @@ class Submission(db.Model):
         ret = dict(filter(lambda x: not x[0].startswith(
             "_"), self.__dict__.items()))
         return ret
+
+    @staticmethod
+    def by_id(id):
+        return db.session.query(Submission).filter(Submission.id == id).one_or_none()

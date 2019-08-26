@@ -24,6 +24,7 @@
         submission = new Vue({
             delimiters: ['{[', ']}'],
             el: "#submission",
+            mixins: [baseMixin],
             data: {
                 //是否完成加载
                 done: false,
@@ -49,7 +50,16 @@
             }, mounted: function () {
 
             }, methods: {
-                copy_text: copy_text
+                copy_text: copy_text, rejudge() {
+                    $.post("/api/rejudge", { submission_id: this.data.id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        window.location.reload();
+                    })
+                }
             }
         })
         $.post("/api/get_submission_info", { submission_id: submission_id }).done((ctx) => {
@@ -123,10 +133,10 @@
                 </tr>
                 <tr>
                     <td class="first-column">题目</td>
-                    <td v-if="contestSubmit"><a :href="'/contest/'+contestID+'/problem/'+problemID" >{[problemID]}
+                    <td v-if="contestSubmit"><a :href="'/contest/'+contestID+'/problem/'+problemID">{[problemID]}
                             {[problem_data.title]}</a></td>
 
-                    <td v-else><a :href="'/show_problem/'+problem_data.id" >{[problem_data.id]}
+                    <td v-else><a :href="'/show_problem/'+problem_data.id">{[problem_data.id]}
                             {[problem_data.title]}</a></td>
                 </tr>
                 <tr>
@@ -165,6 +175,9 @@
                 </tr>
             </tbody>
         </table>
+        <div class="ui very tiny red button" v-if="base.isAdmin" v-on:click="rejudge">
+            重测
+        </div>
         <div class="ui divider"></div>
         <div v-for="val,key in data.judge_result">
             <div class="ui header">

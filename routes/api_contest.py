@@ -11,6 +11,34 @@ import re
 from typing import Iterable
 
 
+@app.route("/api/contest/remove", methods=["POST"])
+def remove_contest():
+    """
+    参数:
+    {
+        "contest_id":"比赛ID"
+    }
+    {
+        "code":0,
+        "message":"",
+    }
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    user: User = User.by_id(session.get("uid"))
+    contest: Contest = Contest.by_id(request.form["contest_id"])
+    if not user.is_admin and user.id != contest.owner_id:
+        return make_response(-1, message="只有管理员或比赛创建者才可进行此操作")
+    db.session.query(Submission).filter(
+        Submission.contest_id == contest.id).delete()
+    for userx in db.session.query(User).all():
+        userx.rating_history = list(
+            filter(lambda x: x['contest_id'] != contest.id, userx.rating_history.copy()))
+    db.session.query(Contest).filter(Contest.id == contest.id).delete()
+    db.session.commit()
+    return make_response(0, message="成功")
+
+
 @app.route("/api/contest/create", methods=["POST"])
 def create_contest():
     """
@@ -123,20 +151,15 @@ def show_contest():
     }
     """
     import time
-    can_see_ranks = False
-    can_see_judge_result = False
     contest: Contest = Contest.by_id(request.form["contest_id"])
+    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
+    can_see_judge_result = contest.can_see_judge_result(session.get("uid"))
+    has_login = bool(session.get("uid"))
+    if has_login:
+        user: User = User.by_id(session.get("uid"))
     if not contest:
         return make_response(-1, message="未知题目ID")
-    can_see_ranks = can_see_ranks or contest.ranklist_visible
-    can_see_judge_result = can_see_judge_result or contest.judge_result_visible
-    has_login = False
-    if session.get("uid"):
-        has_login = True
-        user: User = User.by_id(session.get("uid"))
-        if user.is_admin or user.id == contest.owner_id:
-            can_see_ranks = True
-            can_see_judge_result = True
+
     owner: User = User.by_id(contest.owner_id)
 
     result = {
@@ -163,7 +186,7 @@ def show_contest():
             "my_submit": -1,
             "status": "unsubmitted", "weight": problem_data["weight"]
         }
-        if can_see_ranks:
+        if can_see_ranklist:
             submit_query = db.session.query(Submission).filter(
                 Submission.contest_id == contest.id).filter(Submission.problem_id == problem.id)
             current["total_submit"] = submit_query.count()
@@ -176,7 +199,7 @@ def show_contest():
                 current["my_submit"] = my_best_submit.id
                 current["status"] = my_best_submit.status
                 if not can_see_judge_result:
-                    current["status"] = "invisible"  
+                    current["status"] = "invisible"
         problems.append(current)
     return make_response(0, data=result)
 
@@ -392,13 +415,7 @@ def contest_ranklist():
     }
     """
     contest: Contest = Contest.by_id(request.form['contest_id'])
-    can_see_ranklist = False
-    if session.get("uid"):
-        userx: User = User.by_id(session.get("uid"))
-        if userx.is_admin or userx.id == contest.owner_id:
-            can_see_ranklist = True
-    if contest.ranklist_visible:
-        can_see_ranklist = True
+    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
     users = db.session.query(Submission.uid).filter(
         Submission.contest_id == contest.id).distinct().all()
     ranklist = []

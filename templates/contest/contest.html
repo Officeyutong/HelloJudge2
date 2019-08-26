@@ -33,6 +33,19 @@
                 }, getRemainedTimeString() {
                     let seconds = parseInt((new Date(this.data.end_time * 1000) - new Date()) / 1000);
                     return `${parseInt(seconds / 3600)}:${parseInt(seconds / 60) % 60}:${seconds % 60}`;
+                }, removeContest() {
+                    $("#warning-modal").modal({
+                        onApprove() {
+                            $.post("/api/contest/remove", { contest_id: contest.data.id }).done((ctx) => {
+                                ctx = JSON.parse(ctx);
+                                if (ctx.code) {
+                                    showErrorModal(ctx.message);
+                                    return;
+                                }
+                                window.location.href = '/';
+                            })
+                        }
+                    }).modal("show");
                 }
             }
         });
@@ -95,7 +108,10 @@
         <a :href="'/submissions/1?filter=contest%3D'+data.id" class="ui red tiny button"
             v-if="base.isAdmin||base.uid==data.owner_id" target="_blank">所有提交</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id+',uid%3D'+base.uid" class="ui blue tiny button"
-             target="_blank">我的提交</a>
+            target="_blank">我的提交</a>
+        <div class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id" v-on:click="removeContest">删除比赛
+        </div>
+
         <div class="ui divider" v-if="data.description!=''"></div>
         <div v-html="makeHTML(data.description)" v-if="data.description!=''"></div>
     </div>
@@ -131,5 +147,22 @@
         </table>
     </div>
 </div>
-
+<div class="ui modal" id="warning-modal">
+    <div class="ui header">
+        警告
+    </div>
+    <div class="content">
+        <p>删除比赛会产生以下后果</p>
+        <p>1.所有此次比赛中的提交会被删除</p>
+        <p>2.所有用户中，因为此次比赛而改变的rating将会被忽略</p>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">
+            确定
+        </div>
+        <div class="ui blue cancel button">
+            取消
+        </div>
+    </div>
+</div>
 {%endblock%}
