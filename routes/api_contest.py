@@ -384,6 +384,8 @@ def contest_ranklist():
         "code":0,
         "data":{
             "name":'比赛名',
+            "contest_id":"比赛ID",
+            "using_penalty":"使用罚时",
             "ranklist":[
                 {
                     "uid":"用户ID",
@@ -457,7 +459,7 @@ def contest_ranklist():
                     "ac_time": -1,
                     "penalty": 0,
                     "submit_id": -1,
-                    "status": "unknown"
+                    "status": "unsubmitted"
                 })
                 continue
             best_submit = best_submit.first()
@@ -465,7 +467,7 @@ def contest_ranklist():
             import time
             if best_submit.status == "accepted":
                 last = {
-                    "score": best_submit.acore*weight,
+                    "score": best_submit.score*weight,
                     "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id < best_submit.id).count(),
                     "ac_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60),
                     "submit_id": best_submit.id,
@@ -500,13 +502,14 @@ def contest_ranklist():
     else:
         ranklist.sort(key=lambda x: x["total"]["score"], reverse=True)
     problems = []
-    result = {"ranklist": ranklist, "problems": problems, "name": contest.name}
+    result = {"ranklist": ranklist, "problems": problems,
+              "name": contest.name, "contest_id": contest.id, "using_penalty": contest.rank_criterion == "penalty"}
     for i, x in enumerate(contest.problems):
         problem: Problem = Problem.by_id(x["id"])
         problems.append({
             "name": problem.title,
             "id": i,
-            "accepted_submit": db.session.query(Submission.id).filter(Submission.contest_id == contest.id and Submission.status == "accepted" and Submission.problem_id == problem.id).count(),
-            "total_submit": db.session.query(Submission.id).filter(Submission.contest_id == contest.id and Submission.problem_id == problem.id).count()
+            "accepted_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.status == "accepted", Submission.problem_id == problem.id)).count(),
+            "total_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.problem_id == problem.id)).count()
         })
     return make_response(0, data=result)

@@ -1,6 +1,6 @@
 {%extends "base.html"%}
 {%block title%}
-编辑比赛
+比赛排名
 {%endblock%}
 {%block body%}
 <script>
@@ -14,7 +14,7 @@
                 data: null,
                 done: false,
             }, methods: {
-                
+
             }
         });
         $.post("/api/contest/ranklist", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
@@ -35,7 +35,51 @@
     <div class="ui header ">
         <h1>{[data.name]} - 排行榜</h1>
     </div>
-    
+    <div class="ui segment stacked">
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>用户名</th>
+                    <th v-for="problem in data.problems" class="center aligned">
+                        <a :href="'/contest/'+data.contest_id+'/problem/'+problem.id">{[problem.id]}.
+                            {[problem.name]}</a>
+                        <div><span style="color:green">{[problem.accepted_submit]}</span>/{[problem.total_submit]}</div>
+                    </th>
+                    <th class="center aligned">
+                        总分
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="line,i in data.ranklist">
+                    <td>#{[i+1]}</td>
+                    <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
+                    <td class="center aligned" v-for="item in line.scores"
+                        v-bind:class="{positive:item.status=='accepted',negative:item.status=='unaccepted'}">
+                        <div v-if="item.submit_id!=-1">
+                            <a :href="'/show_submission/'+item.submit_id">
+                                <span v-if="data.using_penalty==false">{[item.score]}</span>
+                                <span v-else>
+                                    <div v-if="item.status=='accepted'">
+                                        -{[item.submit_count]}({[item.penalty]})
+                                    </div>
+                                    <div v-else>-{[item.submit_count]}</div>
+                                </span>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="center aligned">
+                        <span v-if="data.using_penalty==false">{[line.total.score]}</span>
+                        <span v-else>
+                            <span style="color:green">{[line.total.ac_count]}</span><span
+                                style="color:red">({[line.total.penalty]})</span>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {%endblock%}
