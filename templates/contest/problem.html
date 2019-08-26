@@ -122,24 +122,19 @@
         show_problem = new Vue({
             el: "#show-problem",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 data: {},
                 langs: {},
                 selected_id: "",
                 code: "",
-                uploader_profile: {},
-                done: false, recent_discussion: []
+                done: false
             }, methods: {
                 submit: function () {
-                    $.post("/api/submit", {
-                        problem_id: show_problem.data.id,
-                        code: show_problem.code,
-                        language: show_problem.selected_id,
-                        contest_id: -1
-                    }).done(ctx => {
+                    $.post("/api/contest/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
-                            show_error_modal(ctx.message);
+                            showErrorModal(ctx.message);
                             return;
                         }
                         window.location.href = "/show_submission/" + ctx.submission_id;
@@ -164,7 +159,7 @@
             template: '<div class="ui container problem-meta"  v-if="value!=\'\'"><div class="ui fluid two column grid"><div class="ui column">\
                             <div class="ui header"><h3>{[name]}</h3></div></div><div class="ui right aligned column">\
                                 <div class="ui tiny orange circular icon button" @click="copy_text(value)"><i class="clipboard outline icon"></i></div>\
-                                    </div></div>    <div class="ui stack segment"><div class="latex" v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" v-else></pre>    </div></div>',
+                                    </div></div>    <div class="ui stack segment"><div  v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" v-else></pre>    </div></div>',
             props: {
                 //内容
                 value: {
@@ -192,8 +187,11 @@
             }
         });
 
-
-        $.post("/api/contest/get_problem_info", { id: parseInt(window.location.href.split("/").pop()) }).done(ctx => {
+        let splits = window.location.href.split("/");
+        let problemID = splits.pop();
+        splits.pop();
+        let contestID = splits.pop();
+        $.post("/api/contest/problem/show", { contest_id: contestID, problem_id: problemID }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code != 0) {
                 $("#no-perm-text").text(ctx.message);
@@ -216,7 +214,6 @@
                     show_problem.selected_id = ctx.list[0].id;
                 }
                 show_problem.done = true;
-
             })
         });
 
@@ -268,7 +265,7 @@
                         <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
                         <td>{[subtask.time_limit]} ms</td>
                         <td>{[subtask.memory_limit]} MB</td>
-                        <td class="latex">{[subtask.comment]}</td>
+                        <td v-html="makeHTML(subtask.comment)"></td>
                         <td>{[subtask.score]}</td>
                     </tr>
                 </tbody>
@@ -298,7 +295,7 @@
                 <div class="twelve wide stretched column" style="padding-left: 0;">
                     <div class="ui container">
                         <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                            style="left:30px;">
+                            style="left:30px;min-height: 500px;">
                         </editor>
                     </div>
                 </div>
@@ -319,10 +316,13 @@
                             <td>题目分数</td>
                             <td>{[total_score]}</td>
                         </tr>
-
                         <tr v-if="data.using_file_io">
                             <td>输入/输出文件</td>
                             <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
+                        </tr>
+                        <tr>
+                            <td>附加编译参数</td>
+                            <td>{[data.extra_compile_parameter]}</td>
                         </tr>
 
                     </tbody>

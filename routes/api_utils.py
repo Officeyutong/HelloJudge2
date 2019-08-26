@@ -32,7 +32,9 @@ def get_judge_status():
         "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
         "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
         "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
-        "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"}
+        "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"},
+        "invisible": {"icon": "times icon", "text": "不可见", "color": "black"},
+        "unsubmitted": {"icon": "notched circle loading icon", "text": "未提交", "color": "red"}
     }
     return make_response(0, data=ret)
 
@@ -54,7 +56,7 @@ def get_supported_lang():
     result = []
     import os
     import importlib
-    for file in filter(lambda x:x.endswith(".py"),os.listdir("langs")):
+    for file in filter(lambda x: x.endswith(".py"), os.listdir("langs")):
         module = importlib.import_module("langs."+file.replace(".py", ""))
         result.append({
             "id": file.replace(".py", ""), "display": module.DISPLAY, "version": module.VERSION, "ace_mode": module.ACE_MODE

@@ -96,7 +96,7 @@
         $.post("/api/submission_list", { page: currentPage, filter: (submissions.encodedFilter || "") }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
-                show_modal_error(ctx.message);
+                showErrorModal(ctx.message);
                 return;
             }
             submissions.data = ctx.data;
@@ -177,7 +177,7 @@
                     </td>
 
                     <td>
-                        <a v-if="item.contest!=-1" :href="'/contests/'+item.contest">{[item.contest]}</a>
+                        <a v-if="item.contest!=-1" :href="'/contest/'+item.contest">{[item.contest]}</a>
                     </td>
                 </tr>
             </tbody>

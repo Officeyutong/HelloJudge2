@@ -16,7 +16,7 @@
 {%block body%}
 <script>
     var submission, socket;
-
+    console.log("qwq");
     $(document).ready(() => {
         const url = window.location.href.split("/");
         const submission_id = url[url.length - 1];
@@ -34,7 +34,10 @@
                 //题目数据
                 problem_data: null,
                 //评测状态列表
-                judge_status: null
+                judge_status: null,
+                //是否为比赛提交
+                contestSubmit: false,
+                contestID: -1, problemID: -1,
             }, computed: {
                 problem_subtasks: function () {
                     var obj = {};
@@ -58,7 +61,7 @@
             submission.data = ctx.data;
             $.post("/api/get_user_profile", { uid: ctx.data.uid }).done(ctx => {
                 submission.user_profile = JSON.parse(ctx).data;
-                $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(ctx => {
+                const done = function (ctx) {
                     submission.problem_data = JSON.parse(ctx).data;
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;
@@ -82,8 +85,21 @@
                             hljs.highlightBlock(document.getElementsByTagName("code")[0]);
                         });
                     });
+                };
+                if (typeof submission.data.problem_id != "number" && submission.data.problem_id.startsWith("contest")) {
+                    let [contestID, problemID] = submission.data.problem_id.substr(8).split(",");
+                    submission.contestSubmit = true;
+                    submission.contestID = contestID;
+                    submission.problemID = problemID;
 
-                });
+                    $.post("/api/contest/problem/show", { contest_id: contestID, problem_id: problemID }).done(done);
+
+                } else {
+                    $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(done);
+                }
+
+
+
             });
         });
     });
@@ -107,7 +123,11 @@
                 </tr>
                 <tr>
                     <td class="first-column">题目</td>
-                    <td><a :href="'/show_problem/'+problem_data.id">{[problem_data.id]} {[problem_data.title]}</a></td>
+                    <td v-if="contestSubmit"><a :href="'/contest/'+contestID+'/problem/'+problemID" >{[problemID]}
+                            {[problem_data.title]}</a></td>
+
+                    <td v-else><a :href="'/show_problem/'+problem_data.id" >{[problem_data.id]}
+                            {[problem_data.title]}</a></td>
                 </tr>
                 <tr>
                     <td class="first-column">提交者</td>
@@ -162,7 +182,8 @@
                             <div v-if="!problem_subtasks[key]">
                                 测试点不存在
                             </div>
-                            <score-label v-else :score="val.score" :full_score="problem_subtasks[key].score" ></score-label>
+                            <score-label v-else :score="val.score" :full_score="problem_subtasks[key].score">
+                            </score-label>
                         </td>
                     </tr>
                     <tr>

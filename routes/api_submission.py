@@ -5,6 +5,7 @@ from utils import *
 from models.user import *
 from models.problem import *
 from models.submission import *
+from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
@@ -42,7 +43,7 @@ def submit():
         importlib.import_module("langs."+request.form["language"])
     except:
         return make_response(-1, message="不支持的语言ID")
-        
+
     import datetime
     submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
                         code=request.form["code"], status="waiting")
@@ -95,10 +96,22 @@ def get_submission_info():
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
         if not submit.public and not user.is_admin and not user.id == submit.uid:
-            return make_response(-1, "你没有权限查看此提交")
+            return make_response(-1, message="你没有权限查看此提交")
     ret = submit.to_dict()
+
     ret["score"] = submit.get_total_score()
     ret["submit_time"] = str(ret["submit_time"])
+    if submit.contest_id != -1:
+        contest: Contest = Contest.by_id(submit.contest_id)
+        if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not user.is_admin:
+            ret["judge_result"] = {}
+            ret["status"] = "invisible"
+            ret["score"] = 0
+        for i, x in enumerate(contest.problems):
+            if x["id"] == ret["problem_id"]:
+                ret["problem_id"] = f"contest:{contest.id},{i}"
+                break
+
     import importlib
     ret["ace_mode"] = importlib.import_module(
         "langs."+submit.language).ACE_MODE
@@ -186,6 +199,12 @@ def submission_list():
             "username": User.by_id(submit.uid).username,
             "submit_time": str(submit.submit_time)
         }
+        if submit.contest_id != -1:
+            contest: Contest = Contest.by_id(submit.contest_id)
+            if not contest.can_see_judge_result(session.get("uid")):
+                obj["status"] = "invisible"
+                obj["score"] = 0
+        
         problem: Problem = db.session.query(Problem).filter(
             Problem.id == submit.problem_id).one()
         obj["problem_id"] = problem.id

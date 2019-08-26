@@ -168,8 +168,8 @@
             extensions: [
                 {
                     type: 'lang', regex: /¨D¨D(.+)¨D¨D/g, replace: (x, y) => {
-                        console.log(x);
-                        console.log(y);
+                        // console.log(x);
+                        // console.log(y);
 
                         return katex.renderToString(x.replace(/¨D/g, ""), {
                             throwOnError: false,
@@ -179,8 +179,8 @@
                 },
                 {
                     type: 'lang', regex: /¨D(.+)¨D/g, replace: (x, y) => {
-                        console.log(x);
-                        console.log(y);
+                        // console.log(x);
+                        // console.log(y);
                         return katex.renderToString(x.replace(/¨D/g, ""), {
                             throwOnError: false,
                             displayMode: false

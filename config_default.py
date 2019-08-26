@@ -51,3 +51,5 @@ SMTP_PASSWORD = "password"
 EMAIL_SENDER = "qwq@qwq.com"
 # 重置密码邮件格式
 RESET_PASSWORD_EMAIL = "请前往 http://[此处替换为网站地址]/reset_password/{reset_token} 重置密码。此链接仅有效一次。"
+# 比赛失败提交罚时(分钟)
+FAIL_SUBMIT_PENALTY = 20
