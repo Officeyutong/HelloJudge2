@@ -10,13 +10,13 @@ import math
 import re
 
 legal_paths = re.compile(
-    r"^discussion((.global)|(.problem((.global)|.(?P<id>[0-9]+))))$")
+    r"^(broadcast)|(discussion((.global)|(.problem((.global)|.(?P<id>[0-9]+)))))$")
 path_query = re.compile(
-    r"^discussion((.global)?|(.problem((.global)|.(?P<id>[0-9]+))?))$")
+    r"^(broadcast)|(discussion((.global)?|(.problem((.global)|.(?P<id>[0-9]+))?)))$")
 
 
 def can_post_at(user: User, path: str):
-    if not user.is_admin and path.startswith("broadcast."):
+    if not user.is_admin and path.startswith("broadcast"):
         return False
     match_result = legal_paths.match(path)
     if not match_result:
@@ -217,7 +217,8 @@ def get_path_name():
         "discussion": "所有讨论",
         "discussion.global": "全局讨论",
         "discussion.problem": "所有题目讨论",
-        "discussion.problem.global": "题目全局讨论"
+        "discussion.problem.global": "题目全局讨论",
+        "broadcast": "公告"
     }.get(request.form["path"], f"题目 {request.form['path'].split('.')[-1]} 的讨论")))
 
 

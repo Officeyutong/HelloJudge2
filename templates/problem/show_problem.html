@@ -384,8 +384,8 @@
                         <tr>
                             <td>操作</td>
                             <td>
-                                <a class="ui very tiny blue button" :href="'/problem_edit/'+data.id" target="_blank">编辑</a>
-                                <div class="ui very tiny red button" v-on:click="removeProblem" v-if="base.uid==data.uploader_id||base.isAdmin">删除</div>
+                                <a  :href="'/problem_edit/'+data.id" target="_blank">编辑</a>
+                                <a  v-on:click="removeProblem" v-if="base.uid==data.uploader_id||base.isAdmin">删除</a>
 
                             </td>
                         </tr>

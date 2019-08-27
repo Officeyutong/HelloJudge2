@@ -196,7 +196,7 @@ def get_user_profile():
                 "description":"描述",
                 "is_admin":"是否为管理员",
                 "ac_problems":"通过题目",
-                "rating_history":"rating历史",
+                "rating_history":[],
                 "joined_teams":[
                     {"name":"团队名","id":"团队ID"}
                 ]

@@ -32,6 +32,12 @@ DISCUSSION_PER_PAGE = 30
 COMMENTS_PER_PAGE = 30
 # 每页显示的比赛数量
 CONTESTS_PER_PAGE = 50
+# 主页显示的公告数量
+HOMEPAGE_BROADCAST = 15
+# 主页排行榜显示的数量
+HOMEPAGE_RANKLIST = 15
+# 主页显示的题目数量
+HOMEPAGE_PROBLEMS = 5
 # 编译时间限制,ms
 COMPILE_TIME_LIMIT = 10*1000
 # 编译结果长度限制,单位字符

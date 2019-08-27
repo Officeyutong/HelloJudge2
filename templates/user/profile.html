@@ -11,6 +11,7 @@
         profile = new Vue({
             el: "#profile",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 done: false, data: null
             }, methods: {
@@ -24,6 +25,7 @@
                 return;
             }
             profile.data = ctx.data;
+            profile.data.ac_problems.sort((x, y) => x - y);
             $("title").text(`${profile.data.username} - ${profile.data.id} - 用户资料 - {{APP_NAME}}`);
             profile.done = true;
         });
@@ -73,14 +75,51 @@
                                         <h4 class="ui block attached header">
                                             个人简介
                                         </h4>
+                                        <div class="ui bottom attached segment" v-html="makeHTML(data.description)">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ui row">
+                                    <div class="ui column">
+                                        <h4 class="ui block attached header">
+                                            Rating历史
+                                        </h4>
                                         <div class="ui bottom attached segment">
-                                            {[data.description]}
+                                            <table class="ui very basic celled table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>比赛</th>
+                                                        <th>变化</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr v-for="item in data.rating_history">
+                                                        <td><a
+                                                                :href="'/contest/'+item.contest_id">{[item.contest_name]}</a>
+                                                        </td>
+                                                        <td style="color:green" v-if="item.result>=0">+{[item.result]}
+                                                        </td>
+                                                        <td v-else style="color:red">-{[-item.result]}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                         </div>
+                        <div class="ui eight wide column">
+                            <h4 class="ui block attached header">
+                                通过题目
+                            </h4>
+                            <div class="ui bottom attached segment">
+                                <span v-for="item in data.ac_problems"><a :href="'/show_problem/'+item">{[item]} </a>
+                                </span>
+
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>

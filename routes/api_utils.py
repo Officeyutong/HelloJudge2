@@ -2,11 +2,58 @@ from main import web_app as app
 from main import db, config, basedir
 from flask import session, request, send_file, send_from_directory
 from utils import *
-from models.user import *
-from models.problem import *
-from models.submission import *
+from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+
+
+@app.route("/api/home_page", methods=["POST"])
+def home_page():
+    """
+    返回主页数据
+    {
+        "data":{
+            "broadcasts":[
+                {
+                    "title":"xxx",
+                    "id":"xxx",
+                    "date":'xxx'
+                }
+            ],
+            "ranklist":[
+                "username":"xxx",
+                "uid":-1,
+                "description":"xxx"
+            ],
+            "recent_problems":[
+                "title":"xxx",
+                "id":"xxx",
+                "create_time":"xxx"
+            ]
+        }
+    }
+    """
+    result = {"broadcasts": [], "ranklist": [],
+              "recent_problems": [], "app_name": config.APP_NAME}
+    broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
+        Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
+    for item in broadcasts:
+        result["broadcasts"].append({
+            "title": item.title, "id": item.id, "time": str(item.time)
+        })
+    ranklist = db.session.query(User.id, User.description, User.username, User.rating).order_by(
+        User.rating.desc()).limit(config.HOMEPAGE_RANKLIST).all()
+    for item in ranklist:
+        result["ranklist"].append({
+            "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
+        })
+    problems = db.session.query(Problem.title, Problem.id, Problem.create_time).order_by(
+        Problem.create_time.desc()).limit(config.HOMEPAGE_PROBLEMS).all()
+    for item in problems:
+        result["recent_problems"].append({
+            "title": item.title, "id": item.id, "create_time": str(item.create_time)
+        })
+    return make_response(0, data=result)
 
 
 @app.route("/api/get_judge_status", methods=["POST", "GET"])
@@ -30,6 +77,7 @@ def get_judge_status():
         "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"},
         "wrong_answer": {"icon": "x icon", "text": "答案错误", "color": "red"},
         "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
+        "memory_limit_exceed": {"icon": "microchip icon", "text": "内存超限", "color": "purple"},
         "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
         "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
         "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"},
@@ -86,6 +134,7 @@ def import_from_syzoj():
     import shutil
     import os
     import yaml
+    import requests
     from io import BytesIO
     from utils import decode_json
     if not session.get("uid"):
@@ -98,6 +147,7 @@ def import_from_syzoj():
         with urllib.request.urlopen(f"{request.form['url']}/export") as urlf:
             data = decode_json(urlf.read().decode())["obj"]
         print("JSON data: {}".format(data))
+        import datetime
         problem = Problem(uploader_id=user.id,
                           title=data["title"],
                           content=data["description"],
@@ -107,17 +157,18 @@ def import_from_syzoj():
                           using_file_io=data["file_io"],
                           input_file_name=data["file_io_input_name"],
                           output_file_name=data["file_io_output_name"],
+                          create_time=datetime.datetime.now()
                           )
         problem.example = []
-        problem.hint = "### 样例\n" + data["example"]+"\n\n"+problem.hint
+        problem.hint = "### 样例\n" + data["example"]+"\n\n### Hint\n"+problem.hint
         time_limit = int(data["time_limit"])
         memory_limit = int(data["memory_limit"])
         db.session.add(problem)
         db.session.commit()
 
         work_dir = pathlib.PurePath(tempfile.mkdtemp())
-        with urllib.request.urlopen(f"{request.form['url']}/testdata/download") as urlf:
-            pack = zipfile.ZipFile(BytesIO(urlf.read()))
+        with requests.get(f"{request.form['url']}/testdata/download") as urlf:
+            pack = zipfile.ZipFile(BytesIO(urlf.content))
             pack.extractall(work_dir)
             pack.close()
         problem_data_dir = pathlib.PurePath(

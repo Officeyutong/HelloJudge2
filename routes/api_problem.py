@@ -138,6 +138,7 @@ def get_problem_info():
             if any_submit.count():
                 result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
+    result["create_time"]=str(result["create_time"])
     return make_response(0, data=result)
 
 
@@ -439,7 +440,8 @@ def create_problem():
         User.id == session.get("uid")).one()
     if not user.is_admin:
         return make_response(-1, message="你没有权限进行此操作")
-    problem = Problem(uploader_id=user.id)
+    from datetime import datetime
+    problem = Problem(uploader_id=user.id, create_time=datetime.now())
     db.session.add(problem)
     db.session.commit()
     return make_response(0, problem_id=problem.id)

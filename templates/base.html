@@ -167,7 +167,7 @@
         const converter = new showdown.Converter({
             extensions: [
                 {
-                    type: 'lang', regex: /¨D¨D(.+)¨D¨D/g, replace: (x, y) => {
+                    type: 'lang', regex: /¨D¨D([\s\S]+?)¨D¨D/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
 
@@ -178,7 +178,7 @@
                     }
                 },
                 {
-                    type: 'lang', regex: /¨D(.+)¨D/g, replace: (x, y) => {
+                    type: 'lang', regex: /¨D([\S\s]+?)¨D/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
                         return katex.renderToString(x.replace(/¨D/g, ""), {

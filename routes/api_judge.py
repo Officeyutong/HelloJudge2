@@ -87,7 +87,9 @@ def judge_get_problem_info():
     if problem.count() == 0:
         return make_response(-1, message="题目不存在")
     problem: Problem = problem.one()
-    return make_response(0, data=problem.as_dict())
+    result = problem.as_dict()
+    result["create_time"] = str(result["create_time"])
+    return make_response(0, data=result)
 
 
 @csrf.exempt

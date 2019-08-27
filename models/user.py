@@ -2,6 +2,7 @@ from main import db
 
 from ormtypes.json_pickle import JsonPickle
 
+
 class User(db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
@@ -10,7 +11,7 @@ class User(db.Model):
     # 密码
     password = db.Column(db.String(64))
     # 个人简介
-    description = db.Column(db.Text(), default="无")
+    description = db.Column(db.Text(), default="")
     # 电子邮件
     email = db.Column(db.String(30))
     # 是否为管理员
@@ -24,6 +25,7 @@ class User(db.Model):
     rating_history = db.Column(JsonPickle, nullable=False, default=[])
     # 所在团队列表
     joined_teams = db.Column(JsonPickle, nullable=False, default=[])
+    rating = db.Column(db.Integer, nullable=False, default=1500, index=True)
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one_or_none()

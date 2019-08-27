@@ -48,6 +48,8 @@ class Problem(db.Model):
     problem_type = db.Column(db.String(20), default="traditional")
     # 附加编译参数
     extra_compile_parameter = db.Column(db.Text, default="", nullable=False)
+    # 创建日期
+    create_time = db.Column(db.DateTime, nullable=False)
 
     def as_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(
