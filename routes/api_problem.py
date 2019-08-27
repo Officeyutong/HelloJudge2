@@ -29,6 +29,8 @@ def problem_remove():
         Submission.problem_id == problem.id).delete()
     db.session.delete(problem)
     db.session.commit()
+    import shutil
+    shutil.rmtree(f"{config.UPLOAD_DIR}/{request.form['problem_id']}")
     return make_response(0, message="操作完成")
 
 
@@ -299,8 +301,6 @@ def update_problem():
     for subtask in data["subtasks"]:
         if len(subtask["testcases"]) == 0:
             return make_response(-1, message=f"子任务{subtask['name']}的测试点个数为0！")
-        if subtask["method"] == "sum" and (int(subtask["score"]) % len(subtask["testcases"]) != 0):
-            return make_response(-1, message="如果计分方式为取和，那么子任务分数必须为测试点个数的倍数")
         if subtask["score"] < len(subtask["testcases"]):
             return make_response(-1, message="测试点个数不得多于分数")
         if subtask["method"] == "min":

@@ -195,7 +195,7 @@ def show_contest():
             current["accepted_submit"] = submit_query.filter(
                 Submission.status == "accepted").count()
         if has_login:
-            if contest.rank_criterion!="last_submit":
+            if contest.rank_criterion != "last_submit":
                 my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
                     Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.status.asc()).first()
             else:
@@ -276,6 +276,8 @@ def contest_update():
         return datetime.datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
     contest.start_time = from_second_to_datetime(data["start_time"])
     contest.end_time = from_second_to_datetime(data["end_time"])
+    if contest.end_time < contest.start_time:
+        return make_response(-1, message="开始时间必须早于结束时间")
     # print(contest.start_time, contest.end_time)
     db.session.commit()
     return make_response(0, message="完成")
@@ -424,7 +426,9 @@ def contest_ranklist():
     }
     """
     contest: Contest = Contest.by_id(request.form['contest_id'])
-    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
+    can_see_ranklist = contest.can_see_ranklist(session.get("uid")) 
+    if not can_see_ranklist:
+        return make_response(-1, message="你无权进行此操作")
     users = db.session.query(Submission.uid).filter(
         Submission.contest_id == contest.id).distinct().all()
     ranklist = []

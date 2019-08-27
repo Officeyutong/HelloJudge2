@@ -19,6 +19,7 @@
         problems = new Vue({
             delimiters: ['{[', ']}'],
             el: "#problems",
+            mixins: [baseMixin],
             data: {
                 data: null,
                 page_count: 0,
@@ -88,7 +89,11 @@
     <h1>Problems</h1>
 </div>
 <div class="ui stacked segment">
-    <div class="ui right aligned container" id="add-problem-button">
+
+    <div class="ui right aligned container" >
+        <a class="ui blue icon button" href="/import_from_syzoj" target="_blank">
+            <i class="ui plus icon"></i>从SYZOJ导入题目..
+        </a>
         <div class="ui green icon button">
             <i class="ui plus icon"></i>添加题目..
         </div>

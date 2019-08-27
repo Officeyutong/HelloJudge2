@@ -28,5 +28,4 @@ socket = SocketIO(web_app)
 queue = celery.Celery(
     web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
 # logger.info("Starting server...")
-executor = ThreadPoolExecutor(3)
 import routes

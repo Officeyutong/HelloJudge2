@@ -8,3 +8,4 @@ celery
 redis
 mysql-connector-python
 jsonpickle
+pyyaml

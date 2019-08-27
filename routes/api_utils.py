@@ -63,3 +63,164 @@ def get_supported_lang():
             "id": file.replace(".py", ""), "display": module.DISPLAY, "version": module.VERSION, "ace_mode": module.ACE_MODE
         })
     return make_response(0, list=result)
+
+
+@app.route("/api/import_from_syzoj", methods=["POST"])
+def import_from_syzoj():
+    """
+    从SYZOJ导入题目
+    参数:
+    url:str SYZOJ题目URL
+    返回
+    {
+        "code":0,
+        "uuid":'用于websocket的uuid',
+        "message":""
+    }
+    """
+    import urllib
+    import tempfile
+    import pathlib
+    import traceback
+    import zipfile
+    import shutil
+    import os
+    import yaml
+    from io import BytesIO
+    from utils import decode_json
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    user: User = User.by_id(session.get("uid"))
+    if not user.is_admin:
+        return make_response(-1, message="你没有权限执行此操作")
+    try:
+
+        with urllib.request.urlopen(f"{request.form['url']}/export") as urlf:
+            data = decode_json(urlf.read().decode())["obj"]
+        print("JSON data: {}".format(data))
+        problem = Problem(uploader_id=user.id,
+                          title=data["title"],
+                          content=data["description"],
+                          input_format=data["input_format"],
+                          output_format=data["output_format"],
+                          hint=data["limit_and_hint"],
+                          using_file_io=data["file_io"],
+                          input_file_name=data["file_io_input_name"],
+                          output_file_name=data["file_io_output_name"],
+                          )
+        problem.example = []
+        problem.hint = "### 样例\n" + data["example"]+"\n\n"+problem.hint
+        time_limit = int(data["time_limit"])
+        memory_limit = int(data["memory_limit"])
+        db.session.add(problem)
+        db.session.commit()
+
+        work_dir = pathlib.PurePath(tempfile.mkdtemp())
+        with urllib.request.urlopen(f"{request.form['url']}/testdata/download") as urlf:
+            pack = zipfile.ZipFile(BytesIO(urlf.read()))
+            pack.extractall(work_dir)
+            pack.close()
+        problem_data_dir = pathlib.PurePath(
+            f"{config.UPLOAD_DIR}/{problem.id}")
+        shutil.copytree(work_dir, problem_data_dir)
+        shutil.rmtree(work_dir)
+        # 更换新的word_dir
+        work_dir = problem_data_dir
+        for file in filter(lambda x: x.endswith(".lock"), os.listdir(work_dir)):
+            os.remove(work_dir/file)
+        file_list = []
+        for file in filter(lambda x: not x.endswith(".lock"), os.listdir(work_dir)):
+            with open(work_dir/(file+".lock"), "w") as f:
+                import time
+                last_modified_time = time.time()
+                f.write(str(last_modified_time))
+            file_list.append({
+                "name": file, "size": os.path.getsize(work_dir/file), "last_modified_time": last_modified_time
+            })
+        problem.files = file_list
+        pure_file_list = list(map(lambda x: x["name"], file_list))
+
+        for x in pure_file_list:
+            if x.startswith("spj_"):
+                problem.spj_filename = x
+                break
+        auto_generate = True
+        subtasks = []
+        if os.path.exists(work_dir/"data.yml"):
+            # 存在data.yml
+            with open(work_dir/"data.yml", "r", encoding="utf-8") as f:
+                data_obj = yaml.safe_load(f)
+                # data.yml中钦定spj
+
+                if "specialJudge" in data_obj:
+                    new_spj_filename = work_dir/(
+                        "spj_"+data_obj["specialJudge"]["language"]+"."+data_obj["specialJudge"]["fileName"].split(".")[-1])
+                    print(new_spj_filename)
+                    print(work_dir/data_obj["specialJudge"]["fileName"])
+                    shutil.move(
+                        work_dir/data_obj["specialJudge"]["fileName"], new_spj_filename)
+                    problem.spj_filename = new_spj_filename.name
+                if "subtasks" in data_obj:
+                    auto_generate = False
+
+                    def make_input(x):
+                        return data_obj["inputFile"].replace("#", str(x))
+
+                    def make_output(x):
+                        return data_obj["outputFile"].replace("#", str(x))
+
+                    for i, subtask in enumerate(data_obj["subtasks"]):
+                        print(subtask)
+                        subtasks.append({
+                            "name": f"Subtask{i+1}",
+                            "score": int(subtask["score"]),
+                            "method": subtask["type"],
+                            "time_limit": time_limit,
+                            "memory_limit": memory_limit,
+                            "testcases": []
+                        })
+                        testcases = subtasks[-1]["testcases"]
+                        score = subtasks[-1]["score"]//len(subtask["cases"])
+                        for testcase in subtask["cases"]:
+                            testcases.append({
+                                "input": make_input(testcase),
+                                "output": make_output(testcase),
+                                "full_score": score
+                            })
+                        testcases[-1]["full_score"] = subtasks[-1]["score"] - \
+                            score*(len(testcases)-1)
+        if auto_generate:
+            # 不存在data.yml，直接生成子任务
+            input_files = list(
+                filter(lambda x: x.endswith(".in"), pure_file_list))
+            output_files = list(
+                filter(lambda x: x.endswith(".out") or x.endswith(".ans"), pure_file_list))
+            if len(input_files) == len(output_files):
+                pass
+            for i, file in enumerate(input_files):
+                pure_file_name = file[:file.rindex(".")]
+                subtasks.append({
+                    "name": f"Subtask{i+1}",
+                    "score": 100//len(input_files),
+                    "method": "sum",
+                    "time_limit": time_limit,
+                    "memory_limit": memory_limit,
+                    "testcases": [{"full_score": 100//len(input_files), "input": file, "output": f"{pure_file_name}.ans" if f"{pure_file_name}.ans" in output_files else f"{pure_file_name}.out"}],
+                    "comment": ""
+                })
+            diff = 100-sum(map(lambda x: x["score"], subtasks))
+            subtasks[-1]["score"] += diff
+            subtasks[-1]["testcases"][0]["full_score"] += diff
+        for file in filter(lambda x: x.endswith(".lock"), os.listdir(work_dir)):
+            os.remove(work_dir/file)
+        for file in filter(lambda x: not x.endswith(".lock"), os.listdir(work_dir)):
+            with open(work_dir/(file+".lock"), "w") as f:
+                import time
+                last_modified_time = time.time()
+                f.write(str(last_modified_time))
+        problem.files = generate_file_list(problem.id)
+        problem.subtasks = subtasks
+        db.session.commit()
+    except Exception:
+        return make_response(-1, message=traceback.format_exc())
+    return make_response(0, problem_id=problem.id)

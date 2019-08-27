@@ -105,14 +105,19 @@ def view_reset_password(token):
 
 @app.route("/team")
 def view_team_list():
-    return render_template("/team/team_list.html")
+    return render_template("team/team_list.html")
 
 
 @app.route("/team/<int:id>")
 def view_team(id):
-    return render_template("/team/team.html")
+    return render_template("team/team.html")
 
 
 @app.route("/edit_team/<int:id>")
 def view_edit_team(id):
-    return render_template("/team/edit_team.html")
+    return render_template("team/edit_team.html")
+
+
+@app.route("/import_from_syzoj")
+def view_import_from_syzoj():
+    return render_template("import_from_syzoj.html")

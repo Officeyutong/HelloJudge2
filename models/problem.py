@@ -31,12 +31,12 @@ class Problem(db.Model):
     # 编译时提供的文件列表,这些文件将会在编译的时候和程序放在一起
     provides = db.Column(JsonPickle, default=[])
     # 子任务安排
-    # testcases:[{"input":"a.in","output":"b.out","full_score":"测试点满分"}]
+    # testcases:[{"input":"a.in","output":"b.out"}]
     subtasks = db.Column(JsonPickle, default=[
                          {"name": "Subtask1", "score": 40, "method": "min", "testcases": [], "time_limit":1000, "memory_limit":512, "comment":"这里是注释"}])
     # 题目是否公开
     public = db.Column(db.Boolean, default=False)
-    # spj文件名
+    # spj文件名,留空以不使用
     spj_filename = db.Column(db.String(20), default="")
     # 使用文件输入输出
     using_file_io = db.Column(db.Boolean, default=False)
