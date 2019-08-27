@@ -145,6 +145,20 @@
                         }
                         window.location.href = "/show_submission/" + ctx.submission_id;
                     })
+                }, removeProblem() {
+                    $("#warning-modal").modal({
+                        onApprove: function () {
+                            $.post("/api/problem/remove", { problem_id: show_problem.data.id }).done(ctx => {
+                                ctx = JSON.parse(ctx);
+                                if (ctx.code) {
+                                    showErrorModal(ctx.message);
+                                    return;
+                                }
+                                window.location.href = "/";
+                            })
+                        },
+                        closable: false
+                    }).modal("show");
                 }
             }, watch: {
             }, computed: {
@@ -370,7 +384,9 @@
                         <tr>
                             <td>操作</td>
                             <td>
-                                <a :href="'/problem_edit/'+data.id" target="_blank">编辑</a>
+                                <a class="ui very tiny blue button" :href="'/problem_edit/'+data.id" target="_blank">编辑</a>
+                                <div class="ui very tiny red button" v-on:click="removeProblem" v-if="base.uid==data.uploader_id||base.isAdmin">删除</div>
+
                             </td>
                         </tr>
                     </tbody>
@@ -421,6 +437,24 @@
                 <i class="checkmark icon"></i>
                 返回主页
             </div>
+        </div>
+    </div>
+</div>
+<div class="ui modal" id="warning-modal">
+    <div class="ui header">
+        警告
+    </div>
+    <div class="content">
+        <p>删除题目会发生以下后果</p>
+        <p>1.所有关于该题目的提交会被删除</p>
+        <p>2.所有现在正在使用该题目的将会无法正常访问</p>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">
+            确定
+        </div>
+        <div class="ui blue cancel button">
+            取消
         </div>
     </div>
 </div>

@@ -34,3 +34,12 @@ def handle_notification(data):
     data:{"uid":用户ID}
     """
     join_room("notification:"+str(data["uid"]))
+
+
+@socket.on("init", namespace="/ws/import")
+def handle_import(data):
+    """
+    用于实时显示从SYZOJ的导入进度
+    data:{"uuid":'uuid'}
+    """
+    join_room("import:"+str(data["uuid"]))

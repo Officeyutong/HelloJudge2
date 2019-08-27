@@ -9,6 +9,29 @@ from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
 
+@app.route("/api/problem/remove", methods=["POST"])
+def problem_remove():
+    """
+    删除题目
+    problem_id:int 题目
+    {
+        "code":0,
+        "message":"qwq"
+    }
+    """
+    problem: Problem = Problem.by_id(request.form["problem_id"])
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    user: User = User.by_id(session.get("uid"))
+    if not user.is_admin and user.id != problem.uploader_id:
+        return make_response(-1, message="你没有权限执行此操作")
+    db.session.query(Submission).filter(
+        Submission.problem_id == problem.id).delete()
+    db.session.delete(problem)
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
 @app.route("/api/regenerate_filelist", methods=["POST"])
 def regenerate_filelist():
     """

@@ -38,7 +38,7 @@ def rejudge():
 @app.route("/api/submit", methods=["POST"])
 def submit():
     """
-    提交代码\答案
+    提交代码/答案
     参数:
         problem_id:int 题目ID
         code:str 代码
