@@ -364,6 +364,10 @@
                             <td>{[data.extra_compile_parameter]}</td>
                         </tr>
                         <tr>
+                            <td>评测方式</td>
+                            <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
+                        </tr>
+                        <tr>
                             <td>操作</td>
                             <td>
                                 <a :href="'/problem_edit/'+data.id" target="_blank">编辑</a>

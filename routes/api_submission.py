@@ -199,7 +199,7 @@ def submission_list():
     for f in filter:
         if not f:
             continue
-        print(f)
+        # print(f)
         key, value = f.split("=")
         key = key.strip()
         if not key:

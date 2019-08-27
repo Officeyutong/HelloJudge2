@@ -11,6 +11,7 @@ import logging
 from datetime import timedelta
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
+from concurrent.futures import ThreadPoolExecutor
 import os
 import celery
 web_app = flask.Flask("HelloJudge2")
@@ -27,4 +28,5 @@ socket = SocketIO(web_app)
 queue = celery.Celery(
     web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
 # logger.info("Starting server...")
+executor = ThreadPoolExecutor(3)
 import routes

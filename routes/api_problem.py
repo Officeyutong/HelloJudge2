@@ -9,6 +9,42 @@ from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
 
+@app.route("/api/regenerate_filelist", methods=["POST"])
+def regenerate_filelist():
+    """
+    重新生成文件列表
+    problem_id:int 题目ID
+    {
+        "code":""
+        "data":[
+            "新生成的文件列表"
+        ]
+    }
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    user: User = User.by_id(session.get("uid"))
+    problem: Problem = Problem.by_id(request.form["problem_id"])
+    if not user.is_admin and user.id == problem.uploader_id:
+        return make_response(-1, message="你没有权限执行此操作")
+    import pathlib
+    import os
+    import shutil
+    path = pathlib.PurePath(config.UPLOAD_DIR)/str(problem.id)
+    os.makedirs(path, exist_ok=True)
+    for file in filter(lambda x: x.endswith(".lock"), os.listdir(path)):
+        os.remove(path/file)
+    for file in filter(lambda x: not x.endswith(".lock"), os.listdir(path)):
+        with open(path/(file+".lock"), "w") as f:
+            import time
+            f.write(str(time.time()))
+    from utils import generate_file_list
+    file_list = generate_file_list(problem.id)
+    problem.files = file_list
+    db.session.commit()
+    return make_response(0, data=file_list)
+
+
 @app.route("/api/get_problem_info", methods=["POST"])
 def get_problem_info():
     """
@@ -28,7 +64,7 @@ def get_problem_info():
                 "output_format":"输出格式",
                 "hint":"数据范围与提示",
                 "example":"样例,形如[{'input':'xxx','output':'xxx'}]",
-                "files":["a.in","a.out"],//不包括具体的二进制数据！
+                "files":[{"last_modified_time":"time.time()","name":"1.in","size":"bytes"}],//不包括具体的二进制数据！
                 "subtasks":[
                          {"name": "Subtask1", "score": 40, "method": "min", "files": [], "time_limit":1000, "memory_limit":512}].
                 "last_code":"qwq",//上一次提交的代码,
@@ -144,7 +180,7 @@ def download_file(id: int, filename: str):
             User.id == session.get("uid")).one()
         if not problem.public and not user.is_admin and user.id != problem.writer_id:
             flask.abort(403)
-        if problem.public and not user.is_admin and user.id != problem.writer_id and filename not in problem.downloads:
+        if problem.public and not user.is_admin and user.id != problem.uploader_id and filename not in problem.downloads:
             flask.abort(403)
     else:
         if not problem.public or filename not in problem.downloads:

@@ -28,6 +28,17 @@
                 }
             },
             methods: {
+                regenerateFileList() {
+                    $.post("/api/regenerate_filelist", { problem_id: this.data.id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        this.files = ctx.data;
+                        window.location.reload();
+                    });
+                },
                 auto_generate: function () {
                     $("#auto-generate-modal").modal({
                         onApprove: function () {
@@ -225,7 +236,7 @@
                 <div class="ui header">
                     <h3>文件列表</h3>
                 </div>
-                <div >
+                <div>
                     <table class="ui table">
                         <thead>
                             <tr>
@@ -278,6 +289,7 @@
                             v-bind:class="{loading:uploading}">
                             上传..
                         </div>
+                        <div class="ui blue button" v-on:click="regenerateFileList">重新生成文件列表</div>
                     </div>
                     <div class="ui header">
                         <h3>评测数据设定</h3>

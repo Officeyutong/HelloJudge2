@@ -195,8 +195,12 @@ def show_contest():
             current["accepted_submit"] = submit_query.filter(
                 Submission.status == "accepted").count()
         if has_login:
-            my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
-                Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.status.desc()).first()
+            if contest.rank_criterion!="last_submit":
+                my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
+                    Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.status.asc()).first()
+            else:
+                my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
+                    Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.id.desc()).first()
             if my_best_submit:
                 current["my_submit"] = my_best_submit.id
                 current["status"] = my_best_submit.status
