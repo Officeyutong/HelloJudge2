@@ -119,6 +119,7 @@ def import_from_syzoj():
     从SYZOJ导入题目
     参数:
     url:str SYZOJ题目URL
+    willPublic:int 新题目是否公开
     返回
     {
         "code":0,
@@ -159,6 +160,8 @@ def import_from_syzoj():
                           output_file_name=data["file_io_output_name"],
                           create_time=datetime.datetime.now()
                           )
+        if request.form["willPublic"].lower() == "true":
+            problem.public = True
         problem.example = []
         problem.hint = "### 样例\n" + \
             data["example"]+"\n\n### Hint\n"+problem.hint

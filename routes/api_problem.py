@@ -30,7 +30,8 @@ def problem_remove():
     db.session.delete(problem)
     db.session.commit()
     import shutil
-    shutil.rmtree(f"{config.UPLOAD_DIR}/{request.form['problem_id']}",ignore_errors=True)
+    shutil.rmtree(
+        f"{config.UPLOAD_DIR}/{request.form['problem_id']}", ignore_errors=True)
     return make_response(0, message="操作完成")
 
 
@@ -138,7 +139,7 @@ def get_problem_info():
             if any_submit.count():
                 result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
-    result["create_time"]=str(result["create_time"])
+    result["create_time"] = str(result["create_time"])
     return make_response(0, data=result)
 
 

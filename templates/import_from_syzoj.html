@@ -16,7 +16,7 @@
                 successMessage: "",
                 url: "",
                 running: false,
-                message: ""
+                message: "", willPublic: false, openInNewTab: true
             }, methods: {
 
                 start() {
@@ -24,7 +24,7 @@
 
                     this.message = "开始导入。请查看服务器后台以获取实时状态。导入完成后此处将显示新的题目ID。";
                     this.errorMessage = this.successMessage = "";
-                    $.post("/api/import_from_syzoj", { url: this.url }).done(ctx => {
+                    $.post("/api/import_from_syzoj", { url: this.url, willPublic: this.willPublic }).done(ctx => {
                         ctx = JSON.parse(ctx);
 
                         this.errorMessage = "";
@@ -38,7 +38,9 @@
                             return;
                         }
                         // this.successMessage = ctx.message;
-                        window.location.href = "/show_problem/" + ctx.problem_id;
+                        if (this.openInNewTab)
+                            window.open("/show_problem/" + ctx.problem_id, "_blank")
+                        else window.location.href = "/show_problem/" + ctx.problem_id;
                     });
                 }
             }
@@ -57,6 +59,19 @@
                     <label>SYZOJ题目地址</label>
                     <input type="text" placeholder="SYZOJ题目地址" v-model="url">
                 </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="willPublic">
+                        <label>导入后公开</label>
+                    </div>
+                </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="openInNewTab">
+                        <label>在新标签页打开</label>
+                    </div>
+                </div>
+
                 <div class="ui positive message" v-if="message!=''">
                     <div class="header">工作中</div>
                     <p>{[message]}</p>
