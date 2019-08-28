@@ -299,6 +299,10 @@
             <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(email)"></img>
             <span>{[username]}</span>
         </a>
+        <a class="item" :href="'/profile_edit/'+uid" v-if="is_login" target="_blank">
+            个人信息编辑..
+        </a>
+        
         <a class="item" v-on:click="logout" v-if="is_login"><i class="x icon"></i>登出</a>
     </div>
     <div class="pusher" style="background-color: rgb(236, 233, 233);">

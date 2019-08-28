@@ -1,5 +1,7 @@
 from main import config
-def md5_with_salt(text: str, salt: str)->str:
+
+
+def md5_with_salt(text: str, salt: str) -> str:
     import hashlib
     md5 = hashlib.md5()
     md5.update((text+salt).encode())
@@ -24,7 +26,7 @@ def make_response(code, **data):
     }, **data))
 
 
-def generate_file_list(pid: int)->list:
+def generate_file_list(pid: int) -> list:
     import os
     from main import basedir
     upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/" + str(pid))
@@ -32,7 +34,25 @@ def generate_file_list(pid: int)->list:
     files = filter(lambda x: not x.endswith(".lock"), os.listdir(upload_path))
     files = filter(lambda x: os.path.exists(
         os.path.join(upload_path, x+".lock")), files)
+
     def read_file(x):
         with open(x, "r") as f:
             return f.read()
     return list(map(lambda x: {"name": x, "last_modified_time": float(read_file(os.path.join(upload_path, x)+".lock")), "size": os.path.getsize(os.path.join(upload_path, x))}, files))
+
+
+def send_mail(content: str, subject: str,target:str) -> None:
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.header import Header
+    content = MIMEText((content), "plain", "utf-8")
+    # content["From"] = Header("HelloJudgeV2", "utf-8")
+    content["Subject"] = Header("重置密码", "utf-8")
+    smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
+    smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
+    try:
+        smtp_client.sendmail(config.EMAIL_SENDER, target,
+                             content.as_string())
+    except smtplib.SMTPException as ex:
+        return make_response(-1, message="发送失败！\n"+str(ex))
+    smtp_client.close()

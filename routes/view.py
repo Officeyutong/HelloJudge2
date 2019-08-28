@@ -72,6 +72,10 @@ def view_show_discussion(id):
 def view_profile(id):
     return render_template("user/profile.html")
 
+@app.route("/profile_edit/<int:id>")
+def view_profile_edit(id):
+    return render_template("user/profile_edit.html")
+
 
 @app.route("/contest/<int:contest_id>")
 def view_contest(contest_id):

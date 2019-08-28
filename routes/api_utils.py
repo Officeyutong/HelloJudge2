@@ -273,5 +273,6 @@ def import_from_syzoj():
         problem.subtasks = subtasks
         db.session.commit()
     except Exception:
+        print(traceback.format_exc())
         return make_response(-1, message=traceback.format_exc())
     return make_response(0, problem_id=problem.id)

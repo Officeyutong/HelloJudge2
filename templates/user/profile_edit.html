@@ -1,0 +1,117 @@
+{%extends "base.html"%}
+{%block title%}
+用户资料编辑
+{%endblock%}
+{%block body%}
+<script>
+    let profile_edit;
+    $(document).ready(() => {
+
+        profile_edit = new Vue({
+            el: "#profile-edit",
+            delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                done: false, data: null, successMessage: "", errorMessage: "", loading: false, password: "", password2: ""
+            }, methods: {
+                submit() {
+                    this.errorMessage = this.successMessage = "";
+                    if (this.password != "" && this.password != this.password2) {
+                        this.failWithMessage("两次密码输入不一致！") ;
+                        return;
+                    }
+                    this.loading = true;
+                    $.post("/api/update_profile", {
+                        uid: this.data.id, data: JSON.stringify({
+                            username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
+                        })
+                    }).done(ctx => {
+                        this.loading = false;
+                        $("html,body").animate({
+                            scrollTop: 0
+                        });
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            this.errorMessage = ctx.message;
+                            return;
+                        }
+                        this.successMessage = ctx.message;
+                    });
+                }, failWithMessage(msg) {
+                    this.errorMessage = msg;
+                    $("html,body").animate({
+                        scrollTop: 0
+                    });
+
+                }
+            }, mounted() {
+                // if (!base.isLogin) {
+                //     showErrorModal("请先登录");
+                //     return;
+                // }
+            }
+        });
+        $.post("/api/get_user_profile", { uid: window.location.href.split("/").pop() }).done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                showErrorModal(ctx.message);
+                return;
+            }
+            profile_edit.data = ctx.data;
+            profile_edit.done = true;
+        });
+    });
+
+</script>
+<div style="top:10%;" id="profile-edit" v-if="done">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>用户资料编辑</h1>
+        </div>
+        <div class="ui segment stacked">
+            <div class="ui form" v-bind:class="{success:successMessage!='',error:errorMessage!=''}">
+                <div class="ui success message">
+                    <div class="header">完成</div>
+                    <p>{[successMessage]}</p>
+                </div>
+                <div class="ui error message">
+                    <div class="header">发生错误</div>
+                    <p>{[errorMessage]}</p>
+                </div>
+                <div class="ui field">
+                    <label>用户名</label>
+                    <input type="text" v-model="data.username">
+                </div>
+                <div class="ui field">
+                    <label>电子邮箱</label>
+                    <input type="text" v-model="data.email">
+                </div>
+                <div class="ui field">
+                    <label>个人简介</label>
+                    <textarea v-model="data.description" rows="10"></textarea>
+                </div>
+                <div class="ui field">
+                    <label>头像</label>
+                    请前往:<a href="https://en.gravatar.com/">https://en.gravatar.com/</a>进行更改.
+                </div>
+                <div class="ui divider"></div>
+                <div class="ui field">
+                    <label>更改密码(不需要更改请留空)</label>
+                    <div class="two fields">
+                        <div class="ui field">
+                            <label>密码</label>
+                            <input type="password" v-model="password">
+                        </div>
+                        <div class="ui field">
+                            <label>重复密码</label>
+                            <input type="password" v-model="password2">
+                        </div>
+                    </div>
+                </div>
+                <div class="ui divider"></div>
+                <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="submit">提交</div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

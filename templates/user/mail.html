@@ -1,0 +1,34 @@
+{%extends "base.html"%}
+{%block title%}
+私信
+{%endblock%}
+{%block body%}
+<script>
+    let mail;
+    $(document).ready(() => {
+        
+        mail = new Vue({
+            el: "#mail",
+            delimiters: ['{[', ']}'],
+            data: {
+                done:false
+            }, methods: {
+
+            }
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 500px;">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>私信</h1>
+        </div>
+        <div class="ui stack segment">
+            <div id="mail" class="ui form" v-bind:class="{error:error_message!=''}">
+                
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

@@ -131,22 +131,13 @@ def require_reset_password():
         return make_response(-1, message="用户名或邮箱错误")
     user: User = query.one()
     user.reset_token = str(uuid.uuid1())
-
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.header import Header
-    content = MIMEText(config.RESET_PASSWORD_EMAIL.format(
-        reset_token=user.reset_token), "plain", "utf-8")
-    # content["From"] = Header("HelloJudgeV2", "utf-8")
-    content["Subject"] = Header("重置密码", "utf-8")
-    smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
-    smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
+    from utils import send_mail
     try:
-        smtp_client.sendmail(config.EMAIL_SENDER, user.email,
-                             content.as_string())
-    except smtplib.SMTPException as ex:
-        return make_response(-1, message="发送失败！\n"+str(ex))
-    smtp_client.close()
+        send_mail(config.RESET_PASSWORD_EMAIL.format(
+            reset_token=user.reset_token), "重置密码", user.email)
+    except ex:
+        import traceback
+        return make_response(-1, message=traceback.format_exc())
     db.session.commit()
     return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")
 
@@ -191,6 +182,7 @@ def get_user_profile():
             "code":0,//非0表示调用成功
             "message":"qwq"//code非0的时候表示错误信息
             "data":{
+                "id":"用户ID"
                 "username":"用户名",
                 "email":"邮箱",
                 "description":"描述",
@@ -227,3 +219,43 @@ def get_user_profile():
             contest_name = "比赛不存在"
         item["contest_name"] = contest_name
     return make_response(0, data=ret)
+
+
+@app.route("/api/update_profile", methods=["POST"])
+def update_profile():
+    """
+    更新个人信息
+    {
+        "uid":"用户ID",
+        "data":{
+            "username":"用户名",
+            "email":"电子邮件",
+            "description":"个人简介",
+            "changePassword":"是否更改密码",
+            "newPassword":"新密码"
+        }
+    }
+    {
+        "code":0,"message":"qwq"
+    }
+    """
+    import re
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    operator: User = User.by_id(session.get("uid"))
+    user: User = User.by_id(request.form["uid"])
+    if user.id != operator.id and not operator.is_admin:
+        return make_response(-1, message="你无权进行此操作")
+    data: dict = decode_json(request.form["data"])
+    regex = re.compile(config.USRENAME_REGEX)
+    if not regex.search(data["username"]):
+        return make_response(-1, message="用户名必须符合以下正则表达式: {}".format(config.USRENAME_REGEX))
+    if not re.compile(r"(.+)@(.+)").search(data["email"]):
+        return make_response(-1, message="请输入合法的用户名")
+    user.username = data["username"]
+    user.email = data["email"]
+    user.description = data["description"]
+    if data["changePassword"]:
+        user.password = data["newPassword"]
+    db.session.commit()
+    return make_response(0, message="操作完成")
