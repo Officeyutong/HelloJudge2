@@ -71,9 +71,9 @@ def view_show_discussion(id):
 @app.route("/profile/<int:id>")
 def view_profile(id):
     return render_template("user/profile.html")
-
+@app.route("/profile_edit/")
 @app.route("/profile_edit/<int:id>")
-def view_profile_edit(id):
+def view_profile_edit(id=None):
     return render_template("user/profile_edit.html")
 
 
@@ -125,3 +125,7 @@ def view_edit_team(id):
 @app.route("/import_from_syzoj")
 def view_import_from_syzoj():
     return render_template("import_from_syzoj.html")
+
+@app.route("/help")
+def view_help():
+    return render_template("help.html")

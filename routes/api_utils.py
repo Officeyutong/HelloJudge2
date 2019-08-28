@@ -144,8 +144,8 @@ def import_from_syzoj():
         return make_response(-1, message="你没有权限执行此操作")
     try:
 
-        with urllib.request.urlopen(f"{request.form['url']}/export") as urlf:
-            data = decode_json(urlf.read().decode())["obj"]
+        with requests.get(f"{request.form['url']}/export") as urlf:
+            data = decode_json(urlf.content.decode())["obj"]
         print("JSON data: {}".format(data))
         import datetime
         problem = Problem(uploader_id=user.id,
@@ -160,7 +160,8 @@ def import_from_syzoj():
                           create_time=datetime.datetime.now()
                           )
         problem.example = []
-        problem.hint = "### 样例\n" + data["example"]+"\n\n### Hint\n"+problem.hint
+        problem.hint = "### 样例\n" + \
+            data["example"]+"\n\n### Hint\n"+problem.hint
         time_limit = int(data["time_limit"])
         memory_limit = int(data["memory_limit"])
         db.session.add(problem)
@@ -276,3 +277,8 @@ def import_from_syzoj():
         print(traceback.format_exc())
         return make_response(-1, message=traceback.format_exc())
     return make_response(0, problem_id=problem.id)
+
+
+@app.route("/api/get_help_markdown", methods=["POST", "GET"])
+def get_help_markdown():
+    return send_file("help.md")

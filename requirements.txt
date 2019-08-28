@@ -9,3 +9,4 @@ redis
 mysql-connector-python
 jsonpickle
 pyyaml
+requests

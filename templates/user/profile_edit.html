@@ -17,7 +17,7 @@
                 submit() {
                     this.errorMessage = this.successMessage = "";
                     if (this.password != "" && this.password != this.password2) {
-                        this.failWithMessage("两次密码输入不一致！") ;
+                        this.failWithMessage("两次密码输入不一致！");
                         return;
                     }
                     this.loading = true;
@@ -45,13 +45,11 @@
 
                 }
             }, mounted() {
-                // if (!base.isLogin) {
-                //     showErrorModal("请先登录");
-                //     return;
-                // }
+
             }
         });
-        $.post("/api/get_user_profile", { uid: window.location.href.split("/").pop() }).done(ctx => {
+        let uid = window.location.href.split("/").pop();
+        $.post("/api/get_user_profile", { uid: uid }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
                 showErrorModal(ctx.message);

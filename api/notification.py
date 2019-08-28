@@ -23,7 +23,7 @@ def send_notification(uid: str, text: str, send_message: bool):
         mail.time = datetime.now()
         emit("mail", {
             "from_id": 0, "to_id": uid, "text": text, "time": str(mail.time)
-        }, namespace="/ws/mail", room=make_room_name(0, to_id))
+        }, namespace="/ws/mail", room=make_room_name(0, mail.to_id))
         db.session.add(mail)
         db.session.commit()
     if f"mail:{uid}" not in rooms():
