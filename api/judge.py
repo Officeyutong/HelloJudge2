@@ -28,8 +28,8 @@ def push_to_queue(submission_id):
                     "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT,
                     "extra_compile_parameter": problem.extra_compile_parameter,
                     "auto_sync_files": config.AUTO_SYNC_FILES
-
                     }])
+    print(f"Push {submission_id} to queue done.")
     db.session.commit()
 # 更新评测状态
 
