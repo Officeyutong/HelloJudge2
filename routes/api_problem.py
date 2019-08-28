@@ -30,7 +30,7 @@ def problem_remove():
     db.session.delete(problem)
     db.session.commit()
     import shutil
-    shutil.rmtree(f"{config.UPLOAD_DIR}/{request.form['problem_id']}")
+    shutil.rmtree(f"{config.UPLOAD_DIR}/{request.form['problem_id']}",ignore_errors=True)
     return make_response(0, message="操作完成")
 
 
