@@ -6,6 +6,11 @@ from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
+@app.errorhandler(400)
+def err400(e):
+    import traceback
+    print(e)
+    raise e
 
 @app.route("/api/home_page", methods=["POST"])
 def home_page():
