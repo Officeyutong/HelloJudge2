@@ -27,6 +27,13 @@
                 current_page: 0,
                 page_menu: [],
                 search_keyword: ""
+            }, methods: {
+                getColor(public) {
+                    if (!public) return {
+                        color: "green"
+                    };
+                    return {};
+                }
             }
         });
         args = GetRequest();
@@ -90,7 +97,7 @@
 </div>
 <div class="ui stacked segment">
 
-    <div class="ui right aligned container" >
+    <div class="ui right aligned container">
         <a class="ui blue icon button" href="/import_from_syzoj" target="_blank">
             <i class="ui plus icon"></i>从SYZOJ导入题目..
         </a>
@@ -123,7 +130,7 @@
                 <tr v-for="item in data"
                     v-bind:class="{positive:item.status&&item.status=='accepted',negative:item.status&&item.status!='accepted'}">
                     <td class="center aligned" style="max-width: 80px;width:80px;">{[item.id]}</td>
-                    <td style="min-width: 400px;"><a :href="'/show_problem/'+item.id">{[item.title]}</a> </td>
+                    <td style="min-width: 400px;"><a :href="'/show_problem/'+item.id" v-bind:style="getColor(item.public)">{[item.title]}</a> </td>
                     <td>{[item.accepted_submit]} </td>
                     <td>{[item.total_submit]}</td>
                     <td>{[parseInt(item.accepted_submit/item.total_submit*100)]}%</td>
