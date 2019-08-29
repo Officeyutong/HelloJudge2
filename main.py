@@ -17,6 +17,7 @@ import celery
 web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+web_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # web_app.config["SQLALCHEMY_ECHO"] = config.DEBUG
 
 web_app.secret_key = config.SESSION_KEY
