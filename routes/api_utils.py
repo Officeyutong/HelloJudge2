@@ -47,7 +47,7 @@ def home_page():
         result["ranklist"].append({
             "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
         })
-    problems = db.session.query(Problem.title, Problem.id, Problem.create_time).order_by(
+    problems = db.session.query(Problem.title, Problem.id, Problem.create_time).filter(Problem.public == True).order_by(
         Problem.create_time.desc()).limit(config.HOMEPAGE_PROBLEMS).all()
     for item in problems:
         result["recent_problems"].append({
