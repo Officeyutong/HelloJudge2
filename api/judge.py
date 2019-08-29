@@ -14,7 +14,7 @@ def push_to_queue(submission_id):
     # {"subtask1":{"score":100,"status":"WA",testcases:[{"input":"1.in","output":"1.out","score":0,status:"WA","message":""}]}}
     submit.judge_result = dict()
     for item in problem.subtasks:
-        print(item)
+        # print(item)
         submit.judge_result[item["name"]] = {"score": 0,
                                              "status": "waiting",
                                              "testcases": list(map(lambda x: dict(**x, status="waiting", score=0, message="Judging..", time_cost=0, memory_cost=0), item["testcases"]))
@@ -29,7 +29,7 @@ def push_to_queue(submission_id):
                     "extra_compile_parameter": problem.extra_compile_parameter,
                     "auto_sync_files": config.AUTO_SYNC_FILES
                     }])
-    print(f"Push {submission_id} to queue done.")
+    # print(f"Push {submission_id} to queue done.")
     db.session.commit()
 # 更新评测状态
 
@@ -55,8 +55,8 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "judging"
     else:
         submit.status = "unaccepted"
-    print(
-        f"Update judge status for {submission_id} to {judge_result} ,judger = {judger},message={message}")
+    # print(
+    #     f"Update judge status for {submission_id} to {judge_result} ,judger = {judger},message={message}")
     for k, v in submit.judge_result.items():
         v["score"] = int(v["score"])
         for testcase in v["testcases"]:
