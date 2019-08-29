@@ -6,7 +6,7 @@ Java默认使用```javac Main.java {extra}```来编译。
 ### 个人信息
 可以前往在登陆后进行个人资料的编辑。
 
-个人简介支持```Markdown```与```KaTex```。
+个人简介支持```Markdown```与```KaTeX```。
 ### 头像
 请前往[https://en.gravatar.com/](https://en.gravatar.com/)并使用自己的邮箱注册后上传头像。
 
@@ -18,7 +18,7 @@ Java默认使用```javac Main.java {extra}```来编译。
 
 点击创建题目按钮后会打开一个新的题目页面，点击右侧编辑后即可进行编辑。
 
-题面支持```Markdown```与```LaTex```，分别使用```Showdown```与```KaTex```进行渲染。
+题面支持```Markdown```与```LaTeX```，分别使用```Showdown```与```KaTeX```进行渲染。
 
 Markdown语法可以参考[此处](https://github.com/showdownjs/showdown/wiki/Showdown's-Markdown-syntax).
 
