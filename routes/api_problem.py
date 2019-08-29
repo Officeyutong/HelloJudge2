@@ -299,7 +299,10 @@ def update_problem():
         return make_response(-1, message="你没有权限执行此操作")
     data = decode_json(request.form["data"])
     for subtask in data["subtasks"]:
-        subtask["score"] = int(subtask["score"])
+        try:
+            subtask["score"] = int(subtask["score"])
+        except Exception as ex:
+            return make_response(-1, message=f"子任务{subtask['name']}的分数非整数")
     for subtask in data["subtasks"]:
         if len(subtask["testcases"]) == 0:
             return make_response(-1, message=f"子任务{subtask['name']}的测试点个数为0！")
