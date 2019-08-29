@@ -4,10 +4,6 @@ from main import socket, web_app, config, db
 from flask_socketio import emit, send, join_room
 
 
-@socket.on_error_default
-def ws_err(e):
-    print(e)
-    raise e
 
 @socket.on("init", namespace="/ws/submission")
 def handle_submission(data):
