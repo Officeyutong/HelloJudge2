@@ -84,11 +84,12 @@
                     <div class="header">成功</div>
                     <p>{[successMessage]}</p>
                 </div>
-                <div class="ui warning message">
+                <div class="ui  message">
                     <div class="header">警告</div>
                     <p>目前已知问题:</p>
                     <p>1.由于HelloJudge2目前仅支持传统题，所以从SYZOJ导入的提交答案题和交互题无法正常使用。</p>
                     <p>2.暂不支持SYZOJ的附加文件.</p>
+                    <p>3.不兼容SYZOJ的SPJ</p>
                     <!-- <p>2.</p> -->
                 </div>
                 <div class="ui green button" v-on:click="start" v-bind:class="{loading:running}">
