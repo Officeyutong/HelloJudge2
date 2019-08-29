@@ -75,20 +75,20 @@
                     submission.problem_data = JSON.parse(ctx).data;
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;
-                        if (submission.data.status == "judging" || submission.data.status == "waiting") {
-                            socket = io(window.location.origin + "/ws/submission");
-                            console.log("WebSocket connected..");
-                            socket.emit("init", { "submission_id": submission_id });
-                            socket.on("update", (x) => {
-                                console.log("Websocket got ");
-                                console.log(x);
-                                submission.data.message = x.message;
-                                submission.data.judge_result = x.judge_result;
-                                submission.data.status = x.status;
-                                submission.data.score = x.score;
-                                // if (submission.data.status != "judging" && submission.data != "waiting") socket.close();
-                            });
-                        }
+                        // if (submission.data.status == "judging" || submission.data.status == "waiting") {
+                        //     socket = io(window.location.origin + "/ws/submission");
+                        //     console.log("WebSocket connected..");
+                        //     socket.emit("init", { "submission_id": submission_id });
+                        //     socket.on("update", (x) => {
+                        //         console.log("Websocket got ");
+                        //         console.log(x);
+                        //         submission.data.message = x.message;
+                        //         submission.data.judge_result = x.judge_result;
+                        //         submission.data.status = x.status;
+                        //         submission.data.score = x.score;
+                        //         // if (submission.data.status != "judging" && submission.data != "waiting") socket.close();
+                        //     });
+                        // }
 
                         submission.done = true;
                         submission.$nextTick(() => {
