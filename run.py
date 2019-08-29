@@ -1,3 +1,4 @@
 from main import *
 
-socket.run(web_app, port=config.PORT, host=config.HOST, debug=config.DEBUG)
+socket.run(web_app, port=config.PORT, host=config.HOST,
+           use_reloader=config.DEBUG, debug=True)
