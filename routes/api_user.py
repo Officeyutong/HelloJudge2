@@ -203,7 +203,7 @@ def get_user_profile():
     del ret["password"]
     del ret["reset_token"]
     problems = db.session.query(Submission.problem_id).filter(
-        Submission.uid == user.id and Submission.status == "AC").distinct().all()
+        Submission.uid == user.id and Submission.status == "accepted").distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
     ret["rating"] = user.get_rating()
     ret["register_time"] = str(ret["register_time"])
