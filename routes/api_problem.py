@@ -172,9 +172,24 @@ def upload_file(id):
     if not problem.public and not user.is_admin and user.id != problem.writer_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
+    import zipfile
+    from io import BytesIO
     upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/%d" % id)
     os.makedirs(upload_path, exist_ok=True)
+
+    def handle_zipfile(fileobj):
+        buf = BytesIO(fileobj.stream.read())
+        zipf = zipfile.ZipFile(buf)
+        for f in zipf.filelist:
+            if not f.is_dir() and "/" not in f.filename:
+                zipf.extract(f, upload_path)
+                with open(os.path.join(upload_path, f.filename)+".lock", "w") as file:
+                    import time
+                    file.write(f"{time.time()}")
     for file in request.files:
+        if request.files[file].filename.endswith(".zip"):
+            handle_zipfile(request.files[file])
+            continue
         request.files[file].save(os.path.join(
             upload_path, file))
         with open(os.path.join(upload_path, file)+".lock", "w") as file:

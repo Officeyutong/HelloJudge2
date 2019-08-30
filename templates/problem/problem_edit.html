@@ -19,7 +19,8 @@
                 done: false,
                 quickGenInput: "",
                 quickGenOutput: "",
-                quickGenScript: ""
+                quickGenScript: "",
+                autoExtract: false
 
             },
             computed: {
@@ -321,6 +322,7 @@
                             <label>上传文件</label>
                             <input type="file" multiple id="files" v-on:change="get_file">
                         </div>
+                        <p>当您上传的文件为zip压缩包时，将会自动解压并把根目录下的所有文件加入题目文件中</p>
                         <div class="ui small green submit button" v-on:click="upload"
                             v-bind:class="{loading:uploading}">
                             上传..
@@ -538,4 +540,5 @@
             </div>
         </div>
     </div>
-    {%endblock%}
+</div>
+{%endblock%}
