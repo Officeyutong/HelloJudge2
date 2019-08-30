@@ -9,6 +9,14 @@ from werkzeug.utils import secure_filename
 from typing import Tuple
 
 
+@app.before_request
+def banned_check():
+    if session.get("uid"):
+        user: User = User.by_id(session.get("uid"))
+        if user.bannad:
+            session.pop("uid")
+
+
 @app.route("/api/query_login_state", methods=["POST"])
 def query_login_state():
     """
@@ -54,6 +62,9 @@ def login():
         User.email == request.form["identifier"], User.username == request.form["identifier"])).filter(User.password == request.form["password"])
     if query.count() == 0:
         return make_response(-1, message="用户名或密码错误")
+    user: User = query.one()
+    if user.bannad:
+        return make_response(-1, message="此账户已被封禁.")
     session["uid"] = query.one().id
     session.permanment = True
     return make_response(0)

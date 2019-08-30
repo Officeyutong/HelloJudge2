@@ -1,0 +1,34 @@
+{%extends "base.html"%}
+{%block title%}
+后台管理
+{%endblock%}
+{%block body%}
+
+<script>
+    let admin;
+    $(document).ready(() => {
+        admin = new Vue({
+            el: "#admin",
+            delimiters: ['{[', ']}'],
+            data: {
+                data: null,
+                done: false
+            }, methods: {
+
+            }
+        });
+        $.post("/api/admin/show").done(ctx => {
+            ctx = JSON.parse(ctx);
+            if (ctx.code) {
+                showErrorModal(ctx.message);
+                return;
+            }
+            admin.data = ctx.data;
+            admin.done = true;
+        });
+    });
+</script>
+<div id="admin" v-if="done">
+
+</div>
+{%endblock%}

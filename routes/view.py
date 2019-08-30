@@ -129,3 +129,7 @@ def view_import_from_syzoj():
 @app.route("/help")
 def view_help():
     return render_template("help.html")
+
+@app.route("/admin")
+def view_admin():
+    return render_template("admin.html")

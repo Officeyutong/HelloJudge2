@@ -66,6 +66,7 @@ def regenerate_filelist():
             f.write(str(time.time()))
     from utils import generate_file_list
     file_list = generate_file_list(problem.id)
+    file_list.sort(key=lambda x: x["name"])
     problem.files = file_list
     db.session.commit()
     return make_response(0, data=file_list)
