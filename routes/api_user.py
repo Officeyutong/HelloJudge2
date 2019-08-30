@@ -5,7 +5,7 @@ from utils import *
 
 from models import *
 from sqlalchemy.sql.expression import *
-from werkzeug.utils import secure_filename
+# from werkzeug.utils import secure_filename
 from typing import Tuple
 
 
@@ -65,9 +65,23 @@ def login():
     user: User = query.one()
     if user.bannad:
         return make_response(-1, message="此账户已被封禁.")
+    if user.auth_token != "":
+        return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
     session["uid"] = query.one().id
     session.permanment = True
     return make_response(0)
+
+
+@app.route("/auth_email/<string:token>")
+def auth_email(token: str):
+    user: User = db.session.query(User).filter(User.auth_token == token)
+    if not user.count():
+        return 404
+    user = user.one()
+    user.auth_token = ""
+    db.session.commit()
+    import flask
+    return flask.redirect("/login")
 
 
 @app.route("/api/register", methods=["POST"])
@@ -87,8 +101,25 @@ def register():
     if session.get("uid") is not None:
         return make_response(-1, message="你已经登录了！")
     import re
+    import utils
     if re.match(config.USRENAME_REGEX, request.form["username"]) is None:
         return make_response(-1, message="用户名必须满足以下正则表达式:"+config.USRENAME_REGEX)
+    if config.REQUIRE_REGISTER_AUTH:
+        user = db.session.query(User).filter(
+            User.username == request.form["username"])
+        if user.count():
+            user = user.one()
+            next_query = db.session.query(User).filter(
+                User.email == request.form["email"])
+            if next_query.count() != 0 and next_query.one().username != request.form["username"]:
+                return make_response(-1, message="此邮箱已被使用")
+            if user.auth_token != "":
+                send_mail(config.REGISTER_AUTH_EMAIL.format(
+                    auth_token=user.auth_token), "验证邮件", request.form["email"])
+                user.email = request.form["email"]
+                db.session.commit()
+                return make_response(-1, message=f"验证邮件已经发送到您的新邮箱{request.form['email']}")
+
     query = db.session.query(User).filter(or_(
         User.email == request.form["email"], User.username == request.form["username"]))
     if query.count():
@@ -96,6 +127,14 @@ def register():
     from datetime import datetime
     user = User(username=request.form["username"],
                 email=request.form["email"], password=request.form["password"], register_time=datetime.now())
+    import uuid
+    if config.REQUIRE_REGISTER_AUTH:
+        user.auth_token = str(uuid.uuid1())
+        send_mail(config.REGISTER_AUTH_EMAIL.format(
+            auth_token=user.auth_token), "验证邮件", request.form["email"])
+        db.session.add(user)
+        db.session.commit()
+        return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
     db.session.add(user)
     db.session.commit()
     session.permanment = True
