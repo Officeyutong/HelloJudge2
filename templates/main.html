@@ -138,8 +138,14 @@
                         </tbody>
                     </table>
                 </div>
-
-
+                <div class="ui header">
+                    <h2>友情链接</h2>
+                </div>
+                <div class="ui stacked segment">
+                    <div class="ui list">
+                        <a v-for="item in data.friend_links" class="item" :href="item.url">{[item.name]}</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

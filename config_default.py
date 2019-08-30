@@ -67,3 +67,10 @@ REGISTER_AUTH_EMAIL = "请前往 http://[此处替换为网站地址]/auth_email
 FAIL_SUBMIT_PENALTY = 20
 # 是否允许私有题目
 ALLOW_PRIVATE_PROBLEMS = False
+# 友情链接
+FRIEND_LINKS = [
+    {
+        "name": "Libre OJ",
+        "url": "https://loj.ac"
+    }
+]

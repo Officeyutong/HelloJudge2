@@ -34,12 +34,17 @@ def home_page():
                 "title":"xxx",
                 "id":-1,
                 "time":""
+            ],
+            "friend_links":[
+                {
+                    "name":"qwq","url":"qwq"
+                }
             ]
         }
     }
     """
     result = {"broadcasts": [], "ranklist": [],
-              "recent_problems": [], "app_name": config.APP_NAME, "discussions": []}
+              "recent_problems": [], "app_name": config.APP_NAME, "discussions": [], "friend_links": config.FRIEND_LINKS}
     broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
         Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
     for item in broadcasts:
