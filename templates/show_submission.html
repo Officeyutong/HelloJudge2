@@ -73,6 +73,10 @@
             $.post("/api/get_user_profile", { uid: ctx.data.uid }).done(ctx => {
                 submission.user_profile = JSON.parse(ctx).data;
                 const done = function (ctx) {
+                    if (ctx.code) {
+                        showErrorModal(ctx.message);
+                        return;
+                    }
                     submission.problem_data = JSON.parse(ctx).data;
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;

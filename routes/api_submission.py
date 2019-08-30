@@ -72,6 +72,7 @@ def submit():
     import datetime
     submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
                         code=request.form["code"], status="waiting")
+    submit.public = problem.public
     db.session.add(submit)
     db.session.commit()
     from api.judge import push_to_queue

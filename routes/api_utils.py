@@ -6,6 +6,7 @@ from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 
+
 @app.route("/api/home_page", methods=["POST"])
 def home_page():
     """
@@ -16,7 +17,7 @@ def home_page():
                 {
                     "title":"xxx",
                     "id":"xxx",
-                    "date":'xxx'
+                    "time":'xxx'
                 }
             ],
             "ranklist":[
@@ -28,12 +29,17 @@ def home_page():
                 "title":"xxx",
                 "id":"xxx",
                 "create_time":"xxx"
+            ],
+            "discussions":[
+                "title":"xxx",
+                "id":-1,
+                "time":""
             ]
         }
     }
     """
     result = {"broadcasts": [], "ranklist": [],
-              "recent_problems": [], "app_name": config.APP_NAME}
+              "recent_problems": [], "app_name": config.APP_NAME, "discussions": []}
     broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
         Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
     for item in broadcasts:
@@ -51,6 +57,12 @@ def home_page():
     for item in problems:
         result["recent_problems"].append({
             "title": item.title, "id": item.id, "create_time": str(item.create_time)
+        })
+    discussions = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(Discussion.path.like("discussion.%")).order_by(Discussion.top.desc()).order_by(
+        Discussion.time.desc()).limit(config.HOMEPAGE_DISCUSSIONS).all()
+    for item in discussions:
+        result["discussions"].append({
+            "title": item.title, "id": item.id, "time": str(item.time)
         })
     return make_response(0, data=result)
 

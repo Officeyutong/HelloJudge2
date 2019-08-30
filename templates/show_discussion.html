@@ -26,7 +26,7 @@
                 <div class="column" style="width:65px;">
                     <img :src="'https://www.gravatar.com/avatar/'+md5(data.email)" class="ui small circular image"></img>
                 </div>
-                <div class="column" style="max-width: 700px;width:90%;">
+                <div class="column" style="max-width: 1000px;width:90%;">
                     <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.uid" target="_blank">{[data.username]}</a></div>
                     <div class="ui container" style="word-wrap: break-word;word-break: break-all">
                         <div class="ui segment" v-html="content">
@@ -127,7 +127,7 @@
 
     });
 </script>
-<div id="discussion" v-if="done" style="max-width: 700px;">
+<div id="discussion" v-if="done" style="max-width: 1000px;">
     <div class="ui header" style="margin-bottom: 50px;">
         <h2>{[data.title]}</h2>
     </div>
