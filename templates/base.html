@@ -96,7 +96,7 @@
                     ratio *= 100;
                     if (ratio <= 50) return "red";
                     else if (ratio <= 70) return "orange";
-                    else if (ratio < 100) return "yellow";
+                    else if (ratio < 100) return "darkorange";
                     else return "green";
                 }
             }, template: "<span :style=\"'font-weight: bold;color: '+get_text_color(score/full_score)\">{[score]}/{[full_score]}</span>"
