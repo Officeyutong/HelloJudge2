@@ -106,14 +106,14 @@ def get_problem_info():
             }
         }
     """
-    problem = db.session.query(Problem).filter(
+    problem: Problem = db.session.query(Problem).filter(
         Problem.id == int(request.form["id"]))
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
     if not problem.public and not session.get("uid"):
         return make_response(-1, message="你没有权限查看此题目")
-    if not problem.public and not db.session.query(User).filter(User.id == session.get("uid")).one().is_admin:
+    if not problem.public and not User.by_id(session.get("uid")).is_admin and int(session.get("uid")) != problem.uploader_id:
         return make_response(-1, message="你没有权限查看此题目")
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
@@ -169,7 +169,7 @@ def upload_file(id):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not problem.public and not user.is_admin and user.id != problem.writer_id:
+    if not problem.public and not user.is_admin and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
     import zipfile
@@ -221,7 +221,7 @@ def download_file(id: int, filename: str):
     if session.get("uid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if not problem.public and not user.is_admin and user.id != problem.writer_id:
+        if not problem.public and not user.is_admin and user.id != problem.uploader_id:
             flask.abort(403)
         if problem.public and not user.is_admin and user.id != problem.uploader_id and filename not in problem.downloads:
             flask.abort(403)
@@ -261,7 +261,7 @@ def remove_file():
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not problem.public and not user.is_admin and user.id != problem.writer_id:
+    if not problem.public and not user.is_admin and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
     upload_path = os.path.join(
@@ -302,7 +302,7 @@ def update_problem():
             "message":"qwq",//code非0的时候表示错误信息
         }
     """
-    problem = db.session.query(Problem).filter(
+    problem: Problem = db.session.query(Problem).filter(
         Problem.id == request.form["id"])
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
@@ -311,7 +311,7 @@ def update_problem():
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not user.is_admin and user.id != problem.writer_id:
+    if not user.is_admin and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     data = decode_json(request.form["data"])
     for subtask in data["subtasks"]:
@@ -333,6 +333,8 @@ def update_problem():
                 subtask["testcases"][i]["full_score"] = score
             subtask["testcases"][-1]["full_score"] = subtask["score"] - \
                 score*(len(subtask["testcases"])-1)
+    if not user.is_admin and problem.public == False and data["public"] == True:
+        return make_response(-1, message="你没有权限公开题目")
     for k, v in data.items():
         setattr(problem, k, v)
 
@@ -458,10 +460,11 @@ def create_problem():
         return make_response(-1, message="你尚未登录!")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not user.is_admin:
+    if not user.is_admin and not config.ALLOW_PRIVATE_PROBLEMS:
         return make_response(-1, message="你没有权限进行此操作")
     from datetime import datetime
-    problem = Problem(uploader_id=user.id, create_time=datetime.now())
+    problem = Problem(uploader_id=user.id,
+                      create_time=datetime.now(), public=False)
     db.session.add(problem)
     db.session.commit()
     return make_response(0, problem_id=problem.id)

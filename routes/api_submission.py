@@ -61,7 +61,7 @@ def submit():
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
     if not problem.public:
-        if not user.is_admin and user.id != problem.writer_id:
+        if not user.is_admin and user.id != problem.uploader_id:
             return make_response(-1, message="你没有权限执行此操作")
     import importlib
     try:
@@ -70,7 +70,7 @@ def submit():
         return make_response(-1, message="不支持的语言ID")
 
     import datetime
-    submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=True, contest_id=request.form["contest_id"],
+    submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=problem.public, contest_id=request.form["contest_id"],
                         code=request.form["code"], status="waiting")
     submit.public = problem.public
     db.session.add(submit)
