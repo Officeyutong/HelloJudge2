@@ -210,6 +210,7 @@
             sidebar = new Vue({
                 delimiters: ['{[', ']}'],
                 el: "#main-sidebar",
+                mixins: [baseMixin],
                 data: {
                     is_login: false,
                     username: "",
@@ -298,13 +299,19 @@
         <a class="item" href="/register" v-if="!is_login">
             或者注册...
         </a>
+        <a class="item" :href="'/profile_edit/'+uid" v-if="is_login" target="_blank">
+            <i class="address card icon"></i>
+            个人信息编辑..
+        </a>
+        <a class="item" href="/admin" v-if="base.isAdmin" target="_blank">
+            <i class="sitemap icon"></i>
+            后台管理..
+        </a>
         <a class="item" :href="'/profile/'+uid" v-if="is_login">
             <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(email)"></img>
             <span>{[username]}</span>
         </a>
-        <a class="item" :href="'/profile_edit/'+uid" v-if="is_login" target="_blank">
-            个人信息编辑..
-        </a>
+
 
         <a class="item" v-on:click="logout" v-if="is_login"><i class="x icon"></i>登出</a>
     </div>
