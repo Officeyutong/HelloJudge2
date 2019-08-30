@@ -16,7 +16,11 @@
                 success_message: "",
                 files: null,
                 uploading: false,
-                done: false
+                done: false,
+                quickGenInput: "",
+                quickGenOutput: "",
+                quickGenScript: ""
+
             },
             computed: {
                 file_list: function () {
@@ -28,6 +32,38 @@
                 }
             },
             methods: {
+                quickGenerateSubtask() {
+                    let arrays;
+                    try {
+                        arrays = eval(this.quickGenScript);
+                    } catch (err) {
+                        showErrorModal(err);
+                        return;
+                    }
+                    this.data.subtasks = [];
+                    const makeInput = x => this.quickGenInput.replace("#", String(x));
+                    const makeOutput = x => this.quickGenOutput.replace("#", String(x));
+                    let score = parseInt(100 / arrays.length);
+                    let lastScore = 100 - score * (arrays.length - 1);
+                    for (let i = 0; i < arrays.length; i++) {
+                        let array = arrays[i];
+                        let subtask = {
+                            name: "Subtask" + (i + 1),
+                            score: i != arrays.length - 1 ? score : lastScore,
+                            method: "sum",
+                            testcases: [],
+                            time_limit: 1000, memory_limit: 512, comment: ""
+                        };
+                        // let caseScore = parseInt(testcase.score / array.length);
+                        // let caseLastscore = testcase.score - caseScore * (array.length - 1);
+                        for (let j = 0; j < array.length; j++) {
+                            subtask.testcases.push({
+                                input: makeInput(array[j]), output: makeOutput(array[j])
+                            })
+                        }
+                        this.data.subtasks.push(subtask);
+                    }
+                },
                 regenerateFileList() {
                     $.post("/api/regenerate_filelist", { problem_id: this.data.id }).done(ctx => {
                         ctx = JSON.parse(ctx);
@@ -329,10 +365,35 @@
                         <div class="ui green button" v-on:click="submit">提交</div>
                     </div>
                     <div class="ui header">
+                        <h3>快速生成子任务</h3>
+                    </div>
+                    <div class="ui stacked segment">
+                        <div class="ui form">
+                            <div class="ui fields">
+                                <div class="ui field">
+                                    <label>输入文件名</label>
+                                    <input type="text" v-model="quickGenInput">
+                                </div>
+                                <div class="ui field">
+                                    <label>输出文件名</label>
+                                    <input type="text" v-model="quickGenOutput">
+                                </div>
+                            </div>
+
+                            <div class="ui field">
+                                <label>生成脚本</label>
+                                <textarea v-model="quickGenScript"></textarea>
+                            </div>
+                            <p>在文件名中使用#作为占位符.</p>
+                            <p style="color:red">进行本操作将会删除现有的所有子任务</p>
+                            <p>具体使用说明见帮助.</p>
+                            <div class="ui green submit button" v-on:click="quickGenerateSubtask">执行</div>
+                        </div>
+                    </div>
+                    <div class="ui header">
                         <h3>子任务设定</h3>
                     </div>
                     <div class="ui stacked segment">
-
                         <div class="ui form">
                             <div class="ui fields">
                                 <div class="ui field">
