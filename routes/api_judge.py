@@ -102,6 +102,7 @@ def judge_update():
     uuid:str 评测机uuid
     judge_result:dict 评测结果
     message:str 附加信息
+    extra_status:str 附加状态
     返回
     {
         "code":-1,//0表示调用成功
@@ -112,7 +113,7 @@ def judge_update():
         return make_response(-1, message="该评测机未认证")
     from api.judge import update_status
     update_status(int(request.form["submission_id"]), decode_json(request.form["judge_result"]),
-                  str(config.JUDGERS[request.form["uuid"]]), request.form.get("message", ""))
+                  str(config.JUDGERS[request.form["uuid"]]), request.form.get("message", ""), request.form["extra_status"])
     return make_response(0)
 
 

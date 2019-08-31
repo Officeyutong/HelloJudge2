@@ -34,7 +34,7 @@ def push_to_queue(submission_id):
 # 更新评测状态
 
 
-def update_status(submission_id: int, judge_result: dict, judger: str, message=""):
+def update_status(submission_id: int, judge_result: dict, judger: str, message="", extra_status=""):
     """
     更新某个提交测评测状态
     submission_id:int 提交ID
@@ -55,6 +55,8 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "judging"
     else:
         submit.status = "unaccepted"
+    if extra_status == "compile_error":
+        submit.status = "compile_error"
     # print(
     #     f"Update judge status for {submission_id} to {judge_result} ,judger = {judger},message={message}")
     for k, v in submit.judge_result.items():
