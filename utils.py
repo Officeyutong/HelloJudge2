@@ -10,7 +10,7 @@ def md5_with_salt(text: str, salt: str) -> str:
 
 def encode_json(obj):
     import json
-    encoder = json.JSONEncoder()
+    encoder = json.JSONEncoder(default=lambda x:str(x))
     return encoder.encode(obj)
 
 

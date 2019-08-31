@@ -154,6 +154,20 @@
                         <judge-status :status="data.status"></judge-status>
                     </td>
                 </tr>
+                <tr v-if="data.time_cost!=-1">
+                    <td>时间开销</td>
+                    <td>
+                        {[data.time_cost]} ms
+                    </td>
+                </tr>
+
+                <tr v-if="data.memory_cost!=-1">
+                    <td>空间开销</td>
+                    <td>
+                        {[data.memory_cost]} bytes
+                    </td>
+                </tr>
+
                 <tr>
                     <td>得分/总分</td>
                     <td>

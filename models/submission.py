@@ -1,5 +1,5 @@
 from main import db
-
+from typing import Tuple
 from ormtypes.json_pickle import JsonPickle
 
 
@@ -26,6 +26,18 @@ class Submission(db.Model):
     judge_result = db.Column(JsonPickle, default={})
     # 总分
     score = db.Column(db.Integer, default=0, nullable=False, index=True)
+    # 内存开销
+    memory_cost = db.Column(db.Integer, default=0, nullable=False)
+    # 时间开销
+    time_cost = db.Column(db.Integer, default=0, nullable=False)
+
+    def get_total_memory_time_cost(self) -> Tuple[int, int]:
+        memory, time = 0, 0
+        for subtask in self.judge_result.values():
+            for testcase in subtask["testcases"]:
+                time += testcase["time_cost"]
+                memory = max(memory, testcase["memory_cost"])
+        return memory, time
 
     def get_total_score(self):
         return sum(map(lambda x: x["score"], self.judge_result.values()))

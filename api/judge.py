@@ -74,4 +74,6 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
     print(
         f"Submission {submission_id} status updated to \n{judge_result}\nmessage {message},judger {judger}")
     submit.score = submit.get_total_score()
+    if submit.status in {"accepted", "unaccepted"}:
+        submit.memory_cost, submit.time_cost = submit.get_total_memory_time_cost()
     db.session.commit()

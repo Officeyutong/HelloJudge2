@@ -108,7 +108,9 @@ def get_submission_info():
             "message":"附加信息",
             "judger":"评测机名，非UUID",
             "score":"总分",
-            "ace_mode":"ACE.js语言ID"
+            "ace_mode":"ACE.js语言ID",
+            "time_cost":"时间开销",
+            "memory_cost":"内存开销"
         }
     }
     """
@@ -131,8 +133,11 @@ def get_submission_info():
         contest: Contest = Contest.by_id(submit.contest_id)
         if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not user.is_admin:
             ret["judge_result"] = {}
-            ret["status"] = "invisible"
+            ret["status"] = ret["status"] if ret["status"] in {
+                "compile_error"} else "invisible"
             ret["score"] = 0
+            ret["time_cost"] = -1
+            ret["memory_cost"] = -1
         for i, x in enumerate(contest.problems):
             if x["id"] == ret["problem_id"]:
                 ret["problem_id"] = f"contest:{contest.id},{i}"
@@ -223,7 +228,8 @@ def submission_list():
             "contest": submit.contest_id,
             "uid": submit.uid,
             "username": User.by_id(submit.uid).username,
-            "submit_time": str(submit.submit_time)
+            "submit_time": str(submit.submit_time),
+            "memory_cost": submit.memory_cost, "time_cost": submit.time_cost
         }
         if submit.contest_id != -1:
             contest: Contest = Contest.by_id(submit.contest_id)

@@ -150,7 +150,9 @@
                     <th class="center aligned" style="max-width: 80px;width:80px;">提交编号</th>
                     <th class="center aligned">题目</th>
                     <th>用户</th>
-                    <th>时间</th>
+                    <th>提交时间</th>
+                    <th>时间开销</th>
+                    <th>空间开销</th>
                     <th class="center aligned">状态</th>
                     <th>分数</th>
                     <th>比赛</th>
@@ -165,6 +167,8 @@
                             {[item.problem_title]}</a> </td>
                     <td><a :href="'/profile/'+item.uid">{[item.username]}</a></td>
                     <td>{[item.submit_time]}</td>
+                    <td>{[item.time_cost]} ms</td>
+                    <td>{[item.memory_cost]} bytes</td>
                     <td class="center aligned">
                         <a :href="'/show_submission/'+item.id" target="_blank">
                             <judge-status :status="item.status"></judge-status>
@@ -174,7 +178,6 @@
                             <score-label :score="item.score" :full_score="item.total_score"></score-label>
                         </a>
                     </td>
-
                     <td>
                         <a v-if="item.contest!=-1" :href="'/contest/'+item.contest">{[item.contest]}</a>
                     </td>
