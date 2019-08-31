@@ -29,7 +29,7 @@ class Discussion(db.Model):
 
     @staticmethod
     def by_id(id):
-        return db.session.query(Discussion).filter(Discussion.id == id).one()
+        return db.session.query(Discussion).filter(Discussion.id == id).one_or_none()
 
     @staticmethod
     def has(id):

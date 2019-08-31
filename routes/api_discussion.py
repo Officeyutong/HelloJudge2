@@ -28,6 +28,54 @@ def can_post_at(user: User, path: str):
     return True
 
 
+@app.route("/api/discussion/remove", methods=["POST"])
+def discussion_remove():
+    """
+    删除讨论
+    discussion_id:讨论ID
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    discussion: Discussion = Discussion.by_id(request.form["discussion_id"])
+    if not discussion:
+        return make_response(-1, message="讨论ID不存在")
+    user: User = User.by_id(session.get("uid"))
+    if not user.is_admin and user.id != discussion.uid:
+        return make_response(-1, message="你没有权限这样做")
+    db.session.delete(discussion)
+    db.session.commit()
+    return make_response(0, message="操作成功")
+
+
+@app.route("/api/discussion/update", methods=["POST"])
+def discussion_update():
+    """
+    更新讨论
+    id:讨论ID
+    content:内容
+    title:标题:
+    top:置顶
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    discussion: Discussion = Discussion.by_id(request.form["id"])
+    if not discussion:
+        return make_response(-1, message="讨论ID不存在")
+    user: User = User.by_id(session.get("uid"))
+    if not user.is_admin and user.id != discussion.uid:
+        return make_response(-1, message="你没有权限这样做")
+    import datetime
+    discussion.content = request.form["content"] + \
+        "\n\n最后编辑于"+str(datetime.datetime.now())
+    discussion.title = request.form["title"]
+    top = request.form["top"].lower() == "true"
+    if top and not user.is_admin:
+        return make_response(-1, message="你没有权限发送置顶讨论")
+    discussion.top = top
+    db.session.commit()
+    return make_response(0, message="操作成功")
+
+
 @app.route("/api/post_discussion", methods=["POST"])
 def post_discussion():
     """

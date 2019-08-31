@@ -14,14 +14,45 @@
         discussion = new Vue({
             el: "#discussion",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 done: false,
                 data: null,
                 path_name: "",
                 current_page: 0,
                 page_count: 0,
-                path: ""
-            }, computed: {
+                path: "", editing: false
+            },
+            methods: {
+                removeDiscussion(id) {
+                    $.post("/api/discussion/remove", { discussion_id: id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        window.location.reload();
+                    });
+                },
+                editDiscussion(id) {
+                    $.post("/api/get_discussion", { id: id }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            return;
+                        }
+                        post.text = ctx.data.content;
+                        post.title = ctx.data.title;
+                        post.top = ctx.data.top;
+                        post.editing = id;
+                        $("html,body").animate({
+                            scrollTop: 9999
+                        });
+
+                    });
+                },
+            },
+            computed: {
                 page_menu() {
                     const arr = new Array();
                     for (var i = 1; i <= this.page_count; i++) arr.push(i);
@@ -57,7 +88,7 @@
         });
         post = new Vue({
             data: {
-                text: "", error_message: "", success_message: "", sending: false, title: "", top: false
+                text: "", error_message: "", success_message: "", sending: false, title: "", top: false, editing: false
             },
             el: "#post",
             delimiters: ['{[', ']}'],
@@ -66,6 +97,21 @@
                     return converter.makeHtml(this.text);
                 }
             }, methods: {
+                update() {
+                    this.sending = true, this.error_message = "";
+                    this.success_message = "";
+                    $.post("/api/discussion/update", { id: this.editing, title: this.title, top: this.top, content: this.text }).done(ctx => {
+                        ctx = JSON.parse(ctx);
+                        this.sending = false;
+                        if (ctx.code) {
+                            showErrorModal(ctx.message);
+                            
+                            return;
+                        }
+                        this.success_message = "更新完成."
+
+                    });
+                },
                 send() {
                     const comp = this;
                     this.sending = true, this.error_message = "";
@@ -99,6 +145,7 @@
                     <th class="center aligned">时间</th>
                     <th class="center aligned">回复数</th>
                     <th class="center aligned">最新回复</th>
+                    <th>操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,6 +164,10 @@
                     </td>
                     <td class="center aligned">
                         {[data.last_comment_time]}
+                    </td>
+                    <td>
+                        <a v-if="base.isAdmin||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
+                        <a v-if="base.isAdmin||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
                     </td>
                 </tr>
 
@@ -165,8 +216,11 @@
     <div class="ui segment" v-html="preview_content">
 
     </div>
-    <div class="ui green icon button" v-on:click="send" v-bind:class="{loading:sending}">
+    <div class="ui green icon button" v-if="!editing" v-on:click="send" v-bind:class="{loading:sending}">
         <i class="send icon"></i>发送
+    </div>
+    <div class="ui green icon button" v-if="editing" v-on:click="update" v-bind:class="{loading:sending}">
+        <i class="send icon"></i>更新
     </div>
 </div>
 {%endblock%}
