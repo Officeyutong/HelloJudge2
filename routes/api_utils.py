@@ -52,7 +52,7 @@ def home_page():
             "title": item.title, "id": item.id, "time": str(item.time)
         })
     ranklist = db.session.query(User.id, User.description, User.username, User.rating).order_by(
-        User.rating.desc()).limit(config.HOMEPAGE_RANKLIST).all()
+        User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
     for item in ranklist:
         result["ranklist"].append({
             "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
