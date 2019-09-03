@@ -41,15 +41,15 @@ def generate_file_list(pid: int) -> list:
     return list(map(lambda x: {"name": x, "last_modified_time": float(read_file(os.path.join(upload_path, x)+".lock")), "size": os.path.getsize(os.path.join(upload_path, x))}, files))
 
 
-def send_mail(content: str, subject: str, target: str) -> None:
+def send_mail(content: str, subject: str, target: str, receiver_username="") -> None:
     import smtplib
     from email.mime.text import MIMEText
     from email.header import Header
     content = MIMEText((content), "plain", "utf-8")
     # content["From"] = Header("HelloJudgeV2", "utf-8")
     content["Subject"] = Header(subject, "utf-8")
-    content["From"] = Header(target, "utf-8")
-    content["To"] = Header(config.EMAIL_SENDER, "utf-8")
+    content["From"] = Header(f"HelloJudgeV2 <{config.EMAIL_SENDER}>", "utf-8")
+    content["To"] = Header(f"{receiver_username} <{target}>", "utf-8")
     smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
     smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
     try:
