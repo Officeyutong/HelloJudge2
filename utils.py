@@ -10,7 +10,7 @@ def md5_with_salt(text: str, salt: str) -> str:
 
 def encode_json(obj):
     import json
-    encoder = json.JSONEncoder(default=lambda x:str(x))
+    encoder = json.JSONEncoder(default=lambda x: str(x))
     return encoder.encode(obj)
 
 
@@ -48,6 +48,8 @@ def send_mail(content: str, subject: str, target: str) -> None:
     content = MIMEText((content), "plain", "utf-8")
     # content["From"] = Header("HelloJudgeV2", "utf-8")
     content["Subject"] = Header(subject, "utf-8")
+    content["From"] = Header(target, "utf-8")
+    content["To"] = Header(config.EMAIL_SENDER, "utf-8")
     smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
     smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
     try:
