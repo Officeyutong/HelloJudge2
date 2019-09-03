@@ -185,7 +185,7 @@ def require_reset_password():
     try:
         send_mail(config.RESET_PASSWORD_EMAIL.format(
             reset_token=user.reset_token), "重置密码", user.email)
-    except ex:
+    except Exception as ex:
         import traceback
         return make_response(-1, message=traceback.format_exc())
     db.session.commit()
