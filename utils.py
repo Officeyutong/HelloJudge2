@@ -49,13 +49,13 @@ def send_mail(content: str, subject: str, target: str, receiver_username="") -> 
 
     def my_format(s):
         name, addr = parseaddr(s)
-        return formataddr((Header(name, "utf-8").encode(), addr.encode("utf-8")))
+        return formataddr((Header(name, "utf-8"), addr.encode("utf-8")))
 
     content = MIMEText((content), "plain", "utf-8")
     # content["From"] = Header("HelloJudgeV2", "utf-8")
     content["Subject"] = Header(subject, "utf-8")
     content["From"] = my_format(f"HelloJudgeV2 <{config.EMAIL_SENDER}>")
-    content["To"] =my_format(f"{receiver_username} <{target}>")
+    content["To"] = my_format(f"{receiver_username} <{target}>")
     smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
     smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
     try:
