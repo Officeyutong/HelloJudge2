@@ -49,7 +49,7 @@ def send_mail(content: str, subject: str, target: str, receiver_username="") -> 
 
     def my_format(s):
         name, addr = parseaddr(s)
-        return formataddr((Header(name, "utf-8"), addr.encode("utf-8")))
+        return formataddr((Header(name, "utf-8"), addr))
 
     content = MIMEText((content), "plain", "utf-8")
     # content["From"] = Header("HelloJudgeV2", "utf-8")
