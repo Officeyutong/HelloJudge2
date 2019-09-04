@@ -160,7 +160,8 @@
         $.post("/api/get_judge_status").done(ctx => {
             ctx = JSON.parse(ctx);
             judge_status.done = true;
-            judge_status.data = ctx.data;
+            Vue.set(judge_status, "data", ctx.data);
+            // judge_status.data = ctx.data;
         });
         var sidebar;
         let baseObject;
