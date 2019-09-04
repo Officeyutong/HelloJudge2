@@ -127,6 +127,7 @@ def get_supported_lang():
         result.append({
             "id": file.replace(".py", ""), "display": module.DISPLAY, "version": module.VERSION, "ace_mode": module.ACE_MODE
         })
+    result.sort(key=lambda x: x["id"])
     return make_response(0, list=result)
 
 
