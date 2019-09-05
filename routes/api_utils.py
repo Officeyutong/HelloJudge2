@@ -100,7 +100,7 @@ def get_judge_status():
         "invisible": {"icon": "times icon", "text": "不可见", "color": "black"},
         "unsubmitted": {"icon": "code icon", "text": "未提交", "color": "yellow"},
         "judge_failed": {"icon": "times icon", "text": "评测失败", "color": "red"},
-        "compile_error": {"icon": "cog icon", "text": "编译错误", "color": "red"}
+        "compile_error": {"icon": "cog icon", "text": "编译错误", "color": "blue"}
     }
     return make_response(0, data=ret)
 
