@@ -10,3 +10,4 @@ mysql-connector-python
 jsonpickle
 pyyaml
 requests
+eventlet
