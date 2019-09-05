@@ -108,12 +108,14 @@ def register():
         user = db.session.query(User).filter(
             User.username == request.form["username"])
         if user.count():
-            user = user.one()
+            user: User = user.one()
             next_query = db.session.query(User).filter(
                 User.email == request.form["email"])
             if next_query.count() != 0 and next_query.one().username != request.form["username"]:
                 return make_response(-1, message="此邮箱已被使用")
             if user.auth_token != "":
+                import uuid
+                user.auth_token = str(uuid.uuid1())
                 send_mail(config.REGISTER_AUTH_EMAIL.format(
                     auth_token=user.auth_token), "验证邮件", request.form["email"])
                 user.email = request.form["email"]
