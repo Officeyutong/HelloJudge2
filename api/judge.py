@@ -27,7 +27,8 @@ def push_to_queue(submission_id):
                     "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
                     "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT,
                     "extra_compile_parameter": problem.extra_compile_parameter,
-                    "auto_sync_files": config.AUTO_SYNC_FILES
+                    "auto_sync_files": config.AUTO_SYNC_FILES,
+                    "output_file_size_limit":config.OUTPIT_FILE_SIZE_LIMIT
                     }])
     # print(f"Push {submission_id} to queue done.")
     db.session.commit()

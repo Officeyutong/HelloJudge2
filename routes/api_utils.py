@@ -94,6 +94,7 @@ def get_judge_status():
         "wrong_answer": {"icon": "x icon", "text": "答案错误", "color": "red"},
         "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
         "memory_limit_exceed": {"icon": "microchip icon", "text": "内存超限", "color": "purple"},
+        "output_size_limit_exceed": {"icon": "hdd icon", "text": "输出文件过长", "color": "red"},
         "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
         "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
         "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"},
