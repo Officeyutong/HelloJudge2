@@ -35,7 +35,7 @@
 <div style="top:10%;max-width: 1000px;" v-if="done" id="profile">
     <div class="ui grid" style="width: 100%">
         <div class="ui row">
-            <div class="ui four wide column">
+            <div class="ui five wide column">
                 <div class="ui card" style="width:100%">
                     <div class="image">
                         <img v-bind:src="'https://www.gravatar.com/avatar/'+md5(data.email)+'?s=200'">
@@ -54,76 +54,54 @@
                         <span>Rating: {[data.rating]}</span>
                     </div>
                 </div>
-            </div>
-            <div class="ui twelve wide column">
-                <div class="ui grid">
-                    <div class="ui row">
-                        <div class="ui seven wide column">
-                            <div class="ui grid">
-                                <div class="ui row">
-                                    <div class="ui column">
-                                        <h4 class="ui block attached header">
-                                            邮箱
-                                        </h4>
-                                        <div class="ui bottom attached segment">
-                                            {[data.email]}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ui row">
-                                    <div class="ui column">
-                                        <h4 class="ui block attached header">
-                                            个人简介
-                                        </h4>
-                                        <div class="ui bottom attached segment" v-html="makeHTML(data.description)">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="ui row">
-                                    <div class="ui column">
-                                        <h4 class="ui block attached header">
-                                            Rating历史
-                                        </h4>
-                                        <div class="ui bottom attached segment">
-                                            <table class="ui very basic celled table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>比赛</th>
-                                                        <th>变化</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr v-for="item in data.rating_history">
-                                                        <td><a
-                                                                :href="'/contest/'+item.contest_id">{[item.contest_name]}</a>
-                                                        </td>
-                                                        <td style="color:green" v-if="item.result>=0">+{[item.result]}
-                                                        </td>
-                                                        <td v-else style="color:red">-{[-item.result]}</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                        <div class="ui eight wide column">
-                            <h4 class="ui block attached header">
-                                通过题目
-                            </h4>
-                            <div class="ui bottom attached segment">
-                                <span v-for="item in data.ac_problems"><a :href="'/show_problem/'+item">{[item]} </a>
-                                </span>
-
-                            </div>
-                        </div>
-
-                    </div>
+                <h4 class="ui block attached header">
+                    电子邮件
+                </h4>
+                <div class="ui bottom attached segment">
+                    {[data.email]}
                 </div>
+                <h4 class="ui block attached header">
+                    Rating历史
+                </h4>
+                <div class="ui bottom attached segment">
+                    <div v-if="data.rating_history.length==0">这个人很懒，没参加过任何Rated比赛...</div>
+                    <table class="ui very basic celled table" v-else>
+                        <thead>
+                            <tr>
+                                <th>比赛</th>
+                                <th>变化</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in data.rating_history">
+                                <td><a :href="'/contest/'+item.contest_id">{[item.contest_name]}</a>
+                                </td>
+                                <td style="color:green" v-if="item.result>=0">+{[item.result]}
+                                </td>
+                                <td v-else style="color:red">-{[-item.result]}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h4 class="ui block attached header">
+                    通过题目
+                </h4>
+                <div class="ui bottom attached segment">
+                    <div v-if="data.ac_problems.length==0">这个人很懒,还没有做过题...</div>
+                    <span v-for="item in data.ac_problems" v-else><a :href="'/show_problem/'+item">{[item]} </a>
+                    </span>
+                </div>
+            </div>
+            <div class="ui eleven wide column">
+                <div class="ui header">
+                    <h1>{[data.username]}</h1>
+                </div>
+                <div v-html="makeHTML(data.description)" class="ui segment stacked" style="height: 100%"
+                    v-if="data.description"></div>
+                <div class="ui segment stacked" v-else style="height: 100%">这个人好懒...什么都没有写...</div>
             </div>
         </div>
     </div>
+
 </div>
 {%endblock%}
