@@ -53,12 +53,9 @@
                     <div class="extra content">
                         <span>Rating: {[data.rating]}</span>
                     </div>
-                </div>
-                <h4 class="ui block attached header">
-                    电子邮件
-                </h4>
-                <div class="ui bottom attached segment">
-                    {[data.email]}
+                    <div class="extra content">
+                        <span>Email: {[data.email]}</span>
+                    </div>
                 </div>
                 <h4 class="ui block attached header">
                     Rating历史
@@ -96,12 +93,11 @@
                 <div class="ui header">
                     <h1>{[data.username]}</h1>
                 </div>
-                <div v-html="makeHTML(data.description)" class="ui segment stacked" style="height: 100%"
+                <div v-html="makeHTML(data.description)" class="ui segment stacked" style="max-height: 1000px;"
                     v-if="data.description"></div>
                 <div class="ui segment stacked" v-else style="height: 100%">这个人好懒...什么都没有写...</div>
             </div>
         </div>
     </div>
-
 </div>
 {%endblock%}
