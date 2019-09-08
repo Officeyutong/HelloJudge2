@@ -46,9 +46,8 @@ def handle_import(data):
 
 
 @socket.on("init", namespace="/ws/iderun")
-def handle_ide_run(data):
+def handle_ide_run():
     """
     处理在线IDE的反馈
-    data:{"run_id":"运行ID"}
     """
-    join_room("iderun:"+str(data["run_id"]))
+    join_room("iderun")

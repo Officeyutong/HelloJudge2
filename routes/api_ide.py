@@ -46,9 +46,10 @@ def iderun_update():
     if request.form.get("uuid") not in config.JUDGERS:
         return make_response(-1, message="未认证评测机")
     import flask_socketio
+    # print(f"Updating...{request.form['run_id']}")
     flask_socketio.emit("update", {
-        "run_id":request.form["run_id"],
+        "run_id": request.form["run_id"],
         "message": request.form["message"],
         "status": request.form["status"]
-    }, room="iderun:"+str(request.form["run_id"]), namespace="/ws/iderun")
-    return make_response(0,message="ok")
+    }, room="iderun", namespace="/ws/iderun", broadcast=True)
+    return make_response(0, message="ok")

@@ -12,7 +12,9 @@
 <script>
     let ide;
     let socket;
+
     $(document).ready(() => {
+
         ide = new Vue({
             el: "#ide",
             delimiters: ['{[', ']}'],
@@ -20,33 +22,40 @@
                 langs: null,
                 selectedLang: "",
                 code: "", input: "",
-                done: false, output: "", loading: false
+                done: false, output: "", loading: false, runID: ""
             }, methods: {
+                saveToBrowser() {
+                    window.localStorage.setItem("hellojudge2-ide", JSON.stringify({
+                        code: this.code, input: this.input, lang: this.selectedLang
+                    }));
+                },
+                loadFromBroswer() {
+                    let obj = window.localStorage.getItem("hellojudge2-ide");
+                    if (!obj) return;
+                    let data = JSON.parse(obj);
+                    this.code = data.code, this.input = data.input, this.selectedLang = data.lang;
+                },
                 submit() {
                     if (this.loading) return;
                     this.loading = true;
-
+                    this.saveToBrowser();
                     $.post("/api/ide/submit", { code: this.code, input: this.input, lang: this.selectedLang }).done(x => {
                         x = JSON.parse(x);
                         if (x.code) {
                             showErrorModal(x.message);
                             return;
                         }
-                        socket = io.connect("/ws/iderun");
-                        socket.emit("init", {
-                            run_id: x.data.run_id
-                        });
-                        let run_id = x.data.run_id;
-                        socket.on("update", x => {
-                            if (x.run_id != run_id) return;
-                            this.output = x.message;
-                            if (x.status == "done") this.loading = false;
-                        });
+                        console.log(x);
+                        ide.runID = x.data.run_id;
+                        // let run_id = x.data.run_id;
+
                     });
                 }
             }, mounted() {
+
                 axios.post("/api/get_supported_langs").then(x => {
                     x = x.data;
+                    console.log(x);
                     if (x.code) {
                         showErrorModal(x.message);
                         return;
@@ -57,7 +66,22 @@
                         this.langs[x.id] = x;
                     })
                     this.done = true;
+                    this.loadFromBroswer();
+                    socket = io.connect("/ws/iderun");
+                    socket.emit("init");
+                    socket.on("update", x => {
+                        console.log("recv", x);
+                        if (x.run_id != ide.runID) return;
+                        let now = new Date();
+
+                        this.output = now.toLocaleString() + "\n" + x.message;
+                        if (x.status == "done") {
+                            this.loading = false;
+                            ide.runID = "";
+                        }
+                    });
                 });
+
             }
         });
     });

@@ -71,6 +71,8 @@ def view_show_discussion(id):
 @app.route("/profile/<int:id>")
 def view_profile(id):
     return render_template("user/profile.html")
+
+
 @app.route("/profile_edit/")
 @app.route("/profile_edit/<int:id>")
 def view_profile_edit(id=None):
@@ -107,6 +109,11 @@ def view_reset_password(token):
     return render_template("user/reset_password.html")
 
 
+@app.route("/auth_email/<string:token>")
+def view_auth_email(token):
+    return render_template("user/auth_email.html")
+
+
 @app.route("/team")
 def view_team_list():
     return render_template("team/team_list.html")
@@ -126,13 +133,16 @@ def view_edit_team(id):
 def view_import_from_syzoj():
     return render_template("import_from_syzoj.html")
 
+
 @app.route("/help")
 def view_help():
     return render_template("help.html")
 
+
 @app.route("/admin")
 def view_admin():
     return render_template("admin.html")
+
 
 @app.route("/ide")
 def view_ide():

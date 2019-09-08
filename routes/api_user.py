@@ -72,16 +72,21 @@ def login():
     return make_response(0)
 
 
-@app.route("/auth_email/<string:token>")
-def auth_email(token: str):
-    user: User = db.session.query(User).filter(User.auth_token == token)
-    if not user.count():
-        return 404
-    user = user.one()
+@app.route("/api/auth_email",methods=["POST"])
+def auth_email():
+    """
+    验证用户邮箱
+    username: 用户名
+    token: 验证密钥
+
+    """
+    user: User = db.session.query(User).filter(and_(
+        User.username == request.form["username"], User.auth_token == request.form["token"])).one_or_none()
+    if not user:
+        return make_response(-1, message="用户名或token错误")
     user.auth_token = ""
     db.session.commit()
-    import flask
-    return flask.redirect("/login")
+    return make_response(0, message="ok")
 
 
 @app.route("/api/register", methods=["POST"])
