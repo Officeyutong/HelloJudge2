@@ -170,7 +170,7 @@
                         };
                         return xhrObj;
                     };
-                    $("#upload-progress-modal").modal("show");
+                    $("#upload-progress-modal").modal('setting', 'closable', false).modal("show");
                     $.ajax({
                         url: "/api/upload_file/" + problem_edit.data.id,
                         type: "POST",
