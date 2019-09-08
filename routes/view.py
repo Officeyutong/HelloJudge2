@@ -133,3 +133,7 @@ def view_help():
 @app.route("/admin")
 def view_admin():
     return render_template("admin.html")
+
+@app.route("/ide")
+def view_ide():
+    return render_template("ide.html")

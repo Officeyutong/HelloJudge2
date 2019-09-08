@@ -4,7 +4,6 @@ from main import socket, web_app, config, db
 from flask_socketio import emit, send, join_room
 
 
-
 @socket.on("init", namespace="/ws/submission")
 def handle_submission(data):
     """
@@ -44,3 +43,12 @@ def handle_import(data):
     data:{"uuid":'uuid'}
     """
     join_room("import:"+str(data["uuid"]))
+
+
+@socket.on("init", namespace="/ws/iderun")
+def handle_ide_run(data):
+    """
+    处理在线IDE的反馈
+    data:{"run_id":"运行ID"}
+    """
+    join_room("iderun:"+str(data["run_id"]))

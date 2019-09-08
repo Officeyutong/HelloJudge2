@@ -9,4 +9,5 @@ from .api_discussion import *
 from .api_team import *
 from .api_contest import *
 from .api_admin import *
+from .api_ide import *
 from .websocket import *
