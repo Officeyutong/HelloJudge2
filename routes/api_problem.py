@@ -336,6 +336,8 @@ def update_problem():
     if not user.is_admin and problem.public == False and data["public"] == True:
         return make_response(-1, message="你没有权限公开题目")
     for k, v in data.items():
+        if k == "create_time":
+            continue
         setattr(problem, k, v)
 
     db.session.commit()
