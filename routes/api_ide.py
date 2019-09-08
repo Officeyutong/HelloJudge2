@@ -50,5 +50,5 @@ def iderun_update():
         "run_id":request.form["run_id"],
         "message": request.form["message"],
         "status": request.form["status"]
-    }, namespace="/ws/iderun")
+    }, room="iderun:"+str(request.form["run_id"]), namespace="/ws/iderun")
     return make_response(0,message="ok")
