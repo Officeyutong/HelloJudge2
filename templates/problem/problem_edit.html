@@ -2,7 +2,9 @@
 {%block title%}
 题目编辑
 {%endblock%}
-
+{%block head%}
+<script src="//cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
+{%endblock%}
 {%block body%}
 <script>
     var problem_edit;
@@ -154,15 +156,32 @@
                     // console.log(formdata);
                     this.uploading = true;
                     this.success_message = this.error_message = false;
+
+                    let simpleXHR = (func) => {
+                        let xhrObj = $.ajaxSettings.xhr();
+                        xhrObj.upload.onprogress = e => {
+                            let progress = $("#upload-progress-bar");
+                            progress.progress({
+                                percent: e.loaded / e.total * 100
+                            });
+                            $("#upload-progress-bar .label").text(
+                                `已上传 ${parseInt(e.loaded / e.total * 100)}%`
+                            );
+                        };
+                        return xhrObj;
+                    };
+                    $("#upload-progress-modal").modal("show");
                     $.ajax({
                         url: "/api/upload_file/" + problem_edit.data.id,
                         type: "POST",
                         data: formdata,
                         contentType: false,
-                        processData: false
+                        processData: false,
+                        xhr: simpleXHR
                     }).done((ctx) => {
                         ctx = JSON.parse(ctx);
                         problem_edit.uploading = false;
+                        $("#upload-progress-modal").modal("hide");
                         if (ctx.code) {
                             problem_edit.error_message = ctx.message;
                             return;
@@ -536,6 +555,17 @@
                 </div>
                 <div class="ui blue cancel button">
                     取消
+                </div>
+            </div>
+        </div>
+        <div class="ui modal" id="upload-progress-modal">
+            <div class="ui header">
+                上传文件中...
+            </div>
+            <div class="content">
+                <div class="ui teal progress" id="upload-progress-bar">
+                    <div class="bar"></div>
+                    <div class="label"></div>
                 </div>
             </div>
         </div>

@@ -76,8 +76,10 @@
                 xhr.setRequestHeader("X-CSRFtoken", "{{csrf_token()}}")
             }, error: function (xhr, status, err) {
                 show_error_modal(xhr.responseText, xhr.status + " " + err);
+                throw err;
             }
         });
+
         // axios.interceptors.request.use((config) => {
         //     // config.headers['X-Requested-With'] = 'XMLHttpRequest';
         //     // config.headers["content-type"] = "application/x-www-form-urlencoded";
