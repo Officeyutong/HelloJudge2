@@ -47,7 +47,8 @@ def iderun_update():
         return make_response(-1, message="未认证评测机")
     import flask_socketio
     flask_socketio.emit("update", {
+        "run_id":request.form["run_id"],
         "message": request.form["message"],
         "status": request.form["status"]
-    }, room="iderun:"+str(request.form["run_id"]), namespace="/ws/iderun")
+    }, namespace="/ws/iderun")
     return make_response(0,message="ok")

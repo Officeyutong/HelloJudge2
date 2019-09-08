@@ -36,7 +36,9 @@
                         socket.emit("init", {
                             run_id: x.data.run_id
                         });
+                        let run_id = x.data.run_id;
                         socket.on("update", x => {
+                            if (x.run_id != run_id) return;
                             this.output = x.message;
                             if (x.status == "done") this.loading = false;
                         });

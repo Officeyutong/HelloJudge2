@@ -51,4 +51,4 @@ def handle_ide_run(data):
     处理在线IDE的反馈
     data:{"run_id":"运行ID"}
     """
-    join_room("iderun:"+str(data["run_id"]))
+    join_room("iderun")
