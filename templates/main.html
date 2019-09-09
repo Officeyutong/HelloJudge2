@@ -10,27 +10,46 @@
         main = new Vue({
             el: "#main",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 data: null,
-                done: false
+                done: false, hitokoto: {
+
+                }
             }, methods: {
+
+            }, mounted() {
+                axios.post("/api/home_page").then(data => {
+                    let pageData = data.data;
+                    pageData = pageData.data;
+                    console.log(pageData);
+                    if (pageData.code) {
+                        showErrorModal(ctx.message);
+                        return;
+                    }
+                    main.data = pageData;
+                    main.done = true;
+                });
+                axios.get("https://v1.hitokoto.cn/").then(hitokoto => {
+                    main.hitokoto = hitokoto.data;
+                });
 
             }
         });
-        $.post("/api/home_page").done(ctx => {
-            ctx = JSON.parse(ctx);
-            if (ctx.code) {
-                showErrorModal(ctx.message);
-                return;
-            }
-            main.data = ctx.data;
-            main.done = true;
-        });
+        // $.post("/api/home_page").done(ctx => {
+        //     ctx = JSON.parse(ctx);
+        //     if (ctx.code) {
+        //         showErrorModal(ctx.message);
+        //         return;
+        //     }
+        //     main.data = ctx.data;
+        //     main.done = true;
+        // });
     });
 </script>
 <div id="main" v-if="done">
     <div class="ui left aligned container" style="padding-bottom: 20px;">
-        <h1>{[data.app_name ]}</h1>
+        <h1>{[data.app_name]}</h1>
     </div>
     <div class="ui divider"></div>
     <div class="ui two column grid">
@@ -81,7 +100,9 @@
                                     <a :href="'/profile/'+item.id">{[item.username]}</a>
                                 </td>
                                 <td class="center aligned">
-                                    {[item.description]}
+                                    <div v-html="makeHTML(item.description)"
+                                        style="max-height: 50px;overflow-y: hidden;overflow-x: hidden;">
+                                    </div>
                                 </td>
                                 <td class="center aligned">
                                     {[item.rating]}
@@ -92,6 +113,21 @@
                 </div>
             </div>
             <div class="ui five wide column">
+                <div class="ui header">
+                    <h2>Hitokoto</h2>
+                </div>
+                <div class="ui segment stacked" v-if="hitokoto">
+                    <div class="ui center aligned container" style="font-size: 15px;min-height: 50px;">
+                        {[hitokoto.hitokoto]}
+                    </div>
+                    <div class="ui right aligend container" style="text-align: right">
+                        {[hitokoto.from]}
+
+                    </div>
+                    <div class="ui right aligend container" style="text-align: right">
+                        <a :href="'https://hitokoto.cn?id='+hitokoto.id">{[hitokoto.id]}</a>
+                    </div>
+                </div>
                 <div class="ui header">
                     <h2>近期题目</h2>
                 </div>
