@@ -72,7 +72,7 @@ EMAIL_SENDER = "qwq@qwq.com"
 RESET_PASSWORD_EMAIL = "请前往 http://[此处替换为网站地址]/reset_password/{reset_token} 重置密码。此链接仅有效一次。"
 # 注册时需要验证邮箱
 REQUIRE_REGISTER_AUTH = False
-REGISTER_AUTH_EMAIL = "请前往 http://[此处替换为网站地址]/auth_email/{auth_token}激活账号。此链接仅有效一次。"
+REGISTER_AUTH_EMAIL = "请前往 http://[此处替换为网站地址]/auth_email/{auth_token} 激活账号。此链接仅有效一次。"
 # 比赛失败提交罚时(分钟)
 FAIL_SUBMIT_PENALTY = 20
 # 是否允许私有题目
