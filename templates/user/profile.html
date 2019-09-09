@@ -28,6 +28,8 @@
             profile.data.ac_problems.sort((x, y) => x - y);
             $("title").text(`${profile.data.username} - ${profile.data.id} - 用户资料 - {{APP_NAME}}`);
             profile.done = true;
+            // profile.data.banned=true;
+            console.log(profile.data);
         });
     });
 
@@ -51,10 +53,13 @@
 
                     </div>
                     <div class="extra content">
-                        <span>Rating: {[data.rating]}</span>
+                        <div>Rating: {[data.rating]}</div>
+                        <div>Email: {[data.email]}</div>
+                    
+                        {[data.banned]}
                     </div>
-                    <div class="extra content">
-                        <span>Email: {[data.email]}</span>
+                    <div class="extra content" v-if="data.banned">
+                        <span style="color:red">此账户已被封禁</span>
                     </div>
                 </div>
                 <h4 class="ui block attached header">

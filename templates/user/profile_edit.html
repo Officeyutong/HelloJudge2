@@ -23,7 +23,7 @@
                     this.loading = true;
                     $.post("/api/update_profile", {
                         uid: this.data.id, data: JSON.stringify({
-                            username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
+                            banned:this.data.banned,username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
                         })
                     }).done(ctx => {
                         this.loading = false;
@@ -106,7 +106,15 @@
                         </div>
                     </div>
                 </div>
+                <div class="ui divider" v-if="base.isAdmin"></div>
+                <div class="ui field" v-if="base.isAdmin">
+                   <div class="ui toggle checkbox">
+                       <input type="checkbox" v-model="data.banned">
+                       <label>账户封禁</label>
+                   </div>
+                </div>
                 <div class="ui divider"></div>
+                
                 <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="submit">提交</div>
             </div>
         </div>

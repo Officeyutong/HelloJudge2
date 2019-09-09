@@ -12,7 +12,8 @@
             delimiters: ['{[', ']}'],
             data: {
                 data: null,
-                done: false
+                done: false,
+                currentTab: "general"
             }, methods: {
 
             }
@@ -32,10 +33,11 @@
     <div class="ui header">
         <h1>后台管理</h1>
     </div>
-    <div class="ui header">
-        <h3>基本信息</h3>
+    <div class="ui top attached tabular menu">
+            <div class="item" v-bind:class="{active:currentTab=='general'}" v-on:click="currentTab='general'">概览</div>
+            <div class="item" v-bind:class="{active:currentTab=='user'}" v-on:click="currentTab='user'">用户管理</div>
     </div>
-    <div class="ui segment stacked" style="max-width: 700px;">
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='general'}">
         <div class="ui three column grid">
             <div class="ui row">
                 <div class="ui column">
@@ -93,7 +95,7 @@
                 <div class="ui column">
                     <div class="ui statistic">
                         <div class="value">
-                           <i class="keyboard outline icon"></i> {[data.discussionCount]}
+                            <i class="keyboard outline icon"></i> {[data.discussionCount]}
                         </div>
                         <div class="label">
                             讨论数量
@@ -102,6 +104,9 @@
                 </div>
             </div>
         </div>
+    </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='user'}">
+        <h1>这个页面还没写好...</h1>
     </div>
 </div>
 {%endblock%}

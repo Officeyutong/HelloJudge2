@@ -13,7 +13,7 @@ from typing import Tuple
 def banned_check():
     if session.get("uid"):
         user: User = User.by_id(session.get("uid"))
-        if user.bannad:
+        if user.banned:
             session.pop("uid")
 
 
@@ -63,7 +63,7 @@ def login():
     if query.count() == 0:
         return make_response(-1, message="用户名或密码错误")
     user: User = query.one()
-    if user.bannad:
+    if user.banned:
         return make_response(-1, message="此账户已被封禁.")
     if user.auth_token != "":
         return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
@@ -72,7 +72,7 @@ def login():
     return make_response(0)
 
 
-@app.route("/api/auth_email",methods=["POST"])
+@app.route("/api/auth_email", methods=["POST"])
 def auth_email():
     """
     验证用户邮箱
@@ -248,7 +248,8 @@ def get_user_profile():
                 "rating_history":[],
                 "joined_teams":[
                     {"name":"团队名","id":"团队ID"}
-                ]
+                ],
+                "banned":"是否已封禁"
             }
         }
     """
@@ -289,7 +290,8 @@ def update_profile():
             "email":"电子邮件",
             "description":"个人简介",
             "changePassword":"是否更改密码",
-            "newPassword":"新密码"
+            "newPassword":"新密码",
+            "banned":"是否已封禁"
         }
     }
     {
@@ -308,11 +310,14 @@ def update_profile():
     if not regex.search(data["username"]):
         return make_response(-1, message="用户名必须符合以下正则表达式: {}".format(config.USRENAME_REGEX))
     if not re.compile(r"(.+)@(.+)").search(data["email"]):
-        return make_response(-1, message="请输入合法的用户名")
+        return make_response(-1, message="请输入合法的邮箱")
     user.username = data["username"]
     user.email = data["email"]
     user.description = data["description"]
     if data["changePassword"]:
         user.password = data["newPassword"]
+    if data["banned"] != user.banned and not operator.is_admin:
+        return make_response(-1, message="你没有权限封禁\解封此用户")
+    user.banned = data["banned"]
     db.session.commit()
     return make_response(0, message="操作完成")

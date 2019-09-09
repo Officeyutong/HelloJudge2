@@ -7,7 +7,7 @@ class User(db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     # 是否封禁
-    bannad = db.Column(db.Boolean, default=False, nullable=False)
+    banned = db.Column(db.Boolean, default=False, nullable=False)
     # 用户名
     username = db.Column(db.String(20), unique=True)
     # 密码
