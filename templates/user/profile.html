@@ -55,11 +55,13 @@
                     <div class="extra content">
                         <div>Rating: {[data.rating]}</div>
                         <div>Email: {[data.email]}</div>
-                    
-                        {[data.banned]}
                     </div>
                     <div class="extra content" v-if="data.banned">
                         <span style="color:red">此账户已被封禁</span>
+                    </div>
+                    <div class="extra content" v-if="base.isAdmin||base.uid==data.id">
+                        <a :href="'/profile_edit/'+data.id">编辑</a>
+
                     </div>
                 </div>
                 <h4 class="ui block attached header">
