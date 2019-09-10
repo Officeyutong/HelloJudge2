@@ -24,7 +24,7 @@
                     pageData = pageData.data;
                     console.log(pageData);
                     if (pageData.code) {
-                        showErrorModal(ctx.message);
+                        showErrorModal(pageData.message);
                         return;
                     }
                     main.data = pageData;

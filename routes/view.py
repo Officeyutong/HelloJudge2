@@ -27,6 +27,11 @@ def view_register():
     return render_template("user/register.html")
 
 
+@app.route("/ranklist/<int:id>")
+def view_global_ranklist(id):
+    return render_template("ranklist.html")
+
+
 @app.route("/problems")
 @app.route("/problems/<int:id>")
 def view_problems(id=-1):

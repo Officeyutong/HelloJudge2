@@ -1,0 +1,80 @@
+{%extends "base.html"%}
+{%block title%}
+排行榜
+{%endblock%}
+{%block body%}
+
+<script>
+    let ranklist;
+    let search = GetRequest().search;
+    let page = parseInt(window.location.href.split("/").pop().split("?")[0]);
+    $(document).ready(() => {
+        ranklist = new Vue({
+            el: "#ranklist",
+            delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                ranklist: null,
+                currentPage: page, totalPage: 0, search: search,
+                done: false
+            }, methods: {
+                callback(x) {
+                    // console.log(x);
+                    window.location.href = "/ranklist/" + x + (this.search ? "?search=" + encodeURIComponent(this.search) : "");
+                },
+                searchKeyword() {
+                    window.location.href = "/ranklist/" + this.currentPage + "?search=" + encodeURIComponent(this.search);
+                }
+            }, mounted() {
+                axios.post("/api/ranklist", {
+                    page: page, search: (search || "")
+                }).then(data => {
+                    let ranklistData = data.data;
+                    console.log(ranklistData);
+                    if (ranklistData.code) {
+                        showErrorModal(ranklistData.message);
+                        return;
+                    }
+                    // console.log(this);
+                    this.ranklist = ranklistData.data.ranklist;
+                    this.totalPage = ranklistData.data.pageCount;
+                    this.done = true;
+                    // console.log(data);
+                });
+            }
+        });
+    });
+</script>
+<div id="ranklist" v-if="done" class="center aligned">
+    <div class="ui left aligned container" style="padding-bottom: 20px;">
+        <h1>排行榜</h1>
+    </div>
+    <div class="ui segment stacked">
+        <div class="ui form" style="max-width: 200px;">
+            <input type="text" v-model="search" v-on:keyup.enter="searchKeyword" placeholder="搜索用户名..">
+        </div>
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th class="center aligned">用户</th>
+                    <th class="center aligned">签名</th>
+                    <th class="center aligned">Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in ranklist">
+                    <td class="center aligned"> <a :href="'/profile/'+item.uid">{[item.username]}</a></td>
+                    <td class="center aligned">
+                        <div v-html="makeHTML(item.description)"
+                            style="max-height: 50px;overflow-y: hidden;overflow-x: hidden;">
+                        </div>
+                    </td>
+                    <td class="center aligned">{[item.rating]}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <page-menu v-bind:page-count="totalPage" v-bind:current-page="currentPage" v-bind:callback="callback">
+    </page-menu>
+</div>
+{%endblock%}

@@ -10,4 +10,5 @@ from .api_team import *
 from .api_contest import *
 from .api_admin import *
 from .api_ide import *
+from .api_ranklist import *
 from .websocket import *

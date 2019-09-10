@@ -29,6 +29,7 @@ class User(db.Model):
     rating_history = db.Column(JsonPickle, nullable=False, default=[])
     # 所在团队列表
     joined_teams = db.Column(JsonPickle, nullable=False, default=[])
+    # rating
     rating = db.Column(db.Integer, nullable=False, default=1500, index=True)
     @staticmethod
     def by_id(id):
