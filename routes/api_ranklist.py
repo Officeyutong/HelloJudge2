@@ -33,7 +33,7 @@ def global_ranklist():
         query = query.filter(User.username.like(f"%{data['search']}%"))
     pages = int(math.ceil(query.count()/config.USERS_ON_RANKLIST_PER_PAGE))
     page = data["page"]
-    query = query.order_by(User.rating.desc())
+    query = query.order_by(User.rating.desc()).order_by(User.id.asc())
     query = query.slice(
         (page-1)*config.USERS_ON_RANKLIST_PER_PAGE, (page)*config.USERS_ON_RANKLIST_PER_PAGE).all()
     result = {
