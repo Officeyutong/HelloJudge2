@@ -50,8 +50,11 @@
         <h1>排行榜</h1>
     </div>
     <div class="ui segment stacked">
-        <div class="ui form" style="max-width: 200px;">
-            <input type="text" v-model="search" v-on:keyup.enter="searchKeyword" placeholder="搜索用户名..">
+        <div class="ui right aligned container">
+            <div class="ui icon input" style="max-width: 200px;">
+                <input type="text" v-model="search" v-on:keyup.enter="searchKeyword" placeholder="搜索用户名..">
+                <i class="search icon"></i>
+            </div>
         </div>
         <table class="ui very basic celled table">
             <thead>
