@@ -378,57 +378,7 @@ def contest_submit():
     return make_response(0, submission_id=submit.id)
 
 
-@app.route("/api/contest/ranklist", methods=["POST"])
-def contest_ranklist():
-    """
-    获取比赛的排行榜
-    {
-        contest_id:比赛ID
-    }
-    返回值:
-    {
-        "code":0,
-        "data":{
-            "name":'比赛名',
-            "contest_id":"比赛ID",
-            "using_penalty":"使用罚时",
-            "ranklist":[
-                {
-                    "uid":"用户ID",
-                    "username":"用户名",
-                    "scores":[
-                        {
-                            "score":"题目得分",
-                            "submit_count":1,//AC前的提交次数,
-                            "ac_time":"AC时间(分钟)",//
-                            "penalty":"罚时"//AC时间+config.FAIL_SUBMIT_PENALTY*提交次数
-                            "submit_id":"提交ID",
-                            "status":"题目状态",
-                            "first_blood":True//一血
-                        }
-                    ],
-                    "total":{
-                        "score":"分数",
-                        "penalty":"总罚时",
-                        "ac_count":"总通过数"
-                    }
-                }        
-            ],
-            "problems":[
-                {
-                    "name":"题目名",
-                    "id":"题目ID",//比赛中的
-                    "accepted_submit":"通过数量",
-                    "total_submit":"总提交数量"
-                }
-            ]
-        }
-    }
-    """
-    contest: Contest = Contest.by_id(request.form['contest_id'])
-    can_see_ranklist = contest.can_see_ranklist(session.get("uid")) 
-    if not can_see_ranklist:
-        return make_response(-1, message="你无权进行此操作")
+def get_contest_rank_list(contest: Contest) -> dict:
     users = db.session.query(Submission.uid).filter(
         Submission.contest_id == contest.id).distinct().all()
     ranklist = []
@@ -520,4 +470,59 @@ def contest_ranklist():
             "accepted_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.status == "accepted", Submission.problem_id == problem.id)).count(),
             "total_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.problem_id == problem.id)).count()
         })
-    return make_response(0, data=result)
+    return result
+
+
+@app.route("/api/contest/ranklist", methods=["POST"])
+def contest_ranklist():
+    """
+    获取比赛的排行榜
+    {
+        contest_id:比赛ID
+    }
+    返回值:
+    {
+        "code":0,
+        "data":{
+            "name":'比赛名',
+            "contest_id":"比赛ID",
+            "using_penalty":"使用罚时",
+            "ranklist":[
+                {
+                    "uid":"用户ID",
+                    "username":"用户名",
+                    "scores":[
+                        {
+                            "score":"题目得分",
+                            "submit_count":1,//AC前的提交次数,
+                            "ac_time":"AC时间(分钟)",//
+                            "penalty":"罚时"//AC时间+config.FAIL_SUBMIT_PENALTY*提交次数
+                            "submit_id":"提交ID",
+                            "status":"题目状态",
+                            "first_blood":True//一血
+                        }
+                    ],
+                    "total":{
+                        "score":"分数",
+                        "penalty":"总罚时",
+                        "ac_count":"总通过数"
+                    }
+                }        
+            ],
+            "problems":[
+                {
+                    "name":"题目名",
+                    "id":"题目ID",//比赛中的
+                    "accepted_submit":"通过数量",
+                    "total_submit":"总提交数量"
+                }
+            ]
+        }
+    }
+    """
+    contest: Contest = Contest.by_id(request.form['contest_id'])
+    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
+    if not can_see_ranklist:
+        return make_response(-1, message="你无权进行此操作")
+
+    return make_response(0, data=get_contest_rank_list(contest))

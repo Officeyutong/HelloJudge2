@@ -113,7 +113,7 @@
 
             </tbody>
         </table>
-        <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button" v-if="showRanklist">排行榜</a>
+        <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button" v-if="showRanklist" target="_blank">排行榜</a>
         <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id"
             target="_blank">编辑</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id" class="ui red tiny button"

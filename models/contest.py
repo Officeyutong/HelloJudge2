@@ -32,6 +32,11 @@ class Contest(db.Model):
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
     invite_code = db.Column(db.String(10), nullable=False, default="")
+    # 是否已应用rating
+    rated = db.Column(db.Boolean, nullable=False, default=False)
+    # 应用rating的时间
+    rated_time = db.Column(db.DateTime, nullable=True)
+
     @staticmethod
     def by_id(id):
         return db.session.query(Contest).filter(Contest.id == id).one_or_none()

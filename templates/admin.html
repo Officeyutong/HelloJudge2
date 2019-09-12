@@ -13,20 +13,30 @@
             data: {
                 data: null,
                 done: false,
-                currentTab: "general"
+                currentTab: "general",
+                ratedContests: []
             }, methods: {
+                removeRatedContest(contestID) {
+                    console.log(contestID);
+                }, appendRatedContest(contestID) {
+                    console.log(contestID);
+                }
+            }, mounted() {
+                axios.all([
+                    axios.post("/api/admin/show"), axios.post("/api/admin/rating/rated_contests")
+                ]).then(axios.spread((show, rating) => {
+                    show = show.data;
+                    if (show.code) {
+                        showErrorModal(show.message);
+                        return;
+                    }
+                    this.data = show.data;
+                    this.ratedContests = rating.data.data;
+                    this.done = true;
+                }));
+            }
+        });
 
-            }
-        });
-        $.post("/api/admin/show").done(ctx => {
-            ctx = JSON.parse(ctx);
-            if (ctx.code) {
-                showErrorModal(ctx.message);
-                return;
-            }
-            admin.data = ctx.data;
-            admin.done = true;
-        });
     });
 </script>
 <div id="admin" v-if="done">
@@ -34,8 +44,8 @@
         <h1>后台管理</h1>
     </div>
     <div class="ui top attached tabular menu">
-            <div class="item" v-bind:class="{active:currentTab=='general'}" v-on:click="currentTab='general'">概览</div>
-            <div class="item" v-bind:class="{active:currentTab=='user'}" v-on:click="currentTab='user'">用户管理</div>
+        <div class="item" v-bind:class="{active:currentTab=='general'}" v-on:click="currentTab='general'">概览</div>
+        <div class="item" v-bind:class="{active:currentTab=='rating'}" v-on:click="currentTab='rating'">Rating管理</div>
     </div>
     <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='general'}">
         <div class="ui three column grid">
@@ -105,8 +115,33 @@
             </div>
         </div>
     </div>
-    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='user'}">
-        <h1>这个页面还没写好...</h1>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='rating'}">
+        <div class="ui input">
+            <input type="text" placeholder="输入要应用Rating的比赛ID.." style="width: 300px;" v-on:keyup.enter="appendRatedContest(parseInt($event.srcElement.value))">
+        </div>
+        <div class="ui divider"></div>
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th>比赛名</th>
+                    <th>参赛人数</th>
+                    <th>Rated 时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in ratedContests">
+                    <td><a :href='"/contest/"+item.contestID'>{[item.contestName]}</a></td>
+                    <td>{[item.contestantCount]}</td>
+                    <td>{[item.ratedTime]}</td>
+                    <td>
+                        <div class="ui tiny red circular icon button" v-on:click="removeRatedContest(item.contestID)">
+                            <i class="ui times icon"></i>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 {%endblock%}

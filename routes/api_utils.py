@@ -195,6 +195,7 @@ def import_from_syzoj():
             pack.close()
         problem_data_dir = pathlib.PurePath(
             f"{config.UPLOAD_DIR}/{problem.id}")
+        shutil.rmtree(problem_data_dir, ignore_errors=True)
         shutil.copytree(work_dir, problem_data_dir)
         shutil.rmtree(work_dir)
         # 更换新的word_dir
