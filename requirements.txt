@@ -11,3 +11,4 @@ jsonpickle
 pyyaml
 requests
 eventlet
+codeforces-rating

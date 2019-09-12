@@ -94,12 +94,16 @@
                                     tasks.push({ input: file, output: find_result });
                                 }
                             }
-                            const score = parseInt(100 / tasks.length);
+                            tasks.sort((a, b) => {
+                                if (a > b) return -1;
+                                else if (a == b) return 0;
+                                else return 0;
+                            });
                             // var i = 0;
-                            for (var i = 0; i < tasks.length - 1; i++) {
-                                problem_edit.data.subtasks.push({ "name": "Subtask" + (i + 1), "score": score, "method": "sum", "testcases": [tasks[i]], "time_limit": 1000, memory_limit: 512 })
-                            }
-                            problem_edit.data.subtasks.push({ "name": "Subtask" + (tasks.length), "score": 100 - score * (tasks.length - 1), "method": "sum", "testcases": [tasks[tasks.length - 1]], "time_limit": 1000, memory_limit: 512 })
+
+                            let subtask = { "name": "默认子任务", "score": 100, "method": "sum", "testcases": tasks, "time_limit": 1000, memory_limit: 512 };
+                            problem_edit.data.subtasks = [subtask];
+
                         },
                         closable: false
                     }).modal("show");
@@ -544,10 +548,10 @@
                 警告
             </div>
             <div class="content">
-                <p>自动生成子任务将会删除现有的所有子任务，并且按照以下策略生成子任务：</p>
+                <p>自动生成子任务将会删除现有的所有子任务，并且添加一个新的子任务，这个子任务具有以下测试点</p>
                 <p>对于文件列表中的任意一个文件[name].in,尝试在文件列表中找到[name].out或者[name].ans(两者都出现时取前者)</p>
-                <p>并且把这两个文件作为一个子任务中唯一一个测试点的输入和输出。</p>
-                <p>假设得到的子任务个数为k，那么前k-1个子任务的分数均为floor(100/k),最后一个子任务的分数为100-(k-1)*floor(100/k),所有子任务的分数之和为100。</p>
+                <p>并且把这两个文件作为一个测试点的输入和输出。</p>
+                <p>假设得到的测试点个数为k，那么前k-1个测试点的分数均为floor(100/k),最后一个测试点的分数为100-(k-1)*floor(100/k),所有测试点的分数之和为100。</p>
             </div>
             <div class="actions">
                 <div class="ui green approve button">
