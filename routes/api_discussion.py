@@ -177,15 +177,13 @@ def get_discussion_list():
         Discussion.path == request.form["path"], Discussion.path.like(f"{request.form['path']}.%")))
     page = int(request.form.get("page", 1))
     ret = {
-        "page_count": int(math.ceil(result.count()/config.DISCUSSION_PER_PAGE)),
+        "page_count": int(math.ceil(result.count()/config.DISCUSSIONS_PER_PAGE)),
         "current_page": page,
         "data": []
     }
-    # print(f"range from {(page-1)*config.DISCUSSION_PER_PAGE} to {min(page*config.DISCUSSION_PER_PAGE, (page-1)*config.DISCUSSION_PER_PAGE+int(request.form.get('count_limit', 10**8)))}")
-    # for x in result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).all():
-    #     print(x.as_dict())
-    result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSION_PER_PAGE,
-                                                                                         min(page*config.DISCUSSION_PER_PAGE, (page-1)*config.DISCUSSION_PER_PAGE+int(request.form.get("count_limit", 10**8))))
+
+    result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSIONS_PER_PAGE,
+                                                                                         min(page*config.DISCUSSIONS_PER_PAGE, (page-1)*config.DISCUSSIONS_PER_PAGE+int(request.form.get("count_limit", 10**8))))
     for item in result:
         user: User = User.by_id(item.uid)
         comments = db.session.query(Comment).filter(

@@ -16,10 +16,45 @@
                 currentTab: "general",
                 ratedContests: []
             }, methods: {
+                reloadRatedContests() {
+                    axios.post("/api/admin/rating/rated_contests").then(x => {
+                        let rating = x.data;
+                        this.ratedContests = rating.data;
+                    });
+                },
                 removeRatedContest(contestID) {
                     console.log(contestID);
+                    const thiz = this;
+                    $("#remove-rated-contest-modal").modal({
+                        closable: false,
+                        onApprove: function () {
+                            axios.post("/api/admin/rating/remove", { contestID: contestID }).then(x => {
+                                let data = x.data;
+                                if (data.code) {
+                                    showErrorModal(data.message);
+                                    return;
+                                }
+                                thiz.reloadRatedContests();
+                            });
+                        }
+                    }).modal("show");
+
                 }, appendRatedContest(contestID) {
-                    console.log(contestID);
+                    if (isNaN(parseInt(contestID))) {
+                        showErrorModal("请输入合法整数");
+                        return;
+                    }
+                    // console.log(contestID);
+                    axios.post("/api/admin/rating/append", {
+                        contestID: parseInt(contestID)
+                    }).then(x => {
+                        let data = x.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.reloadRatedContests();
+                    });
                 }
             }, mounted() {
                 axios.all([
@@ -46,6 +81,8 @@
     <div class="ui top attached tabular menu">
         <div class="item" v-bind:class="{active:currentTab=='general'}" v-on:click="currentTab='general'">概览</div>
         <div class="item" v-bind:class="{active:currentTab=='rating'}" v-on:click="currentTab='rating'">Rating管理</div>
+        <div class="item" v-bind:class="{active:currentTab=='settingPreview'}" v-on:click="currentTab='settingPreview'">
+            设置预览</div>
     </div>
     <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='general'}">
         <div class="ui three column grid">
@@ -117,7 +154,8 @@
     </div>
     <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='rating'}">
         <div class="ui input">
-            <input type="text" placeholder="输入要应用Rating的比赛ID.." style="width: 300px;" v-on:keyup.enter="appendRatedContest(parseInt($event.srcElement.value))">
+            <input type="text" placeholder="输入要应用Rating的比赛ID.." style="width: 300px;"
+                v-on:keyup.enter="appendRatedContest(parseInt($event.srcElement.value))">
         </div>
         <div class="ui divider"></div>
         <table class="ui very basic celled table">
@@ -142,6 +180,36 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='settingPreview'}">
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th>配置名</th>
+                    <th>值</th>
+                    <th>描述</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in data.settings">
+                    <td>{[item.key]}</td>
+                    <td>{[item.value]}</td>
+                    <td>{[item.description]}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="ui tiny modal" id="remove-rated-contest-modal">
+    <div class="ui header">
+        您确定要取消一场比赛的Rated吗？
+    </div>
+    <div class="content">
+        <p>进行此操作后，这场比赛以及在这场比赛之后的比赛都将会被取消Rated.</p>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">确定</div>
+        <div class="ui red cancel button">关闭</div>
     </div>
 </div>
 {%endblock%}

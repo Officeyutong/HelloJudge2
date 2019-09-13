@@ -88,6 +88,16 @@
             config.headers["X-CSRFtoken"] = "{{csrf_token()}}";
             return config;
         });
+        axios.interceptors.response.use(resp => {
+            console.log(resp);
+            return resp;
+        }, err => {
+            let response = err.response;
+            showErrorModal(response.data, response.status + " " + response.statusText)
+            // console.log("qwq", Object.keys(err));
+            // console.log(err.response);
+            // console.log(typeof err)
+        });
         const judge_status = {
             done: false, data: {}
         };

@@ -107,8 +107,8 @@ def register():
         return make_response(-1, message="你已经登录了！")
     import re
     import utils
-    if re.match(config.USRENAME_REGEX, request.form["username"]) is None:
-        return make_response(-1, message="用户名必须满足以下正则表达式:"+config.USRENAME_REGEX)
+    if re.match(config.USERNAME_REGEX, request.form["username"]) is None:
+        return make_response(-1, message="用户名必须满足以下正则表达式:"+config.USERNAME_REGEX)
     if config.REQUIRE_REGISTER_AUTH:
         user = db.session.query(User).filter(
             User.username == request.form["username"])
@@ -275,7 +275,8 @@ def get_user_profile():
             Contest.id == item["contest_id"]).one_or_none()
         if not contest_name:
             contest_name = "比赛不存在"
-        item["contest_name"] = contest_name
+        # print(contest_name)
+        item["contest_name"] = contest_name.name
     return make_response(0, data=ret)
 
 
@@ -306,9 +307,9 @@ def update_profile():
     if user.id != operator.id and not operator.is_admin:
         return make_response(-1, message="你无权进行此操作")
     data: dict = decode_json(request.form["data"])
-    regex = re.compile(config.USRENAME_REGEX)
+    regex = re.compile(config.USERNAME_REGEX)
     if not regex.search(data["username"]):
-        return make_response(-1, message="用户名必须符合以下正则表达式: {}".format(config.USRENAME_REGEX))
+        return make_response(-1, message="用户名必须符合以下正则表达式: {}".format(config.USERNAME_REGEX))
     if not re.compile(r"(.+)@(.+)").search(data["email"]):
         return make_response(-1, message="请输入合法的邮箱")
     user.username = data["username"]
