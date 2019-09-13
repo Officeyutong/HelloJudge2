@@ -228,6 +228,23 @@ def reset_password():
     return make_response(0, message="密码重置完成，请使用新密码登录。")
 
 
+@app.route("/api/user/pass_email_auth", methods=["POST"])
+def user_pass_email_auth():
+    """
+    强行让某用户通过邮箱验证
+    uid:用户ID
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    operator: User = User.by_id(session.get("uid"))
+    if not operator.is_admin:
+        return make_response(-1, message="你没有权限进行此操作")
+    user: User = User.by_id(request.get_json()["uid"])
+    user.auth_token = ""
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
 @app.route("/api/get_user_profile", methods=["POST"])
 def get_user_profile():
     """
@@ -249,7 +266,8 @@ def get_user_profile():
                 "joined_teams":[
                     {"name":"团队名","id":"团队ID"}
                 ],
-                "banned":"是否已封禁"
+                "banned":"是否已封禁",
+                "hasEmailAuth":"是否已进行邮箱验证"
             }
         }
     """
@@ -260,6 +278,7 @@ def get_user_profile():
     ret = user.as_dict()
     del ret["password"]
     del ret["reset_token"]
+    del ret["auth_token"]
     problems = db.session.query(Submission.problem_id).filter(and_(Submission.uid == user.id, Submission.status == "accepted")
                                                               ).distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
@@ -277,6 +296,7 @@ def get_user_profile():
             contest_name = "比赛不存在"
         # print(contest_name)
         item["contest_name"] = contest_name.name
+    ret["hasEmailAuth"] = user.auth_token == ""
     return make_response(0, data=ret)
 
 

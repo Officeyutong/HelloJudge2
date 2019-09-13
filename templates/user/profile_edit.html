@@ -14,6 +14,17 @@
             data: {
                 done: false, data: null, successMessage: "", errorMessage: "", loading: false, password: "", password2: ""
             }, methods: {
+                forcePassEmailAuth() {
+                    axios.post("/api/user/pass_email_auth", { uid: this.data.id }).then(x => {
+                        let data = x.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.data.hasEmailAuth = true;
+
+                    });
+                },
                 submit() {
                     this.errorMessage = this.successMessage = "";
                     if (this.password != "" && this.password != this.password2) {
@@ -23,7 +34,7 @@
                     this.loading = true;
                     $.post("/api/update_profile", {
                         uid: this.data.id, data: JSON.stringify({
-                            banned:this.data.banned,username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
+                            banned: this.data.banned, username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
                         })
                     }).done(ctx => {
                         this.loading = false;
@@ -108,13 +119,16 @@
                 </div>
                 <div class="ui divider" v-if="base.isAdmin"></div>
                 <div class="ui field" v-if="base.isAdmin">
-                   <div class="ui toggle checkbox">
-                       <input type="checkbox" v-model="data.banned">
-                       <label>账户封禁</label>
-                   </div>
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="data.banned">
+                        <label>账户封禁</label>
+                    </div>
+                </div>
+                <div class="ui green button" v-if="base.isAdmin&&!data.hasEmailAuth" v-on:click="forcePassEmailAuth">
+                    强行通过邮箱验证
                 </div>
                 <div class="ui divider"></div>
-                
+
                 <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="submit">提交</div>
             </div>
         </div>
