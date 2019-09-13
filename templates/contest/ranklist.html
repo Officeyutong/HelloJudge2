@@ -62,7 +62,7 @@
                                 <span v-if="data.using_penalty==false">{[item.score]}</span>
                                 <span v-else>
                                     <div v-if="item.status=='accepted'">
-                                        -{[item.submit_count]}({[item.penalty]})
+                                        <div >-{[item.submit_count]}</div><div style="color:red">{[item.penalty]}</div>
                                     </div>
                                     <div v-else>-{[item.submit_count]}</div>
                                 </span>
@@ -72,8 +72,8 @@
                     <td class="center aligned">
                         <span v-if="data.using_penalty==false">{[line.total.score]}</span>
                         <span v-else>
-                            <span style="color:green">{[line.total.ac_count]}</span><span
-                                style="color:red">({[line.total.penalty]})</span>
+                            <div style="color:green">{[line.total.ac_count]}</div><div
+                                style="color:red">{[line.total.penalty]}</div>
                         </span>
                     </td>
                 </tr>
