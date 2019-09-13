@@ -128,7 +128,7 @@
                 langs: {},
                 selected_id: "",
                 code: "",
-                done: false
+                done: false, contestID: -1, problemID: -1
             }, methods: {
                 submit: function () {
                     $.post("/api/contest/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id }).done(ctx => {
@@ -191,6 +191,9 @@
         let problemID = splits.pop();
         splits.pop();
         let contestID = splits.pop();
+        show_problem.contestID = contestID;
+        show_problem.problemID = problemID;
+
         $.post("/api/contest/problem/show", { contest_id: contestID, problem_id: problemID }).done(ctx => {
             ctx = JSON.parse(ctx);
             if (ctx.code != 0) {
@@ -334,7 +337,7 @@
                     <tbody>
                         <tr v-for="file in data.downloads" style="width: 100%">
                             <td>
-                                <a :href="'/api/download_file/'+data.id+'/'+file">{[file]}</a>
+                                <a :href="`/api/contest/${contestID}/${problemID}/download_file/`+file">{[file]}</a>
                             </td>
                         </tr>
                     </tbody>

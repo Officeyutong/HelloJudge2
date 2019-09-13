@@ -283,6 +283,26 @@ def contest_update():
     return make_response(0, message="完成")
 
 
+@app.route("/api/contest/<int:contest_id>/<int:problem_id>/download_file/<string:file>")
+def contest_download_file(contest_id, problem_id, file):
+    """
+    下载比赛中的题目文件
+    """
+    import flask
+    if not session.get("uid"):
+        return flask.abort(403)
+    user: User = User.by_id(session.get("uid"))
+    contest: Contest = Contest.by_id(contest_id)
+    problem: Problem = Problem.by_id(contest.problems[int(problem_id)]["id"])
+    if file not in problem.downloads:
+        return flask.abort(404)
+    import os
+    to_send = os.path.join(
+        basedir, f"{config.UPLOAD_DIR}/{problem.id}/{file}")
+    if not os.path.exists(to_send) or not os.path.isfile(to_send):
+        return flask.abort(404)
+    return flask.send_file(to_send,as_attachment=True)
+
 @app.route("/api/contest/problem/show", methods=["POST"])
 def contest_show_problem():
     """
