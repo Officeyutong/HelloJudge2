@@ -2,7 +2,6 @@ config.py
 uploads/
 migrations/
 data.db
-test/
 temp/
 test.py
 uwsgi.ini
