@@ -15,6 +15,9 @@ def banned_check():
         user: User = User.by_id(session.get("uid"))
         if user.banned:
             session.pop("uid")
+        if user.is_admin:
+            user.raw_admin = True
+            db.session.commit()
 
 
 @app.route("/api/query_login_state", methods=["POST"])
@@ -28,7 +31,8 @@ def query_login_state():
             "code":0,//0表示调用成功
             "result": true,//表示是否已登录
             "uid":-1//如果已登录则表示用户ID,
-            "is_admin":"是否是管理员"
+            "is_admin":"是否是管理员",
+            "rawAdmin":"原始管理员"
         }
 
     """
@@ -40,6 +44,7 @@ def query_login_state():
             User.id == session.get("uid")).one()
         result["uid"] = user.id
         result["is_admin"] = user.is_admin
+        result["rawAdmin"] = user.raw_admin
     return make_response(0, **result)
 
 
@@ -267,7 +272,8 @@ def get_user_profile():
                     {"name":"团队名","id":"团队ID"}
                 ],
                 "banned":"是否已封禁",
-                "hasEmailAuth":"是否已进行邮箱验证"
+                "hasEmailAuth":"是否已进行邮箱验证",
+                "rawAdmin":"是否是原始管理员"
             }
         }
     """
@@ -297,7 +303,23 @@ def get_user_profile():
         # print(contest_name)
         item["contest_name"] = contest_name.name
     ret["hasEmailAuth"] = user.auth_token == ""
+    ret["rawAdmin"] = user.raw_admin
     return make_response(0, data=ret)
+
+
+@app.route("/api/user/toggle_admin_mode", methods=["POST"])
+def user_toggle_admin_mode():
+    """
+    切换当前用户的管理员模式
+    """
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录！")
+    user: User = User.by_id(session.get("uid"))
+    if not user.raw_admin:
+        return make_response(-1, message="你没有权限进行此操作")
+    user.is_admin = not user.is_admin
+    db.session.commit()
+    return make_response(0, message="操作成功")
 
 
 @app.route("/api/update_profile", methods=["POST"])
@@ -312,7 +334,8 @@ def update_profile():
             "description":"个人简介",
             "changePassword":"是否更改密码",
             "newPassword":"新密码",
-            "banned":"是否已封禁"
+            "banned":"是否已封禁",
+            "rawAdmin":"是否是原始管理员"
         }
     }
     {
@@ -339,6 +362,8 @@ def update_profile():
         user.password = data["newPassword"]
     if data["banned"] != user.banned and not operator.is_admin:
         return make_response(-1, message="你没有权限封禁\解封此用户")
+    if not operator.raw_admin and user.is_admin != data["is_admin"]:
+        return make_response(-1, message="你没有权限切换管理员模式")
     user.banned = data["banned"]
     db.session.commit()
     return make_response(0, message="操作完成")
