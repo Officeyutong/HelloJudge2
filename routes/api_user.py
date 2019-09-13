@@ -362,8 +362,7 @@ def update_profile():
         user.password = data["newPassword"]
     if data["banned"] != user.banned and not operator.is_admin:
         return make_response(-1, message="你没有权限封禁\解封此用户")
-    if not operator.raw_admin and user.is_admin != data["is_admin"]:
-        return make_response(-1, message="你没有权限切换管理员模式")
+
     user.banned = data["banned"]
     db.session.commit()
     return make_response(0, message="操作完成")
