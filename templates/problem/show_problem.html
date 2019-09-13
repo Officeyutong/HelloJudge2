@@ -390,18 +390,18 @@
                 <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
                 <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
                 <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>
-                <div class="ui header" v-if="data.downloads.length!=0">
-                    <h4>文件下载</h4>
+                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
+                    <div class="ui header">
+                        <h4>文件下载</h4>
+                    </div>
+                    <a v-for="file,i in data.downloads" v-if="i<=5"
+                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]}    </span></a>
+                    <div class="ui right aligned container">
+                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
+                    </div>
                 </div>
-                <table class="ui very basic fluid collapsing celled table" v-if="data.downloads.length!=0">
-                    <tbody>
-                        <tr v-for="file in data.downloads" style="width: 100%">
-                            <td>
-                                <a :href="'/api/download_file/'+data.id+'/'+file">{[file]}</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+
             </div>
             <div class="ui stack segment" style="max-width: 300px">
                 <div class="ui header">

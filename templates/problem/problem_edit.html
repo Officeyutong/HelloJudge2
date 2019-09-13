@@ -7,6 +7,8 @@
 {%endblock%}
 {%block body%}
 <script>
+    let args = GetRequest();
+
     var problem_edit;
     $(document).ready(() => {
         problem_edit = new Vue({
@@ -22,8 +24,8 @@
                 quickGenInput: "",
                 quickGenOutput: "",
                 quickGenScript: "",
-                autoExtract: false
-
+                autoExtract: false,
+                showFilesOnly: (Boolean(args.show_files))
             },
             computed: {
                 file_list: function () {
@@ -235,12 +237,12 @@
         </div>
         <div>
             <div class="ui top attached tabular menu">
-                <a class="item active" data-tab="tab1">题面</a>
-                <a class="item " data-tab="tab2">题目数据</a>
+                <a class="item " v-bind:class="{active:!showFilesOnly}" data-tab="tab1" v-if="!showFilesOnly">题面</a>
+                <a class="item " v-bind:class="{active:showFilesOnly}" data-tab="tab2">题目数据</a>
                 <a class="item " :href="'/show_problem/'+data.id">返回题目</a>
 
             </div>
-            <div class="ui bottom attached tab segment active" data-tab="tab1">
+            <div class="ui bottom attached tab segment " v-bind:class="{active:!showFilesOnly}" data-tab="tab1" v-if="!showFilesOnly">
                 <div class="ui equal width form">
                     <div class="field">
                         <label>题目ID</label>
@@ -292,7 +294,7 @@
                     </div>
                 </div>
             </div>
-            <div class="ui bottom attached segment tab " data-tab="tab2">
+            <div class="ui bottom attached segment tab "  v-bind:class="{active:showFilesOnly}" data-tab="tab2">
                 <div class="ui header">
                     <h3>文件列表</h3>
                 </div>
@@ -304,12 +306,12 @@
                                 <th>文件名</th>
                                 <th>大小</th>
                                 <th>操作</th>
-                                <th>公开</th>
-                                <th>编译时提供</th>
+                                <th v-if="!showFilesOnly">公开</th>
+                                <th v-if="!showFilesOnly">编译时提供</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="val,i in data.files">
+                            <tr v-for="val,i in data.files" v-if="!showFilesOnly||(data.downloads.includes(val.name))">
                                 <td style="width: 50px">{[i+1]}</td>
                                 <td>{[val.name]}</td>
                                 <td>{[val.size]}({[val.size/1024]} KB)</td>
@@ -317,12 +319,12 @@
                                     <div class="ui buttons">
                                         <a class="ui tiny green button"
                                             :href="'/api/download_file/'+data.id+'/'+val.name" target="_blank">下载</a>
-                                        <button class="ui tiny red button" v-on:click="remove_file"
-                                            :data-index="i">删除</button>
+                                        <button class="ui tiny red button" v-on:click="remove_file" :data-index="i"
+                                            v-if="!showFilesOnly">删除</button>
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="ui toggle checkbox">
+                                    <div class="ui toggle checkbox" v-if="!showFilesOnly">
                                         <input type="checkbox" class="hidden"
                                             :checked="data.downloads.includes(val.name)?1:null">
                                         <label :data="val.name"
@@ -330,7 +332,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="ui toggle checkbox">
+                                    <div class="ui toggle checkbox" v-if="!showFilesOnly">
                                         <input type="checkbox" class="hidden"
                                             :checked="data.provides.includes(val.name)?1:null">
                                         <label :data="val.name"
@@ -340,182 +342,187 @@
                             </tr>
                         </tbody>
                     </table>
-                    <div class="ui form">
-                        <div class="ui field">
-                            <label>上传文件</label>
-                            <input type="file" multiple id="files" v-on:change="get_file">
-                        </div>
-                        <p>当您上传的文件为zip压缩包时，将会自动解压并把根目录下的所有文件加入题目文件中</p>
-                        <div class="ui small green submit button" v-on:click="upload"
-                            v-bind:class="{loading:uploading}">
-                            上传..
-                        </div>
-                        <div class="ui blue button" v-on:click="regenerateFileList">重新生成文件列表</div>
-                    </div>
-                    <div class="ui header">
-                        <h3>评测数据设定</h3>
-                    </div>
-                    <div class="ui stacked segment">
-                        <div class="ui container">
-                            <div class="ui form">
-
-                                <div class="ui field">
-                                    <label>SPJ文件名</label>
-                                    <input type="text" v-model="data.spj_filename" placeholder="留空以不使用SPJ">
-                                </div>
-                                <div class="ui fields">
-                                    <div class="ui field" :class="{disabled:!data.using_file_io}">
-                                        <label>输入文件</label>
-                                        <input type="text" v-model="data.input_file_name">
-                                    </div>
-                                    <div class="ui field" :class="{disabled:!data.using_file_io}">
-                                        <label>输出文件</label>
-                                        <input type="text" v-model="data.output_file_name">
-                                    </div>
-                                </div>
-                                <div class="ui field">
-                                    <div class="ui toggle checkbox">
-                                        <input type="checkbox" v-model="data.using_file_io"
-                                            @click="data.using_file_io=!data.using_file_io">
-                                        <label>使用文件IO</label>
-                                    </div>
-                                </div>
-                                <div class="ui field">
-                                    <label>附加编译参数</label>
-                                    <input type="text" v-model="data.extra_compile_parameter">
-                                </div>
-
-                            </div>
-                        </div>
-                        <div class="ui green button" v-on:click="submit">提交</div>
-                    </div>
-                    <div class="ui header">
-                        <h3>快速生成子任务</h3>
-                    </div>
-                    <div class="ui stacked segment">
+                    <div v-if="!showFilesOnly">
                         <div class="ui form">
-                            <div class="ui fields">
-                                <div class="ui field">
-                                    <label>输入文件名</label>
-                                    <input type="text" v-model="quickGenInput">
-                                </div>
-                                <div class="ui field">
-                                    <label>输出文件名</label>
-                                    <input type="text" v-model="quickGenOutput">
-                                </div>
-                            </div>
-
                             <div class="ui field">
-                                <label>生成脚本</label>
-                                <textarea v-model="quickGenScript"></textarea>
+                                <label>上传文件</label>
+                                <input type="file" multiple id="files" v-on:change="get_file">
                             </div>
-                            <p>在文件名中使用#作为占位符.</p>
-                            <p style="color:red">进行本操作将会删除现有的所有子任务</p>
-                            <p>具体使用说明见帮助.</p>
-                            <div class="ui green submit button" v-on:click="quickGenerateSubtask">执行</div>
-                        </div>
-                    </div>
-                    <div class="ui header">
-                        <h3>子任务设定</h3>
-                    </div>
-                    <div class="ui stacked segment">
-                        <div class="ui form">
-                            <div class="ui fields">
-                                <div class="ui field">
-                                    <label>统一修改内存</label>
-                                    <input type="text" v-on:keyup.enter="modify_all('memory_limit',$event.target.value)"
-                                        placeholder="按回车生效..">
-                                </div>
-                                <div class="ui field">
-                                    <label>统一修改时限</label>
-                                    <input type="text" v-on:keyup.enter="modify_all('time_limit',$event.target.value)"
-                                        placeholder="按回车生效..">
-                                </div>
+                            <p>当您上传的文件为zip压缩包时，将会自动解压并把根目录下的所有文件加入题目文件中</p>
+                            <div class="ui small green submit button" v-on:click="upload"
+                                v-bind:class="{loading:uploading}">
+                                上传..
                             </div>
-                            <div class="ui green button" @click="auto_generate">自动生成子任务</div>
+                            <div class="ui blue button" v-on:click="regenerateFileList">重新生成文件列表</div>
                         </div>
-                        <div class="ui divider"></div>
-                        <div v-for="subtask,index in data.subtasks">
+                        <div class="ui header">
+                            <h3>评测数据设定</h3>
+                        </div>
+                        <div class="ui stacked segment">
+                            <div class="ui container">
+                                <div class="ui form">
 
-                            <div class="ui header">
-                                <h2>{[subtask.name]}</h2>
+                                    <div class="ui field">
+                                        <label>SPJ文件名</label>
+                                        <input type="text" v-model="data.spj_filename" placeholder="留空以不使用SPJ">
+                                    </div>
+                                    <div class="ui fields">
+                                        <div class="ui field" :class="{disabled:!data.using_file_io}">
+                                            <label>输入文件</label>
+                                            <input type="text" v-model="data.input_file_name">
+                                        </div>
+                                        <div class="ui field" :class="{disabled:!data.using_file_io}">
+                                            <label>输出文件</label>
+                                            <input type="text" v-model="data.output_file_name">
+                                        </div>
+                                    </div>
+                                    <div class="ui field">
+                                        <div class="ui toggle checkbox">
+                                            <input type="checkbox" v-model="data.using_file_io"
+                                                @click="data.using_file_io=!data.using_file_io">
+                                            <label>使用文件IO</label>
+                                        </div>
+                                    </div>
+                                    <div class="ui field">
+                                        <label>附加编译参数</label>
+                                        <input type="text" v-model="data.extra_compile_parameter">
+                                    </div>
+
+                                </div>
                             </div>
-                            <div class="ui equal width form">
+                            <div class="ui green button" v-on:click="submit">提交</div>
+                        </div>
+                        <div class="ui header">
+                            <h3>快速生成子任务</h3>
+                        </div>
+                        <div class="ui stacked segment">
+                            <div class="ui form">
                                 <div class="ui fields">
                                     <div class="ui field">
-                                        <label>子任务名</label>
-                                        <input type="text" v-model="subtask.name">
+                                        <label>输入文件名</label>
+                                        <input type="text" v-model="quickGenInput">
                                     </div>
                                     <div class="ui field">
-                                        <label>时间限制(ms,整数)</label>
-                                        <input type="text" v-model="subtask.time_limit">
-                                    </div>
-                                    <div class="ui field">
-                                        <label>内存限制(MB,整数)</label>
-                                        <input type="text" v-model="subtask.memory_limit">
+                                        <label>输出文件名</label>
+                                        <input type="text" v-model="quickGenOutput">
                                     </div>
                                 </div>
 
+                                <div class="ui field">
+                                    <label>生成脚本</label>
+                                    <textarea v-model="quickGenScript"></textarea>
+                                </div>
+                                <p>在文件名中使用#作为占位符.</p>
+                                <p style="color:red">进行本操作将会删除现有的所有子任务</p>
+                                <p>具体使用说明见帮助.</p>
+                                <div class="ui green submit button" v-on:click="quickGenerateSubtask">执行</div>
+                            </div>
+                        </div>
+                        <div class="ui header">
+                            <h3>子任务设定</h3>
+                        </div>
+                        <div class="ui stacked segment">
+                            <div class="ui form">
                                 <div class="ui fields">
                                     <div class="ui field">
-                                        <label>计分方式</label>
-                                        <select class="ui dropdown" v-model="subtask.method">
-                                            <option value="min">取最小值</option>
-                                            <option value="sum">取和</option>
-                                        </select>
+                                        <label>统一修改内存</label>
+                                        <input type="text"
+                                            v-on:keyup.enter="modify_all('memory_limit',$event.target.value)"
+                                            placeholder="按回车生效..">
                                     </div>
                                     <div class="ui field">
-                                        <label>子任务总分</label>
-                                        <input type="text" v-model="subtask.score">
+                                        <label>统一修改时限</label>
+                                        <input type="text"
+                                            v-on:keyup.enter="modify_all('time_limit',$event.target.value)"
+                                            placeholder="按回车生效..">
                                     </div>
                                 </div>
-                                <div class="ui field">
-                                    <label>注释</label>
-                                    <textarea rows="3" v-model="subtask.comment"></textarea>
-                                </div>
-                            </div>
-                            <table class="ui table">
-                                <thead>
-                                    <tr>
-                                        <th>测试点编号</th>
-                                        <th>输入文件名</th>
-                                        <th>输出文件名</th>
-                                        <th>删除</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="testcase,index in subtask.testcases">
-                                        <td>{[index+1]}</td>
-                                        <td>
-                                            <select class="ui dropdown" v-model="testcase.input">
-                                                <option v-for="file in file_list" :value="file">{[file]}</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select class="ui dropdown" v-model="testcase.output">
-                                                <option v-for="file in file_list" :value=file>{[file]}</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <div class="ui tiny red circular icon button"
-                                                v-on:click="subtask.testcases.splice(index,1)">
-                                                <i class="times icon"></i>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="ui buttons">
-                                <div class="ui red button" v-on:click="data.subtasks.splice(index,1)">删除子任务</div>
-                                <div class="ui blue button"
-                                    v-on:click="data.subtasks[index].testcases.push({input:'qwq',output:'qwq'})">增加测试点
-                                </div>
+                                <div class="ui green button" @click="auto_generate">自动生成子任务</div>
                             </div>
                             <div class="ui divider"></div>
-                        </div>
+                            <div v-for="subtask,index in data.subtasks">
 
-                        <div class="ui container">
-                            <div class="ui green button" @click="add_subtask">添加子任务</div>
+                                <div class="ui header">
+                                    <h2>{[subtask.name]}</h2>
+                                </div>
+                                <div class="ui equal width form">
+                                    <div class="ui fields">
+                                        <div class="ui field">
+                                            <label>子任务名</label>
+                                            <input type="text" v-model="subtask.name">
+                                        </div>
+                                        <div class="ui field">
+                                            <label>时间限制(ms,整数)</label>
+                                            <input type="text" v-model="subtask.time_limit">
+                                        </div>
+                                        <div class="ui field">
+                                            <label>内存限制(MB,整数)</label>
+                                            <input type="text" v-model="subtask.memory_limit">
+                                        </div>
+                                    </div>
+
+                                    <div class="ui fields">
+                                        <div class="ui field">
+                                            <label>计分方式</label>
+                                            <select class="ui dropdown" v-model="subtask.method">
+                                                <option value="min">取最小值</option>
+                                                <option value="sum">取和</option>
+                                            </select>
+                                        </div>
+                                        <div class="ui field">
+                                            <label>子任务总分</label>
+                                            <input type="text" v-model="subtask.score">
+                                        </div>
+                                    </div>
+                                    <div class="ui field">
+                                        <label>注释</label>
+                                        <textarea rows="3" v-model="subtask.comment"></textarea>
+                                    </div>
+                                </div>
+                                <table class="ui table">
+                                    <thead>
+                                        <tr>
+                                            <th>测试点编号</th>
+                                            <th>输入文件名</th>
+                                            <th>输出文件名</th>
+                                            <th>删除</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="testcase,index in subtask.testcases">
+                                            <td>{[index+1]}</td>
+                                            <td>
+                                                <select class="ui dropdown" v-model="testcase.input">
+                                                    <option v-for="file in file_list" :value="file">{[file]}</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="ui dropdown" v-model="testcase.output">
+                                                    <option v-for="file in file_list" :value=file>{[file]}</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div class="ui tiny red circular icon button"
+                                                    v-on:click="subtask.testcases.splice(index,1)">
+                                                    <i class="times icon"></i>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="ui buttons">
+                                    <div class="ui red button" v-on:click="data.subtasks.splice(index,1)">删除子任务</div>
+                                    <div class="ui blue button"
+                                        v-on:click="data.subtasks[index].testcases.push({input:'qwq',output:'qwq'})">
+                                        增加测试点
+                                    </div>
+                                </div>
+                                <div class="ui divider"></div>
+                            </div>
+
+                            <div class="ui container">
+                                <div class="ui green button" @click="add_subtask">添加子任务</div>
+                            </div>
                         </div>
                     </div>
                 </div>
