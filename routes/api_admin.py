@@ -102,7 +102,7 @@ def admin_rated_contests():
             "ratedTime": x.rated_time,
             "contestID": x.id,
             "contestName": x.name,
-            "contestantCount": db.session.query(Submission.id).filter(Submission.contest_id == x.id).distinct().count()
+            "contestantCount": db.session.query(Submission.uid).filter(Submission.contest_id == x.id).distinct().count()
         })
     return make_response(0, data=result)
 
