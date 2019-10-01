@@ -37,6 +37,12 @@
                 }
             },
             methods: {
+                publicizeAllFiles() {
+                    this.data.downloads = this.data.files.map(x => x.name);
+                },
+                unpublicizeAllFiles() {
+                    this.data.downloads = new Array();
+                },
                 quickGenerateSubtask() {
                     let arrays;
                     try {
@@ -242,7 +248,8 @@
                 <a class="item " :href="'/show_problem/'+data.id">返回题目</a>
 
             </div>
-            <div class="ui bottom attached tab segment " v-bind:class="{active:!showFilesOnly}" data-tab="tab1" v-if="!showFilesOnly">
+            <div class="ui bottom attached tab segment " v-bind:class="{active:!showFilesOnly}" data-tab="tab1"
+                v-if="!showFilesOnly">
                 <div class="ui equal width form">
                     <div class="field">
                         <label>题目ID</label>
@@ -294,7 +301,7 @@
                     </div>
                 </div>
             </div>
-            <div class="ui bottom attached segment tab "  v-bind:class="{active:showFilesOnly}" data-tab="tab2">
+            <div class="ui bottom attached segment tab " v-bind:class="{active:showFilesOnly}" data-tab="tab2">
                 <div class="ui header">
                     <h3>文件列表</h3>
                 </div>
