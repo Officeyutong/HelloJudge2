@@ -179,7 +179,7 @@
             template: '<div class="ui container problem-meta"  v-if="value!=\'\'"><div class="ui fluid two column grid"><div class="ui column">\
                             <div class="ui header"><h3>{[name]}</h3></div></div><div class="ui right aligned column">\
                                 <div class="ui tiny orange circular icon button" @click="copy_text(value)"><i class="clipboard outline icon"></i></div>\
-                                    </div></div>    <div class="ui stack segment"><div  v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" v-else></pre>    </div></div>',
+                                    </div></div>    <div class="ui stack segment"><div  v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" style="white-space:pre-wrap;word-break:break-word;" v-else></pre>    </div></div>',
             props: {
                 //内容
                 value: {
