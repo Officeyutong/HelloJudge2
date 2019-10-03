@@ -27,8 +27,51 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 1. 运行```python3.7 manage.py db init```
 2. 进入```migrations/script.py.mako```,在```import sqlalchemy as sa```的下一行写上```import ormtypes```
 3. 运行```python3.7 manage.py db migrate```,```python3.7 manage.py db upgrade```
-#### 配置文件
-配置文件内容见config_default.py
+#### 配置文件主要内容
+
+##### SESSION_KEY
+用来加密session的密钥，在第一次运行OJ之前，请填写一个随机滚键盘生成的字符串。
+##### DATABASE_URI
+数据库URI，如果使用SQLite请填写为```sqlite:///data.db```,其中```data.db```为数据库文件名。
+
+如果使用MySQL，请填写为```mysql+mysqlconnector://username:password@host:port/database_name```。
+##### DEBUG
+Flask的调试模式
+##### APP_NAME
+站点名称。
+##### PASSWORD_SALT
+用于在前端加密密码的salt，请脸滚键盘生成一个字符串。
+
+在OJ开始运行后请不要更改，否则所有数据库中的密码都会失效。
+##### USERNAME_REGEX 
+新建用户的用户名必须满足这个正则表达式
+##### REDIS_URI
+Redis的URI。
+##### JUDGERS
+Web端认可的评测机列表。
+
+每一个评测机都应该有一个唯一的UUID，Web端有这个评测机的UUID时，评测机才可以接到Web端发出的评测任务。
+```python
+{
+    "一个评测机的UUID":"这个评测机在前端显示的名字"
+}
+```
+##### PROBLEMS_PER_PAGE
+每页显示的题目数量。
+##### SUBMISSIONS_PER_PAGE
+每页显示的提交记录数量。
+##### DISCUSSION_PER_PAGE
+每页显示的讨论数量。
+##### COMMENTS_PER_PAGE
+每页显示的评论数量。
+##### COMPILE_TIME_LIMIT
+编译程序的时间上限(ms)。
+##### COMPILE_RESULT_LENGTH_LIMIT
+发送给前端的编译结果的大小上限(bytes)
+##### SPJ_EXECUTE_TIME_LIMIT
+SPJ的执行时间上限(ms)
+
+其他配置说明见```config_default.py```
 
 如何添加语言请参考下文。
 
@@ -36,7 +79,7 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 ##### Flask内建服务器
 直接运行```python3.7 run.py```即可。
 
-##### uWSGI
+##### uWSGI\Gunicorn   
 先咕着
 
 #### 如何添加语言
