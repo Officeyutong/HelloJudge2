@@ -73,7 +73,7 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         "message": message
     }, room="judge:"+str(submission_id), namespace="/ws/submission")
     print(
-        f"Submission {submission_id} status updated to \n{judge_result}\nmessage {message},judger {judger}")
+        f"Submission {submission_id} status updated \nmessage {message},judger {judger}")
     submit.score = submit.get_total_score()
     if submit.status in {"accepted", "unaccepted"}:
         submit.memory_cost, submit.time_cost = submit.get_total_memory_time_cost()
