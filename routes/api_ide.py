@@ -53,3 +53,24 @@ def iderun_update():
         "status": request.form["status"]
     }, room="iderun", namespace="/ws/iderun", broadcast=True)
     return make_response(0, message="ok")
+
+
+# @csrf.exempt
+# @app.route("update", namespace="/ws/ide/update")
+# def ws_iderun_update(state: dict):
+#     """
+#     更新在线IDE提交状态
+#     uuid: 评测机UUID
+#     run_id: 运行ID
+#     message: 消息
+#     status: done/running运行状态
+#     """
+#     if state.get("uuid") not in config.JUDGERS:
+#         return
+#     import flask_socketio
+#     # print(f"Updating...{request.form['run_id']}")
+#     flask_socketio.emit("update", {
+#         "run_id": state["run_id"],
+#         "message": state["message"],
+#         "status": state["status"]
+#     }, room="iderun", namespace="/ws/iderun", broadcast=True)

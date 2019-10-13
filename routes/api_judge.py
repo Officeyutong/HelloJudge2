@@ -7,6 +7,7 @@ from models.problem import *
 from models.submission import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+from main import socket
 
 
 @csrf.exempt
@@ -115,6 +116,30 @@ def judge_update():
     update_status(int(request.form["submission_id"]), decode_json(request.form["judge_result"]),
                   str(config.JUDGERS[request.form["uuid"]]), request.form.get("message", ""), request.form["extra_status"])
     return make_response(0)
+
+
+# @csrf.exempt
+# @socket.on("update", namespace="/ws/judge/")
+# def ws_judge_update(state: dict):
+#     """
+#     更新评测状态
+#     参数:
+#     submission_id:int 提交ID
+#     uuid:str 评测机uuid
+#     judge_result:dict 评测结果
+#     message:str 附加信息
+#     extra_status:str 附加状态
+#     返回
+#     {
+#         "code":-1,//0表示调用成功
+#         "message":"qwq"
+#     }
+#     """
+#     if state['uuid'] not in config.JUDGERS:
+#         return
+#     from api.judge import update_status
+#     update_status(int(state["submission_id"]), state["judge_result"],
+#                   str(config.JUDGERS[state["uuid"]]), state.get("message", ""), state["extra_status"])
 
 
 @csrf.exempt
