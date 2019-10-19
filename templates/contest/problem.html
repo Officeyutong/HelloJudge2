@@ -128,10 +128,10 @@
                 langs: {},
                 selected_id: "",
                 code: "",
-                done: false, contestID: -1, problemID: -1
+                done: false, contestID: -1, problemID: -1, usedParameters: []
             }, methods: {
                 submit: function () {
-                    $.post("/api/contest/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id }).done(ctx => {
+                    $.post("/api/contest/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id, usedParameters: JSON.stringify(this.usedParameters) }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             showErrorModal(ctx.message);
@@ -204,6 +204,8 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
+            // console.log()
+
             $.post("/api/get_supported_langs").done((ctx) => {
                 ctx = JSON.parse(ctx);
                 var obj = {}
@@ -280,26 +282,56 @@
             <div class="ui header">
                 <h3>提交代码</h3>
             </div>
-            <div class="ui two column grid" style="min-height: 500px;">
-                <div class="ui four wide column">
-                    <div class="ui vertical pointing menu"
-                        style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
-                        <a class="item" v-for="val,key in langs" :data-id="key" v-bind:class="{active:selected_id==key}"
-                            @click="selected_id=key">
-                            <span>
-                                <span class="ui header">
-                                    <h4>{[val.display]}</h4>
-                                </span>{[val.version]}
-                            </span>
-                            <!-- <p></p> -->
-                        </a>
+            <div class="ui one column grid">
+                <div class="ui column">
+                    <div class="ui two column grid" style="min-height: 500px;">
+                        <div class="ui four wide column">
+                            <div class="ui vertical pointing menu"
+                                style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
+                                <a class="item" v-for="val,key in langs" :data-id="key"
+                                    v-bind:class="{active:selected_id==key}" @click="selected_id=key">
+                                    <span>
+                                        <span class="ui header">
+                                            <h4>{[val.display]}</h4>
+                                        </span>{[val.version]}
+                                    </span>
+                                    <!-- <p></p> -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="twelve wide stretched column" style="padding-left: 0;">
+                            <div class="ui container">
+                                <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
+                                    style="left:30px;min-height: 500px;">
+                                </editor>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="twelve wide stretched column" style="padding-left: 0;">
-                    <div class="ui container">
-                        <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                            style="left:30px;min-height: 500px;">
-                        </editor>
+                <div class="ui column">
+                    <div class="ui segment">
+                        <table class="ui very basic celled table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>参数</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
+                                    <td> {[item.name]} </td>
+                                    <td> {[item.parameter]} </td>
+                                    <td>
+                                        <div class="ui toggle checkbox">
+                                            <input type="checkbox" hidden :checked="usedParameters.includes(i)?1:null">
+                                            <label
+                                                v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -322,10 +354,6 @@
                         <tr v-if="data.using_file_io">
                             <td>输入/输出文件</td>
                             <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
-                        </tr>
-                        <tr>
-                            <td>附加编译参数</td>
-                            <td>{[data.extra_compile_parameter]}</td>
                         </tr>
 
                     </tbody>

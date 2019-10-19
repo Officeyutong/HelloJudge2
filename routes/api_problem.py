@@ -102,7 +102,10 @@ def get_problem_info():
                 //我的提交状态
                 "my_submission_status":-1,
                 "score":题目总分,
-                "extra_compile_parameter":"附加编译参数"
+                "extra_parameter":[
+                    {"lang":"语言ID正则","parameter":"参数","name":"名称"}
+                ],
+                "lastUsedParameters":[1,2,4]
             }
         }
     """
@@ -116,12 +119,14 @@ def get_problem_info():
     if not problem.public and not User.by_id(session.get("uid")).is_admin and int(session.get("uid")) != problem.uploader_id:
         return make_response(-1, message="你没有权限查看此题目")
     result = problem.as_dict()
-    last_submission = db.session.query(Submission).filter(and_(
+    last_submission: Submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
+    result["lastUsedParameters"] = []
     if last_submission.count():
         submit = last_submission.first()
         result["last_code"] = submit.code
         result["last_lang"] = submit.language
+        result["lastUsedParameters"] = submit.selected_compile_parameters
     else:
         result["last_lang"] = result["last_code"] = ""
     result["submission_count"] = db.session.query(Submission).filter(
@@ -129,6 +134,7 @@ def get_problem_info():
     result["accepted_count"] = db.session.query(
         Submission).filter(Submission.status == "accepted").filter(Submission.problem_id == problem.id).count()
     result["my_submission"] = -1
+
     if session.get("uid"):
         ac_submit = db.session.query(Submission.id, Submission.status).filter(
             Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())

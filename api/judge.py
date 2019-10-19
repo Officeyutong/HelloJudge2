@@ -26,7 +26,7 @@ def push_to_queue(submission_id):
                     "compile_time_limit": config.COMPILE_TIME_LIMIT,
                     "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
                     "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT,
-                    "extra_compile_parameter": problem.extra_compile_parameter,
+                    "extra_compile_parameter": submit.extra_compile_parameter,
                     "auto_sync_files": config.AUTO_SYNC_FILES,
                     "output_file_size_limit": config.OUTPUT_FILE_SIZE_LIMIT
                     }])

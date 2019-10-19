@@ -43,7 +43,8 @@ def submit():
         problem_id:int 题目ID
         code:str 代码
         language:str 语言ID
-        contest_id:int 比赛ID,设置为-1表示非比赛提交//目前尚未处理
+        contest_id:int 比赛ID,设置为-1表示非比赛提交
+        usedParameters:str [1,2,3] 使用到了的附加编译选项ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -63,15 +64,19 @@ def submit():
     if not problem.public:
         if not user.is_admin and user.id != problem.uploader_id:
             return make_response(-1, message="你没有权限执行此操作")
+    parameters: List[int] = decode_json(request.form["usedParameters"])
+
     import importlib
     try:
         importlib.import_module("langs."+request.form["language"])
     except:
         return make_response(-1, message="不支持的语言ID")
+    parameter_string = " ".join(
+        (problem.extra_parameter[i]["parameter"] for i in parameters))
 
     import datetime
     submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=problem.public, contest_id=request.form["contest_id"],
-                        code=request.form["code"], status="waiting")
+                        code=request.form["code"], status="waiting", extra_compile_parameter=parameter_string, selected_compile_parameters=parameters)
     submit.public = problem.public
     db.session.add(submit)
     db.session.commit()
@@ -110,7 +115,8 @@ def get_submission_info():
             "score":"总分",
             "ace_mode":"ACE.js语言ID",
             "time_cost":"时间开销",
-            "memory_cost":"内存开销"
+            "memory_cost":"内存开销",
+            "extra_compile_parameter":"附加编译参数"
         }
     }
     """
@@ -144,10 +150,15 @@ def get_submission_info():
                 break
 
     import importlib
-    ret["ace_mode"] = importlib.import_module(
-        "langs."+submit.language).ACE_MODE
-    ret["language_name"] = importlib.import_module(
-        "langs."+ret["language"]).DISPLAY
+    try:
+        ret["ace_mode"] = importlib.import_module(
+            "langs."+submit.language).ACE_MODE
+        ret["language_name"] = importlib.import_module(
+            "langs."+ret["language"]).DISPLAY
+    except Exception as ex:
+        import traceback
+        traceback.print_exc()
+        ret["ace_mode"] = ret["language_name"] = ""
     return make_response(0, data=ret)
 
 

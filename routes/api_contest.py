@@ -301,7 +301,8 @@ def contest_download_file(contest_id, problem_id, file):
         basedir, f"{config.UPLOAD_DIR}/{problem.id}/{file}")
     if not os.path.exists(to_send) or not os.path.isfile(to_send):
         return flask.abort(404)
-    return flask.send_file(to_send,as_attachment=True)
+    return flask.send_file(to_send, as_attachment=True)
+
 
 @app.route("/api/contest/problem/show", methods=["POST"])
 def contest_show_problem():
@@ -328,7 +329,7 @@ def contest_show_problem():
                 "last_code":"qwq",//上一次提交的代码,
                 "last_lang":"qwq",//上一次选择的语言ID
                 "score":题目总分,
-                "extra_compile_parameter":"附加编译参数"
+                "extra_compile_parameter":[]
             }
         }
     """
@@ -366,6 +367,7 @@ def contest_submit():
         code:str 代码
         language:str 语言ID
         contest_id:int 比赛ID
+        usedParameters:str [1,2,3]
     返回:
         {
             "code":0,//非0表示调用成功
@@ -387,10 +389,13 @@ def contest_submit():
         importlib.import_module("langs."+request.form["language"])
     except:
         return make_response(-1, message="不支持的语言ID")
+    parameters: List[int] = decode_json(request.form["usedParameters"])
+    parameter_string = " ".join(
+        (problem.extra_parameter[i]["parameter"] for i in parameters))
 
     import datetime
     submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=False, contest_id=request.form["contest_id"],
-                        code=request.form["code"], status="waiting")
+                        code=request.form["code"], status="waiting", extra_compile_parameter=parameter_string, selected_compile_parameters=parameters)
     db.session.add(submit)
     db.session.commit()
     from api.judge import push_to_queue

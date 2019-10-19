@@ -129,14 +129,15 @@
                 selected_id: "",
                 code: "",
                 uploader_profile: {},
-                done: false, recent_discussion: []
+                done: false, recent_discussion: [], usedParameters: []
             }, methods: {
                 submit: function () {
                     $.post("/api/submit", {
                         problem_id: show_problem.data.id,
                         code: show_problem.code,
                         language: show_problem.selected_id,
-                        contest_id: -1
+                        contest_id: -1,
+                        usedParameters: JSON.stringify(show_problem.usedParameters)
                     }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
@@ -218,6 +219,9 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
+            show_problem.usedParameters = ctx.data.lastUsedParameters;
+            // console.log(show_problem.usedParameters);
+            // console.log(ctx)
             $.post("/api/get_user_profile", { uid: ctx.data.uploader_id }).done(ctx => {
                 ctx = JSON.parse(ctx);
                 show_problem.uploader_profile = ctx.data;
@@ -309,26 +313,56 @@
             <div class="ui header">
                 <h3>提交代码</h3>
             </div>
-            <div class="ui two column grid" style="min-height: 500px;">
-                <div class="ui four wide column">
-                    <div class="ui vertical pointing menu"
-                        style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
-                        <a class="item" v-for="val,key in langs" :data-id="key" v-bind:class="{active:selected_id==key}"
-                            @click="selected_id=key">
-                            <span>
-                                <span class="ui header">
-                                    <h4>{[val.display]}</h4>
-                                </span>{[val.version]}
-                            </span>
-                            <!-- <p></p> -->
-                        </a>
+            <div class="ui one column grid">
+                <div class="ui column">
+                    <div class="ui two column grid" style="min-height: 500px;">
+                        <div class="ui four wide column">
+                            <div class="ui vertical pointing menu"
+                                style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
+                                <a class="item" v-for="val,key in langs" :data-id="key"
+                                    v-bind:class="{active:selected_id==key}" @click="selected_id=key">
+                                    <span>
+                                        <span class="ui header">
+                                            <h4>{[val.display]}</h4>
+                                        </span>{[val.version]}
+                                    </span>
+                                    <!-- <p></p> -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="twelve wide stretched column" style="padding-left: 0;">
+                            <div class="ui container">
+                                <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
+                                    style="left:30px;min-height: 500px;">
+                                </editor>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="twelve wide stretched column" style="padding-left: 0;">
-                    <div class="ui container">
-                        <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                            style="left:30px;min-height: 500px;">
-                        </editor>
+                <div class="ui column">
+                    <div class="ui segment">
+                        <table class="ui very basic celled table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>参数</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
+                                    <td> {[item.name]} </td>
+                                    <td> {[item.parameter]} </td>
+                                    <td>
+                                        <div class="ui toggle checkbox">
+                                            <input type="checkbox" hidden :checked="usedParameters.includes(i)?1:null">
+                                            <label
+                                                v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -374,10 +408,6 @@
                             <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
                         </tr>
                         <tr>
-                            <td>附加编译参数</td>
-                            <td>{[data.extra_compile_parameter]}</td>
-                        </tr>
-                        <tr>
                             <td>评测方式</td>
                             <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
                         </tr>
@@ -395,7 +425,7 @@
                         <h4>文件下载</h4>
                     </div>
                     <a v-for="file,i in data.downloads" v-if="i<=5"
-                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]}    </span></a>
+                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]} </span></a>
                     <div class="ui right aligned container">
                         <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
                     </div>

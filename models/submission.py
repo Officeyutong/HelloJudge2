@@ -30,6 +30,12 @@ class Submission(db.Model):
     memory_cost = db.Column(db.Integer, default=0, nullable=False)
     # 时间开销
     time_cost = db.Column(db.Integer, default=0, nullable=False)
+    # 附加编译参数
+    extra_compile_parameter = db.Column(
+        db.String(128), default="", nullable=False)
+    # 选择的语言参数
+    selected_compile_parameters = db.Column(
+        JsonPickle, default=[], nullable=False)
 
     def get_total_memory_time_cost(self) -> Tuple[int, int]:
         memory, time = 0, 0

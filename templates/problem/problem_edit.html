@@ -363,8 +363,8 @@
                             <div class="ui blue button" v-on:click="regenerateFileList">重新生成文件列表</div>
                             <div class="ui green button" v-on:click="publicizeAllFiles">公开全部文件</div>
                             <div class="ui red button" v-on:click="unpublicizeAllFiles">取消公开全部文件</div>
-                            
-                            
+
+
                         </div>
                         <div class="ui header">
                             <h3>评测数据设定</h3>
@@ -394,14 +394,53 @@
                                             <label>使用文件IO</label>
                                         </div>
                                     </div>
-                                    <div class="ui field">
-                                        <label>附加编译参数</label>
-                                        <input type="text" v-model="data.extra_compile_parameter">
-                                    </div>
-
                                 </div>
                             </div>
                             <div class="ui green button" v-on:click="submit">提交</div>
+                        </div>
+                        <div class="ui header">
+                            <h3>附加编译参数设定</h3>
+                        </div>
+                        <div class="ui stacked segment">
+                            <table class="ui very basic celled table">
+                                <thead>
+                                    <tr>
+                                        <th>语言正则表达式</th>
+                                        <th>参数</th>
+                                        <th>名称</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="line,i in data.extra_parameter">
+                                        <td>
+                                            <div class="ui input"> <input v-model="line.lang">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="ui input"><input v-model="line.parameter"></div>
+
+                                        </td>
+                                        <td>
+                                            <div class="ui input">
+                                                <input v-model="line.name">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="ui tiny red circular icon button"
+                                                v-on:click="data.extra_parameter.splice(i,1)">
+                                                <i class="times icon"></i>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="ui left aligned container">
+                                <div class="ui green button"
+                                    v-on:click="data.extra_parameter.push({lang:'',parameter:'',name:''})">
+                                    添加..
+                                </div>
+                            </div>
                         </div>
                         <div class="ui header">
                             <h3>快速生成子任务</h3>
