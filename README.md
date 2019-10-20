@@ -107,3 +107,13 @@ SPJ的执行时间上限(ms)
 |ACE_MODE|用于ACE.js的代码样式，见static/ace/mode-xxx.js|c_cpp|
 #### 其他
 评测端部署指南见[https://gitee.com/yutong_java/HelloJudge2-Judger](https://gitee.com/yutong_java/HelloJudge2-Judger)
+
+## 捐助
+如果您觉得此项目对您有帮助，欢迎通过以下方式对作者进行捐助。
+
+![](images/alipay.jpg)
+![](images/wechat.jpg)
+
+
+
+如果您在捐助时注明了您的姓名，那么您将会出现在下面的列表上。
