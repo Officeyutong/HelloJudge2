@@ -131,7 +131,7 @@
                 done: false, contestID: -1, problemID: -1, usedParameters: []
             }, methods: {
                 submit: function () {
-                    $.post("/api/contest/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id, usedParameters: JSON.stringify(this.usedParameters) }).done(ctx => {
+                    $.post("/api/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id, usedParameters: JSON.stringify(this.usedParameters) }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             showErrorModal(ctx.message);

@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 @app.route("/api/rejudge", methods=["POST"])
 def rejudge():
-    """ 
+    """
     重测提交
     参数:
     submission_id:int 提交ID
@@ -43,7 +43,7 @@ def submit():
         problem_id:int 题目ID
         code:str 代码
         language:str 语言ID
-        contest_id:int 比赛ID,设置为-1表示非比赛提交
+        contest_id:int 比赛ID,设置为-1表示非比赛提交,如果非-1，那么problem_id为比赛中的题目ID
         usedParameters:str [1,2,3] 使用到了的附加编译选项ID
     返回:
         {
@@ -52,31 +52,53 @@ def submit():
             "submission_id":-1//调用成功时的提交ID
         }
     """
-    problem = db.session.query(Problem).filter(
-        Problem.id == request.form["problem_id"])
-    if problem.count() == 0:
-        return make_response(-1, message="题目ID不存在")
-    problem: Problem = problem.one()
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not problem.public:
-        if not user.is_admin and user.id != problem.uploader_id:
-            return make_response(-1, message="你没有权限执行此操作")
+
+    using_contest = int(request.form["contest_id"]) != -1
+    if using_contest:
+        contest = Contest.by_id(request.form["contest_id"])
+        if not contest.running():
+            return make_response(-1, message="比赛未在进行！")
+        problem: Problem = Problem.by_id(
+            contest.problems[int(request.form["problem_id"])]["id"])
+
+    else:
+        problem = db.session.query(Problem).filter(
+            Problem.id == request.form["problem_id"])
+        if problem.count() == 0:
+            return make_response(-1, message="题目ID不存在")
+        problem: Problem = problem.one()
+        if not problem.public:
+            if not user.is_admin and user.id != problem.uploader_id:
+                return make_response(-1, message="你没有权限执行此操作")
     parameters: List[int] = decode_json(request.form["usedParameters"])
 
     import importlib
+    import re
     try:
         importlib.import_module("langs."+request.form["language"])
     except:
         return make_response(-1, message="不支持的语言ID")
     parameter_string = " ".join(
-        (problem.extra_parameter[i]["parameter"] for i in parameters))
+        (problem.extra_parameter[i]["parameter"] for i in parameters if i < len(
+            problem.extra_parameter) and re.compile(problem.extra_parameter[i]["lang"]).match(request.form["language"]))
+    )
 
     import datetime
-    submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=problem.public, contest_id=request.form["contest_id"],
-                        code=request.form["code"], status="waiting", extra_compile_parameter=parameter_string, selected_compile_parameters=parameters)
+    submit = Submission(uid=user.id,
+                        language=request.form["language"],
+                        problem_id=problem.id,
+                        submit_time=datetime.datetime.now(),
+                        public=problem.public,
+                        contest_id=request.form["contest_id"],
+                        code=request.form["code"],
+                        status="waiting",
+                        extra_compile_parameter=parameter_string,
+                        selected_compile_parameters=parameters
+                        )
     submit.public = problem.public
     db.session.add(submit)
     db.session.commit()

@@ -357,52 +357,6 @@ def contest_show_problem():
     return make_response(0, data=result)
 
 
-@app.route("/api/contest/submit", methods=["POST"])
-def contest_submit():
-    """
-    提交代码\答案
-    参数:
-
-        problem_id:int 题目ID
-        code:str 代码
-        language:str 语言ID
-        contest_id:int 比赛ID
-        usedParameters:str [1,2,3]
-    返回:
-        {
-            "code":0,//非0表示调用成功
-            "message":"qwq",//调用失败时的信息
-            "submission_id":-1//调用成功时的提交ID
-        }
-    """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    contest: Contest = Contest.by_id(request.form["contest_id"])
-    problem: Problem = Problem.by_id(
-        contest.problems[int(request.form["problem_id"])]["id"])
-    if not contest.running():
-        return make_response(-1, message="比赛未在进行！")
-    user: User = db.session.query(User).filter(
-        User.id == session.get("uid")).one()
-    import importlib
-    try:
-        importlib.import_module("langs."+request.form["language"])
-    except:
-        return make_response(-1, message="不支持的语言ID")
-    parameters: List[int] = decode_json(request.form["usedParameters"])
-    parameter_string = " ".join(
-        (problem.extra_parameter[i]["parameter"] for i in parameters))
-
-    import datetime
-    submit = Submission(uid=user.id, language=request.form["language"], problem_id=problem.id, submit_time=datetime.datetime.now(), public=False, contest_id=request.form["contest_id"],
-                        code=request.form["code"], status="waiting", extra_compile_parameter=parameter_string, selected_compile_parameters=parameters)
-    db.session.add(submit)
-    db.session.commit()
-    from api.judge import push_to_queue
-    push_to_queue(submit.id)
-    return make_response(0, submission_id=submit.id)
-
-
 def get_contest_rank_list(contest: Contest) -> dict:
     users = db.session.query(Submission.uid).filter(
         Submission.contest_id == contest.id).distinct().all()

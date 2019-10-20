@@ -8,7 +8,16 @@ Web端和评测端。
 Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 
 评测采用Celery+Redis作为消息队列，评测端通过消息队列获取评测任务，并通过HTTP上报评测结果。
+## 数据库更新记录
+每次数据库更新后请进行数据迁移:
+- ```python3.7 manage.py db migrate```
+- ```python3.7 manage.py db upgrade```
+### 8ea050b32bff577a72c99c6dffda5960546b0867
+修改了自定义编译参数的结构。
+请手动进行以下修改:
 
+- ```submissions```表中的```selected_compile_parameters```列的所有值全都修改为```[]```
+- ```problems```表中的```extra_parameter```改为```[{"lang": "cpp", "name": "C++98", "parameter": "-std=c++98"}, {"lang": "cpp", "name": "C++11", "parameter": "-std=c++11"}, {"lang": "cpp", "name": "C++14", "parameter": "-std=c++14"}, {"lang": "cpp", "name": "C++17", "parameter": "-std=c++17"}, {"lang": ".*", "name": "O2\u4f18\u5316", "parameter": "-O2"}, {"lang": "cpp", "name": "UB\u68c0\u67e5", "parameter": "-fsanitize=undefined"}, {"lang": "cpp", "name": "\u5730\u5740\u68c0\u67e5", "parameter": "-fsanitize=address"}}]```
 ## 架设
 ### Web端
 #### 前置需求
@@ -27,6 +36,7 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 1. 运行```python3.7 manage.py db init```
 2. 进入```migrations/script.py.mako```,在```import sqlalchemy as sa```的下一行写上```import ormtypes```
 3. 运行```python3.7 manage.py db migrate```,```python3.7 manage.py db upgrade```
+
 #### 配置文件主要内容
 
 ##### SESSION_KEY

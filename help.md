@@ -1,7 +1,43 @@
 ## 编译
-C++默认使用```g++ -Wall -Wextra -std=c++11 -fdiagnostics-color=never -O2 {source} -o {output} {extra}```来编译，其中```{extra}```为题目中设定的附加编译参数。
+编译参数中,```{extra}```为题目所提供的附加编译参数。
 
-Java默认使用```javac Main.java {extra}```来编译。
+<table class="ui very basic celled table">
+    <thead>
+        <tr>
+            <th>语言ID</th>
+            <th>语言名</th>
+            <th>编译参数</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>cpp</td>
+            <td>C++</td>
+            <td>g++ -Wall -Wextra  -fdiagnostics-color=never -DONLINE_JUDGE -O2 {source} -o {output} {extra}</td>
+        </tr>
+        <tr>
+            <td>haskell</td>
+            <td>Haskell</td>
+            <td>ghc {source} -o {output} {extra}</td>
+        </tr>
+        <tr>
+            <td>java8</td>
+            <td>Java 8</td>
+            <td>javac Main.java {extra}</td>
+        </tr>
+        <tr>
+            <td>ocaml</td>
+            <td>OCaml</td>
+            <td>ocamlc -color never -custom str.cma -o {output} {source} {extra}</td>
+        </tr>
+        <tr>
+            <td>rust</td>
+            <td>Rust 1.33.0</td>
+            <td>rustc -O -o {output} {source} {extra}</td>
+        </tr>
+    </tbody>
+</table>
+
 ## 用户数据
 ### 个人信息
 可以前往在登陆后进行个人资料的编辑。
@@ -68,7 +104,7 @@ HelloJudge2会自动分配子任务内每个测试点的得分，使其和为子
 
 #### 附加编译参数
 
-会在编译时提供给语言配置的```COMPILE```中的```{extra}```项，用来做一些特殊的操作。
+用来设定此题目所需的一些特殊编译参数(通常为指定C++标准或者优化开关),提交者可自行选择是否使用。
 
 #### 重新生成文件列表
 
