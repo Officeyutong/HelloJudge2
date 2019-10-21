@@ -13,7 +13,7 @@
         <tr>
             <td>cpp</td>
             <td>C++</td>
-            <td>g++ -Wall -Wextra  -fdiagnostics-color=never -DONLINE_JUDGE -O2 {source} -o {output} {extra}</td>
+            <td>g++ -Wall -Wextra  -fdiagnostics-color=never -DONLINE_JUDGE {source} -o {output} {extra}</td>
         </tr>
         <tr>
             <td>haskell</td>

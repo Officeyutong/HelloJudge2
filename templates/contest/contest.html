@@ -119,7 +119,7 @@
         <a :href="'/submissions/1?filter=contest%3D'+data.id" class="ui red tiny button"
             v-if="base.isAdmin||base.uid==data.owner_id" target="_blank">所有提交</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id+',uid%3D'+base.uid" class="ui blue tiny button"
-            target="_blank">我的提交</a>
+            target="_blank" v-if="base.isLogin">我的提交</a>
         <div class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id" v-on:click="removeContest">删除比赛
         </div>
 
