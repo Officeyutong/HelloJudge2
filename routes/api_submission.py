@@ -74,10 +74,15 @@ def submit():
         if not problem.public:
             if not user.is_admin and user.id != problem.uploader_id:
                 return make_response(-1, message="你没有权限执行此操作")
-    parameters: List[int] = decode_json(request.form["usedParameters"])
-
+    from typing import Set
+    parameters: Set[int] = set(decode_json(request.form["usedParameters"]))
     import importlib
     import re
+
+    for i, item in enumerate(problem.extra_parameter):
+        if re.compile(item["lang"]).match(request.form["language"]) and item["force"] and i not in parameters:
+            parameters.add(i)
+
     try:
         importlib.import_module("langs."+request.form["language"])
     except:
@@ -97,7 +102,7 @@ def submit():
                         code=request.form["code"],
                         status="waiting",
                         extra_compile_parameter=parameter_string,
-                        selected_compile_parameters=parameters
+                        selected_compile_parameters=list(parameters)
                         )
     submit.public = problem.public
     db.session.add(submit)

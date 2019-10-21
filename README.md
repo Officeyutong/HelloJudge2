@@ -20,7 +20,8 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 请手动进行以下修改:
 
 - ```submissions```表中的```selected_compile_parameters```列的所有值全都修改为```[]```
-- ```problems```表中的```extra_parameter```改为```[{"lang": "cpp", "name": "C++98", "parameter": "-std=c++98"}, {"lang": "cpp", "name": "C++11", "parameter": "-std=c++11"}, {"lang": "cpp", "name": "C++14", "parameter": "-std=c++14"}, {"lang": "cpp", "name": "C++17", "parameter": "-std=c++17"}, {"lang": ".*", "name": "O2\\u4f18\\u5316", "parameter": "-O2"}, {"lang": "cpp", "name": "UB\\u68c0\\u67e5", "parameter": "-fsanitize=undefined"}, {"lang": "cpp", "name": "\\u5730\\u5740\\u68c0\\u67e5", "parameter": "-fsanitize=address"}]```
+- ```submissions```表中所有```language```列中的```cpp11```,```cpp98```,```cpp17```,```cpp14```均改为```cpp```
+- ```problems```表中的```extra_parameter```改为```[{"lang": "cpp", "name": "C++98", "parameter": "-std=c++98", "force": false}, {"lang": "cpp", "name": "C++11", "parameter": "-std=c++11", "force": false}, {"lang": "cpp", "name": "C++14", "parameter": "-std=c++14", "force": false}, {"lang": "cpp", "name": "C++17", "parameter": "-std=c++17", "force": false}, {"lang": ".*", "name": "O2\\u4f18\\u5316", "parameter": "-O2", "force": false}]```
 ## 架设
 ### Web端
 #### 前置需求

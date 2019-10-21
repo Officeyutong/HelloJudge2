@@ -354,8 +354,8 @@
                                     <td> {[item.name]} </td>
                                     <td> {[item.parameter]} </td>
                                     <td>
-                                        <div class="ui toggle checkbox">
-                                            <input type="checkbox" hidden :checked="usedParameters.includes(i)?1:null">
+                                        <div class="ui toggle checkbox" v-bind:class="{disabled:item.force}">
+                                            <input type="checkbox" hidden :checked="(usedParameters.includes(i)?1:null)||item.force">
                                             <label
                                                 v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
                                         </div>

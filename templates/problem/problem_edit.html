@@ -408,6 +408,7 @@
                                         <th>语言正则表达式</th>
                                         <th>参数</th>
                                         <th>名称</th>
+                                        <th>不可取消</th>
                                         <th>操作</th>
                                     </tr>
                                 </thead>
@@ -424,6 +425,12 @@
                                         <td>
                                             <div class="ui input">
                                                 <input v-model="line.name">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="ui toggle checkbox">
+                                                <input type="checkbox" v-model="line.force">
+                                                <label>不可取消</label>
                                             </div>
                                         </td>
                                         <td>

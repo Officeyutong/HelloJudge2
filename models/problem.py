@@ -48,13 +48,11 @@ class Problem(db.Model):
     problem_type = db.Column(db.String(20), default="traditional")
     # 附加编译参数
     extra_parameter = db.Column(JsonPickle, default=[
-        {"lang": "cpp", "parameter": "-std=c++98", "name": "C++98"},
-        {"lang": "cpp", "parameter": "-std=c++11", "name": "C++11"},
-        {"lang": "cpp", "parameter": "-std=c++14", "name": "C++14"},
-        {"lang": "cpp", "parameter": "-std=c++17", "name": "C++17"},
-        {"lang": ".*", "parameter": "-O2", "name": "O2优化"},
-        {"lang": "cpp", "parameter": "-fsanitize=undefined", "name": "UB检查"},
-        {"lang": "cpp", "parameter": "-fsanitize=address", "name": "地址检查"},
+        {"lang": "cpp", "parameter": "-std=c++98", "name": "C++98", "force": False},
+        {"lang": "cpp", "parameter": "-std=c++11", "name": "C++11", "force": False},
+        {"lang": "cpp", "parameter": "-std=c++14", "name": "C++14", "force": False},
+        {"lang": "cpp", "parameter": "-std=c++17", "name": "C++17", "force": False},
+        {"lang": ".*", "parameter": "-O2", "name": "O2优化", "force": False},
     ], nullable=False)
     # 创建日期
     create_time = db.Column(db.DateTime, nullable=False)
