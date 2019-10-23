@@ -15,19 +15,23 @@ def submit_ide_run():
     code: 代码
     input: 输入
     lang: 语言ID
+    parameter: 附加参数
     """
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    code, input, lang = request.form["code"], request.form["input"], request.form["lang"]
+    code, input, lang, parameter = request.form["code"], request.form[
+        "input"], request.form["lang"], request.form["parameter"]
     if len(code) > config.MAX_CODE_LENGTH:
         return make_response(-1, message="提交代码过长")
     if len(input) > config.MAX_CODE_LENGTH:
         return make_response(-1, message="输入文件过长")
+    if len(parameter) > config.IDE_RUN_COMPILE_PARAMETER_LENGTH_LIMIT:
+        return make_response(-1, message="编译参数过长")
     import os
     if not os.path.exists(os.path.join("langs", lang+".py")):
         return make_response(-1, message="语言ID不存在")
-    run_id = push_into_queue(code, input, lang)
+    run_id = push_into_queue(code, input, lang, parameter)
     return make_response(0, data={
         "run_id": run_id
     })

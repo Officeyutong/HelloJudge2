@@ -22,27 +22,29 @@
                 langs: null,
                 selectedLang: "",
                 code: "", input: "",
-                done: false, output: "", loading: false, runID: ""
+                done: false, output: "", loading: false, runID: "", parameter: ""
             }, methods: {
                 saveToBrowser() {
                     window.localStorage.setItem("hellojudge2-ide", JSON.stringify({
-                        code: this.code, input: this.input, lang: this.selectedLang
+                        code: this.code, input: this.input, lang: this.selectedLang, parameter: this.parameter
                     }));
                 },
                 loadFromBroswer() {
                     let obj = window.localStorage.getItem("hellojudge2-ide");
-                    if (!obj) return;
                     let data = JSON.parse(obj);
                     this.code = data.code, this.input = data.input, this.selectedLang = data.lang;
+                    this.parameter = data.parameter;
                 },
                 submit() {
                     if (this.loading) return;
                     this.loading = true;
                     this.saveToBrowser();
-                    $.post("/api/ide/submit", { code: this.code, input: this.input, lang: this.selectedLang }).done(x => {
+                    $.post("/api/ide/submit", { code: this.code, input: this.input, lang: this.selectedLang, parameter: this.parameter }).done(x => {
+                        this.loading = false;
                         x = JSON.parse(x);
                         if (x.code) {
                             showErrorModal(x.message);
+                            
                             return;
                         }
                         console.log(x);
@@ -224,6 +226,10 @@
                             <div class="ui field">
                                 <label>输入</label>
                                 <textarea v-model="input" style="overflow-y: scroll"></textarea>
+                            </div>
+                            <div class="ui field">
+                                <label>编译参数</label>
+                                <input v-model="parameter">
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 from main import db, config, queue
 
 
-def push_into_queue(code: str, input: str, lang: str) -> str:
+def push_into_queue(code: str, input: str, lang: str, parameter: str = "") -> str:
     """
     把一个IDE运行请求加入队列
     @param code: 代码
@@ -17,7 +17,8 @@ def push_into_queue(code: str, input: str, lang: str) -> str:
                                          "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
                                          "time_limit": config.IDE_RUN_TIME_LIMIT,
                                          "memory_limit": config.IDE_RUN_MEMORY_LIMIT,
-                                         "result_length_limit": config.IDE_RUN_RESULT_LENGTH_LIMIT
+                                         "result_length_limit": config.IDE_RUN_RESULT_LENGTH_LIMIT,
+                                         "parameter": parameter
                                      }
                                      ))
     return run_id
