@@ -186,6 +186,14 @@ def get_submission_info():
         import traceback
         traceback.print_exc()
         ret["ace_mode"] = ret["language_name"] = ""
+    problem: Problem = db.session.query(
+        Problem.can_see_results,Problem.uploader_id).filter(Problem.id == submit.problem_id).one()
+
+    # if not problem.can_see_results :
+        # if not session.get("uid") or (not user.is_admin and user.id != problem.uploader_id ):
+            # pass
+        
+
     return make_response(0, data=ret)
 
 

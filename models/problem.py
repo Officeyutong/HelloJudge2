@@ -54,6 +54,8 @@ class Problem(db.Model):
         {"lang": "cpp", "parameter": "-std=c++17", "name": "C++17", "force": False},
         {"lang": ".*", "parameter": "-O2", "name": "O2优化", "force": False},
     ], nullable=False)
+    # 是否可见用户输出\输入\标准输出
+    can_see_results = db.Column(db.Boolean, default=True, nullable=False)
     # 创建日期
     create_time = db.Column(db.DateTime, nullable=False)
 

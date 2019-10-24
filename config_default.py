@@ -28,7 +28,9 @@ VISIBLE_SETTINGS = OrderedDict({
     "AUTO_SYNC_FILES": "评测时自动同步题目文件",
     "OUTPUT_FILE_SIZE_LIMIT": "用户程序输出文件大小限制",
     "REQUIRE_REGISTER_AUTH": "注册时需要验证邮箱",
-    "FAIL_SUBMIT_PENALTY": "比赛失败提交罚时(分钟)"
+    "FAIL_SUBMIT_PENALTY": "比赛失败提交罚时(分钟)",
+    "IDE_RUN_COMPILE_PARAMETER_LENGTH_LIMIT": "在线IDE自定义参数长度限制",
+    "DISPLAY_DATA_LENGTH_LIMIT": "评测结束后显示的输入\输出\用户输出的长度限制,字符"
 })
 # session密钥，应该是一个随机生成的字符串。
 SESSION_KEY = "qwkqpoksqi0xoqwkqpoksqi0xoqwkqpoksqi0xoqwkqpoksqi0xo"
@@ -78,6 +80,8 @@ USERS_ON_RANKLIST_PER_PAGE = 30
 MAX_CODE_LENGTH = 100*1024
 # 编译时间限制,ms
 COMPILE_TIME_LIMIT = 10*1000
+# 评测结束后显示的输入\输出\用户输出的长度限制,字符
+DISPLAY_DATA_LENGTH_LIMIT = 1000
 # 编译结果长度限制,单位字符
 COMPILE_RESULT_LENGTH_LIMIT = 500
 # SPJ运行时间限制
@@ -88,6 +92,7 @@ IDE_RUN_TIME_LIMIT = 1000*3
 IDE_RUN_MEMORY_LIMIT = 512
 # 在线IDE结果长度限制,chars
 IDE_RUN_RESULT_LENGTH_LIMIT = 2000
+# 在线IDE参数长度限制
 IDE_RUN_COMPILE_PARAMETER_LENGTH_LIMIT = 30
 # 自动同步题目文件
 AUTO_SYNC_FILES = True
