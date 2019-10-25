@@ -33,7 +33,7 @@ def view_global_ranklist(id):
 
 
 @app.route("/problems")
-@app.route("/problems/<int:id>")
+@app.route("/problems/<int:id>")    
 def view_problems(id=-1):
     return render_template("problem/problems.html")
 
