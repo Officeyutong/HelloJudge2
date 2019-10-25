@@ -1,6 +1,6 @@
 config.py
 uploads/
-# migrations/
+migrations/
 data.db
 temp/
 test.py
