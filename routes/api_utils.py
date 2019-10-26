@@ -304,3 +304,51 @@ def import_from_syzoj():
 @app.route("/api/get_help_markdown", methods=["POST", "GET"])
 def get_help_markdown():
     return send_file("help.md")
+
+
+@app.route("/show_problem/<int:id>/export", methods=["POST", "GET"])
+def export_problem(id):
+    """
+    SYZOJ式的导出题目
+    """
+    problem: Problem = Problem.by_id(id)
+    if not problem or not problem.public:
+        return encode_json({
+            "success": False, "error": {
+                "message": "无此题目", "nextUrls": {}
+            }
+        })
+    result = {
+        "success": True,
+        "obj": {
+            "title": problem.title,
+            "description": problem.background+"\n"+problem.content,
+            "input_format": problem.input_format,
+            "output_format": problem.output_format,
+            "example": "\n\n".join((f"#### 样例{index} 输入\n{item['input']}\n\n#### 样例{index} 输出\n{item['output']}" for item, index in enumerate(problem.example))),
+            "limit_and_hint": problem.hint,
+            "time_limit": max((item["time_limit"] for item in problem.subtasks)),
+            "memory_limit": max((item["memory_limit"] for item in problem.subtasks)),
+            "file_io": problem.using_file_io, "file_io_input_name": problem.input_file_name, "file_io_output_name": problem.output_file_name,
+            "type": problem.problem_type, "tags": []
+        }
+    }
+    return encode_json(result)
+
+
+@app.route("/show_problem/<int:id>/testdata/download", methods=["GET", "POST"])
+def testdata_download(id):
+    problem: Problem = Problem.by_id(id)
+    if not problem or not problem.public:
+        return 404
+    import pathlib
+    import zipfile
+    import tempfile
+    import flask
+    problem_path = pathlib.Path(config.UPLOAD_DIR)/str(problem.id)
+    zip_file = tempfile.mktemp("zip")
+    zipf = zipfile.ZipFile(zip_file, "w")
+    for publicized_file in problem.downloads:
+        zipf.write(problem_path/publicized_file)
+    zipf.close()
+    return flask.send_file(zip_file, as_attachment=True, attachment_filename="testdata.zip")
