@@ -45,7 +45,7 @@
     })
     let submissions;
     let currentPage = parseInt(window.location.href.split("/").pop()) || 1;
-    let filter = GetRequest().filter || "";
+    let filter = getRequest().filter || "";
     let obj = {};
     for (let str of filter.split(",")) {
         let [k, v] = str.split("=");

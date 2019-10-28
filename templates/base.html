@@ -43,7 +43,7 @@
         const renderLatex = function (str) {
             return katex.renderToString(String(str), { throwOnError: false });
         };
-        const GetRequest = function () {
+        const getRequest = function () {
             var url = location.search; //获取url中"?"符后的字串  
             var theRequest = new Object();
             if (url.indexOf("?") != -1) {

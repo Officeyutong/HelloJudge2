@@ -355,7 +355,8 @@
                                     <td> {[item.parameter]} </td>
                                     <td>
                                         <div class="ui toggle checkbox" v-bind:class="{disabled:item.force}">
-                                            <input type="checkbox" hidden :checked="(usedParameters.includes(i)?1:null)||item.force">
+                                            <input type="checkbox" hidden
+                                                :checked="(usedParameters.includes(i)?1:null)||item.force">
                                             <label
                                                 v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
                                         </div>
@@ -376,10 +377,12 @@
         <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
             <div class="ui segment stacked" style="max-width: 300px">
                 <table class="ui very basic fluid collapsing celled table">
+
                     <tbody>
                         <tr>
                             <td>题目上传者</td>
-                            <td><a :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
+                            <td style="word-break: break-all;"><a
+                                    :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
                         </tr>
                         <tr>
                             <td>是否公开</td>
@@ -403,7 +406,7 @@
                             <td>{[data.accepted_count]}/{[data.submission_count]}/{[parseInt(100*data.accepted_count/data.submission_count)]}%
                             </td>
                         </tr>
-                        <tr v-if="data.using_file_io">
+                        <tr v-if="data.using_file_io" style="word-break: break-all;">
                             <td>输入/输出文件</td>
                             <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
                         </tr>

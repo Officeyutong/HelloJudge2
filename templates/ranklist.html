@@ -6,7 +6,7 @@
 
 <script>
     let ranklist;
-    let search = GetRequest().search;
+    let search = getRequest().search;
     let page = parseInt(window.location.href.split("/").pop().split("?")[0]);
     $(document).ready(() => {
         ranklist = new Vue({
