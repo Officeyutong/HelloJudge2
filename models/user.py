@@ -37,7 +37,7 @@ class User(db.Model):
     permission_group = db.Column(
         db.Text(20), nullable=False, default="default")
     # 用户特有权限列表
-    permissons = db.Column(JsonPickle, nullable=False, default=[])
+    permissions = db.Column(JsonPickle, nullable=False, default=[])
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one_or_none()
