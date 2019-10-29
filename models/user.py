@@ -33,6 +33,11 @@ class User(db.Model):
     joined_teams = db.Column(JsonPickle, nullable=False, default=[])
     # rating
     rating = db.Column(db.Integer, nullable=False, default=1500, index=True)
+    # 所属权限组ID
+    permission_group = db.Column(
+        db.Text(20), nullable=False, default="default")
+    # 用户特有权限列表
+    permissons = db.Column(JsonPickle, nullable=False, default=[])
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one_or_none()
