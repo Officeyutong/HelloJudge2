@@ -1,21 +1,23 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models import *
 from sqlalchemy.sql.expression import *
+from common.permission import require_permission
+from common.utils import unpack_argument
+@app.route("/api/test", methods=["POST"])
+@unpack_argument
+def test(qwq: int):
+    return f"qwqwqwq: {qwq}"
 
 
 @app.route("/api/admin/show", methods=["POST"])
+@require_permission(manager=permission_manager, permission="admin")
 def admin_show():
     """
     获取后台信息
     """
-    if not session.get("uid"):
-        return make_response(-1, message="你没有权限这么做")
-    user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
-        return make_response(-1, message="你没有权限这么做")
     result = {
         "problemCount": db.session.query(Problem).count(),
         "publicProblemCount": db.session.query(Problem).filter(Problem.public == True).count(),
@@ -37,21 +39,17 @@ def admin_show():
 
 
 @app.route("/api/admin/rating/remove", methods=["POST"])
-def admin_rated_contest_remove():
+@require_permission(permission_manager, permission="admin")
+@unpack_argument
+def admin_rated_contest_remove(contestID:int):
     """
     删除一场比赛及其之后比赛的rating造成的影响
     {
         "contestID":比赛ID
     }
     """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
-        return make_response(-1, message="你没有权限进行此操作")
-    data = request.get_json()
     from typing import List, Tuple
-    contest = Contest.by_id(data["contestID"])
+    contest = Contest.by_id(contestID)
 
     def drop_contest(contest_id):
         print(f"Droping {contest_id}")
@@ -74,6 +72,7 @@ def admin_rated_contest_remove():
 
 
 @app.route("/api/admin/rating/rated_contests", methods=["POST"])
+@require_permission(permission_manager, permission="admin")
 def admin_rated_contests():
     """ 
     获取rated比赛列表
@@ -87,11 +86,7 @@ def admin_rated_contests():
         }
     ]
     """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
-        return make_response(-1, message="你没有权限进行此操作")
     query = db.session.query(Contest.id, Contest.name, Contest.rated_time).filter(
         Contest.rated == True).order_by(Contest.rated_time.desc()).all()
     result = [
@@ -108,7 +103,9 @@ def admin_rated_contests():
 
 
 @app.route("/api/admin/rating/append", methods=["POST"])
-def admin_rating_append():
+@require_permission(permission_manager, "admin")
+@unpack_argument
+def admin_rating_append(contestID):
     """
     应用某场比赛的rating
     {
@@ -118,13 +115,7 @@ def admin_rating_append():
         "code","message"
     }
     """
-    data: dict = request.get_json()
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
-        return make_response(-1, message="你没有权限进行此操作")
-    contest: Contest = Contest.by_id(data["contestID"])
+    contest: Contest = Contest.by_id(contestID)
     if not contest:
         return make_response(-1, message="比赛ID不存在")
     if contest.rated:

@@ -55,10 +55,10 @@ class Contest(db.Model):
         if not uid:
             return self.judge_result_visible
         user: User = User.by_id(uid)
-        return user.is_admin or user.id == self.owner_id or self.judge_result_visible or not self.running()
+        return "contest.manage" in user.permissions or user.id == self.owner_id or self.judge_result_visible or not self.running()
 
     def can_see_ranklist(self, uid) -> bool:
         if not uid:
             return self.ranklist_visible
         user: User = User.by_id(uid)
-        return user.is_admin or user.id == self.owner_id or self.ranklist_visible or not self.running()
+        return "contest.manage" in user.permissions or user.id == self.owner_id or self.ranklist_visible or not self.running()

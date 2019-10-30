@@ -77,7 +77,7 @@
                         showErrorModal(ctx.message);
                         return;
                     }
-                    submission.problem_data = JSON.parse(ctx).data;
+                    submission.problem_data = ctx.data.data;
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;
                         if (submission.data.status == "judging" || submission.data.status == "waiting") {
@@ -107,7 +107,7 @@
                     submission.contestID = contestID;
                     submission.problemID = problemID;
 
-                    $.post("/api/contest/problem/show", { contest_id: contestID, problem_id: problemID }).done(done);
+                    axios.post("/api/contest/problem/show", { contestID: contestID, problemID: problemID }).then(done);
 
                 } else {
                     $.post("/api/get_problem_info", { id: submission.data.problem_id }).done(done);

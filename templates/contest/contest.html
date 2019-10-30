@@ -47,8 +47,9 @@
                 }, removeContest() {
                     $("#warning-modal").modal({
                         onApprove() {
-                            $.post("/api/contest/remove", { contest_id: contest.data.id }).done((ctx) => {
-                                ctx = JSON.parse(ctx);
+                            axios.post("/api/contest/remove", { contestID: contest.data.id }).then((ctx) => {
+                                ctx = ctx.data;
+
                                 if (ctx.code) {
                                     showErrorModal(ctx.message);
                                     return;
@@ -60,8 +61,8 @@
                 }
             }
         });
-        $.post("/api/contest/show", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/contest/show", { contestID: window.location.href.split("/").pop() }).then(ctx => {
+            ctx = ctx.data;
             if (ctx.code) {
                 showErrorModal(ctx.message);
                 return;
@@ -113,7 +114,8 @@
 
             </tbody>
         </table>
-        <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button" v-if="showRanklist" target="_blank">排行榜</a>
+        <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button" v-if="showRanklist"
+            target="_blank">排行榜</a>
         <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id"
             target="_blank">编辑</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id" class="ui red tiny button"

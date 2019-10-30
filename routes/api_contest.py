@@ -1,4 +1,4 @@
-from main import web_app as app
+from main import web_app as app, permission_manager
 from main import db, config, basedir
 from flask import session, request, send_file, send_from_directory
 from utils import *
@@ -9,14 +9,16 @@ import datetime
 import math
 import re
 from typing import Iterable
-
-
+from main import permission_manager
+from common.utils import unpack_argument
+from common.permission import require_permission
 @app.route("/api/contest/remove", methods=["POST"])
-def remove_contest():
+@unpack_argument
+def remove_contest(contestID: int):
     """
     参数:
     {
-        "contest_id":"比赛ID"
+        "contestID":"比赛ID"
     }
     {
         "code":0,
@@ -26,20 +28,18 @@ def remove_contest():
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    contest: Contest = Contest.by_id(request.form["contest_id"])
-    if not user.is_admin and user.id != contest.owner_id:
+    contest: Contest = Contest.by_id(contestID)
+    if not permission_manager.has_permission(user.id, "admin") and user.id != contest.owner_id:
         return make_response(-1, message="只有管理员或比赛创建者才可进行此操作")
     db.session.query(Submission).filter(
         Submission.contest_id == contest.id).delete()
-    # for userx in db.session.query(User).all():
-    #     userx.rating_history = list(
-    #         filter(lambda x: x['contest_id'] != contest.id, userx.rating_history.copy()))
     db.session.query(Contest).filter(Contest.id == contest.id).delete()
     db.session.commit()
     return make_response(0, message="成功")
 
 
 @app.route("/api/contest/create", methods=["POST"])
+@require_permission(manager=permission_manager, permission="contest.create")
 def create_contest():
     """
     参数:
@@ -50,15 +50,10 @@ def create_contest():
         "code":0,
         "message":"",
         "contest_id":1
-    }
     """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
-        return make_response(-1, message="只有管理员才可进行此操作")
+
     import datetime
-    contest = Contest(owner_id=user.id,
+    contest = Contest(owner_id=session.get("uid"),
                       start_time=datetime.datetime.now(),
                       end_time=datetime.datetime.now()+datetime.timedelta(hours=3)
                       )
@@ -68,7 +63,8 @@ def create_contest():
 
 
 @app.route("/api/contest/list", methods=["POST"])
-def contest_list():
+@unpack_argument
+def contest_list(page: int = 1):
     """
     {
         "page":"切换到的页面",
@@ -90,7 +86,6 @@ def contest_list():
         }
     }
     """
-    page = int(request.form.get("page", 1))
     result = db.session.query(Contest).order_by(Contest.id.desc())
     count = result.count()
     import math
@@ -116,11 +111,12 @@ def contest_list():
 
 
 @app.route("/api/contest/show", methods=["POST"])
-def show_contest():
+@unpack_argument
+def show_contest(contestID: int):
     """
     参数:
     {
-        "contest_id"
+        "contestID"
     }
     {
         "code":0,
@@ -151,7 +147,7 @@ def show_contest():
     }
     """
     import time
-    contest: Contest = Contest.by_id(request.form["contest_id"])
+    contest: Contest = Contest.by_id(contestID)
     if not contest:
         return make_response(-1, message="比赛ID不存在！")
     can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
@@ -211,11 +207,12 @@ def show_contest():
 
 
 @app.route("/api/contest/raw_data", methods=["POST"])
-def contest_raw_data():
+@unpack_argument
+def contest_raw_data(contestID):
     """
-    contest_id
+    contestID
     {
-                "id": contest.id,
+        "id": contest.id,
         "name": contest.name,
         "description": contest.description,
         "start_time": int(time.mktime(contest.start_time.timetuple())),
@@ -229,8 +226,8 @@ def contest_raw_data():
     if not session.get("uid"):
         return "你没有权限这样做", 403
     user: User = User.by_id(session.get("uid"))
-    contest: Contest = Contest.by_id(request.form["contest_id"])
-    if not user.is_admin and user.id != contest.owner_id:
+    contest: Contest = Contest.by_id(contestID)
+    if not permission_manager.has_permission(user.uid, "contest.manage") and user.id != contest.owner_id:
         return "你没有权限这样做", 403
     import time
     result = {
@@ -248,22 +245,21 @@ def contest_raw_data():
 
 
 @app.route("/api/contest/update", methods=["POST"])
-def contest_update():
+@unpack_argument
+def contest_update(contestID: int, data: dict):
     """
     更新比赛信息
     {
-        contest_id:比赛ID,
+        contestID:比赛ID,
         data:数据字典
     }
     """
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    contest: Contest = Contest.by_id(request.form["contest_id"])
-    if not user.is_admin and user.id != contest.owner_id:
-        return make_response(-1, message="请先登录")
-    data: dict = decode_json(request.form["data"])
-    # print(data)
+    contest: Contest = Contest.by_id(contestID)
+    if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
+        return make_response(-1, message="你没有权限这么做")
     for k, v in data.items():
         setattr(contest, k, v)
 
@@ -305,12 +301,13 @@ def contest_download_file(contest_id, problem_id, file):
 
 
 @app.route("/api/contest/problem/show", methods=["POST"])
-def contest_show_problem():
+@unpack_argument
+def contest_show_problem(problemID:int,contestID:int):
     """
     获取比赛题目信息
     参数:
-        problem_id:int 题目ID(比赛中的)
-        contest_id:int 比赛ID
+        problemID:int 题目ID(比赛中的)
+        contestID:int 比赛ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -333,15 +330,15 @@ def contest_show_problem():
             }
         }
     """
-    contest: Contest = Contest.by_id(request.form["contest_id"])
+    contest: Contest = Contest.by_id(contestID)
     if not contest.running():
         if not session.get("uid"):
             return make_response(-1, message="你没有权限跟我说话")
         user: User = User.by_id(session.get("uid"))
-        if not user.is_admin and user.id != contest.owner_id:
+        if not permission_manager.has_permission(user.id,"contest.manage") and user.id != contest.owner_id:
             return make_response(-1, message="你没有权限跟我说话")
     problem: Problem = Problem.by_id(
-        contest.problems[int(request.form["problem_id"])]["id"])
+        contest.problems[problemID]["id"])
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())
@@ -351,7 +348,7 @@ def contest_show_problem():
         result["last_lang"] = submit.language
     else:
         result["last_lang"] = result["last_code"] = ""
-    result["id"] = int(request.form["problem_id"])
+    result["id"] = problemID
     del result["uploader_id"]
     result["score"] = problem.get_total_score()
     return make_response(0, data=result)
@@ -453,11 +450,12 @@ def get_contest_rank_list(contest: Contest) -> dict:
 
 
 @app.route("/api/contest/ranklist", methods=["POST"])
-def contest_ranklist():
+@unpack_argument
+def contest_ranklist(contestID):
     """
     获取比赛的排行榜
     {
-        contest_id:比赛ID
+        contestID:比赛ID
     }
     返回值:
     {
@@ -499,7 +497,7 @@ def contest_ranklist():
         }
     }
     """
-    contest: Contest = Contest.by_id(request.form['contest_id'])
+    contest: Contest = Contest.by_id(contestID)
     can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
     if not can_see_ranklist:
         return make_response(-1, message="你无权进行此操作")

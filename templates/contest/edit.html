@@ -25,8 +25,8 @@
                     data.start_time = this.fromTimeString(data.start_time);
                     data.end_time = this.fromTimeString(data.end_time);
 
-                    $.post("/api/contest/update", { contest_id: this.data.id, data: JSON.stringify(data) }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/contest/update", { contestID: this.data.id, data: data }).then(ctx => {
+                        ctx = ctx.data;
                         if (ctx.code) {
                             this.errorMessage = ctx.message;
                             return;
@@ -43,8 +43,9 @@
                 }
             }
         });
-        $.post("/api/contest/raw_data", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/contest/raw_data", { contestID: window.location.href.split("/").pop() }).then(ctx => {
+            
+            ctx = ctx.data;
             if (ctx.code) {
                 showErrorModal(ctx.message);
                 return;

@@ -284,3 +284,33 @@ HelloJudge2支持从SYZOJ导入题目，但是有以下注意事项：
 
 [所有与题目有关的讨论](/discussions/discussion.problem/1)
 
+## 权限系统
+
+HelloJudge2具有权限系统。
+
+每个用户属于一个唯一的权限组，自动拥有此权限组的所有权限。
+
+同时每个用户也可以拥有自己的若干权限。
+
+目前支持的权限如下表：
+
+权限字符串  | 解释
+- | - 
+problem.create| 创建题目 
+problem.publicize|公开题目
+problem.viewall|查看私有题目
+submission.viewall|查看私有提交
+submission.rejudge|重测提交
+contest.create|创建比赛
+contest.publicize|公开比赛
+contest.manage|管理其他人创建的比赛
+contest.enter.比赛ID|进入某场私有比赛(在正确输入私有比赛的邀请码之后，自动取得该权限)
+permission.manage|管理任意用户的权限设定(普通用户默认无权更改自己的权限设定)
+team.create|创建团队
+post.讨论路径| 在某个讨论版块发帖(普通用户默认拥有post.discussion.global,post.discussion.problem.*)
+admin|管理员(管理员才拥有此权限)
+
+
+
+
+

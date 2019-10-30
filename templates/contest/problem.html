@@ -194,8 +194,8 @@
         show_problem.contestID = contestID;
         show_problem.problemID = problemID;
 
-        $.post("/api/contest/problem/show", { contest_id: contestID, problem_id: problemID }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/contest/problem/show", { contestID: contestID, problemID: problemID }).then(ctx => {
+            ctx = ctx.data;
             if (ctx.code != 0) {
                 $("#no-perm-text").text(ctx.message);
                 $("#no-perm-modal").modal("show");

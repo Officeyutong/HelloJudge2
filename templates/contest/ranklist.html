@@ -17,8 +17,9 @@
 
             }
         });
-        $.post("/api/contest/ranklist", { contest_id: window.location.href.split("/").pop() }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/contest/ranklist", { contestID: window.location.href.split("/").pop() }).done(ctx => {
+            // ctx = JSON.parse(ctx);
+            ctx = ctx.data;
             if (ctx.code) {
                 showErrorModal(ctx.message);
                 return;
@@ -62,7 +63,8 @@
                                 <span v-if="data.using_penalty==false">{[item.score]}</span>
                                 <span v-else>
                                     <div v-if="item.status=='accepted'">
-                                        <div >-{[item.submit_count]}</div><div style="color:red">{[item.penalty]}</div>
+                                        <div>-{[item.submit_count]}</div>
+                                        <div style="color:red">{[item.penalty]}</div>
                                     </div>
                                     <div v-else>-{[item.submit_count]}</div>
                                 </span>
@@ -72,8 +74,8 @@
                     <td class="center aligned">
                         <span v-if="data.using_penalty==false">{[line.total.score]}</span>
                         <span v-else>
-                            <div style="color:green">{[line.total.ac_count]}</div><div
-                                style="color:red">{[line.total.penalty]}</div>
+                            <div style="color:green">{[line.total.ac_count]}</div>
+                            <div style="color:red">{[line.total.penalty]}</div>
                         </span>
                     </td>
                 </tr>

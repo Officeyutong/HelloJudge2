@@ -52,6 +52,8 @@ PASSWORD_SALT = "qeiduew9odpjh8q9uohr8"
 USERNAME_REGEX = r"^[a-zA-Z0-9_-]+$"
 # Redis地址
 REDIS_URI = "redis://localhost:6379"
+# 用于缓存的Redis数据库
+CACHE_URL = "redis://localhost:6379/hj2-cache"
 # 评测机列表
 JUDGERS = {
     "UUID": "评测机名"

@@ -83,7 +83,7 @@ def upgrade():
         PermissionGroup.__table__.insert(),
         [
             {
-                "id": "default", "name": "普通用户", "permissions": []
+                "id": "default", "name": "普通用户", "permissions": ["post.discussion.global", "post.discussion.problem.global", "post.discussion.problem.*"]
             },
             {
                 "id": "admin", "name": "管理员", "permissions": ["*"]

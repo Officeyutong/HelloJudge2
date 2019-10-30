@@ -40,8 +40,8 @@
             }
         });
 
-        $.post("/api/contest/list", { page: currentPage }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/contest/list", { page: currentPage }).then(ctx => {
+            ctx = ctx.data;
             if (ctx.code) {
                 showErrorModal(ctx.message);
                 return;
@@ -73,9 +73,12 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="contest,i in data.list" v-bind:class="{positive:running(contest.start_time,contest.end_time  )}">
-                    <td class="center aligned"><a :href="'/contest/'+contest.id">{[contest.id]}. {[contest.name]}</a></td>
-                    <td class="center aligned"><a :href="'/profile/'+contest.owner_id">{[contest.owner_username]}</a></td>
+                <tr v-for="contest,i in data.list"
+                    v-bind:class="{positive:running(contest.start_time,contest.end_time  )}">
+                    <td class="center aligned"><a :href="'/contest/'+contest.id">{[contest.id]}. {[contest.name]}</a>
+                    </td>
+                    <td class="center aligned"><a :href="'/profile/'+contest.owner_id">{[contest.owner_username]}</a>
+                    </td>
                     <td class="center aligned">{[makeTime(contest.start_time*1000)]}</td>
                     <td class="center aligned">{[makeTime(contest.end_time*1000)]}</td>
                 </tr>
