@@ -307,6 +307,7 @@ contest.manage|管理其他人创建的比赛(包括查看私有比赛(暂未实
 contest.enter.比赛ID|进入某场私有比赛(在正确输入私有比赛的邀请码之后，自动取得该权限)
 permission.manage|管理任意用户的权限设定(普通用户默认无权更改自己的权限设定)
 team.create|创建团队
+team.manage|管理任意团队
 discussion.post.讨论路径| 在某个讨论版块发帖(普通用户默认拥有post.discussion.global,post.discussion.problem.*)
 discussion.manage| 管理其他人的讨论
 admin|管理员(管理员才拥有此权限)

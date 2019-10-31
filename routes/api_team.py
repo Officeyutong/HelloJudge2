@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models.user import *
@@ -11,8 +11,6 @@ from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 from typing import Tuple
 from datetime import datetime
-
-
 @app.route("/api/team/list", methods=["POST"])
 def team_list():
     """
@@ -62,7 +60,7 @@ def create_team():
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     owner: User = User.by_id(session.get("uid"))
-    if not owner.is_admin:
+    if not permission_manager.has_permission(owner.id, "team.create"):
         return make_response(-1, message="现在只允许管理员创建团队.")
     team = Team(owner_id=owner.id, create_time=datetime.now())
     team.members = [owner.id]
@@ -122,7 +120,7 @@ def quit_team():
     operator: User = User.by_id(session.get("uid"))
     user: User = User.by_id(request.form["uid"])
     team: Team = Team.by_id(request.form["team_id"])
-    if user.id != operator.id and not operator.is_admin and operator.id not in team.admins and operator.id != team.owner_id:
+    if user.id != operator.id and not permission_manager.has_permission(operator.id, "team.manage") and operator.id not in team.admins and operator.id != team.owner_id:
         return make_response(-1, message="你没有权限这样做")
 
     if team.id not in user.joined_teams and user.id in team.members:

@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models.user import *
@@ -8,6 +8,7 @@ from models.submission import *
 from models import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+from common.permission import require_permission
 
 
 @app.route("/api/rejudge", methods=["POST"])
@@ -20,10 +21,8 @@ def rejudge():
         "code","message"
     }
     """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
+    # user: User = User.by_id(session.get("uid"))
+    if not permission_manager.has_any_permission(session.get("uid", None), "submission.manage", "submission.rejudge"):
         return make_response(-1, message="你没有权限这样做")
     submit: Submission = Submission.by_id(request.form["submission_id"])
     if not submit:
@@ -72,7 +71,7 @@ def submit():
             return make_response(-1, message="题目ID不存在")
         problem: Problem = problem.one()
         if not problem.public:
-            if not user.is_admin and user.id != problem.uploader_id:
+            if not permission_manager.has_any_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
                 return make_response(-1, message="你没有权限执行此操作")
     from typing import Set
     parameters: Set[int] = set(decode_json(request.form["usedParameters"]))
@@ -156,7 +155,7 @@ def get_submission_info():
     if session.get("uid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if not submit.public and not user.is_admin and not user.id == submit.uid:
+        if not submit.public and not permission_manager.has_permission(user.id, "submission.manage") and not user.id == submit.uid:
             return make_response(-1, message="你没有权限查看此提交")
     ret = submit.to_dict()
 
@@ -164,7 +163,7 @@ def get_submission_info():
     ret["submit_time"] = str(ret["submit_time"])
     if submit.contest_id != -1:
         contest: Contest = Contest.by_id(submit.contest_id)
-        if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not user.is_admin:
+        if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not permission_manager.has_permission(user.id, "submission.manage"):
             ret["judge_result"] = {}
             ret["status"] = ret["status"] if ret["status"] in {
                 "compile_error"} else "invisible"
@@ -187,12 +186,8 @@ def get_submission_info():
         traceback.print_exc()
         ret["ace_mode"] = ret["language_name"] = ""
     problem: Problem = db.session.query(
-        Problem.can_see_results,Problem.uploader_id).filter(Problem.id == submit.problem_id).one()
+        Problem.can_see_results, Problem.uploader_id).filter(Problem.id == submit.problem_id).one()
 
-    # if not problem.can_see_results :
-        # if not session.get("uid") or (not user.is_admin and user.id != problem.uploader_id ):
-            # pass
-        
 
     return make_response(0, data=ret)
 
@@ -232,7 +227,7 @@ def submission_list():
     else:
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if user.is_admin:
+        if permission_manager.has_permission(user.id, "submission.manage"):
             result = db.session.query(Submission)
         else:
             result = db.session.query(Submission).filter(
