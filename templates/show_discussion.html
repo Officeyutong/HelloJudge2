@@ -100,10 +100,11 @@
                 send() {
                     const comp = this;
                     this.sending = true, this.error_message = "";
-                    $.post("/api/post_comment", {
-                        content: comp.text, discussion_id: discussion.data.id
-                    }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/post_comment", {
+                        content: comp.text, discussionID: discussion.data.id
+                    }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         comp.sending = false;
                         if (ctx.code) {
                             comp.error_message = ctx.message;
@@ -114,8 +115,9 @@
                 }
             }
         });
-        $.post("/api/get_discussion", { id: window.location.href.split("/").pop() }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/get_discussion", { id: window.location.href.split("/").pop() }).then(ctx => {
+            // ctx = JSON.parse(ctx);
+            ctx = ctx.data;
             if (ctx.code) {
                 show_error_modal(ctx.message);
                 return;

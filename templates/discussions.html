@@ -25,8 +25,9 @@
             },
             methods: {
                 removeDiscussion(id) {
-                    $.post("/api/discussion/remove", { discussion_id: id }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/discussion/remove", { discussionID: id }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             showErrorModal(ctx.message);
                             return;
@@ -35,8 +36,9 @@
                     });
                 },
                 editDiscussion(id) {
-                    $.post("/api/get_discussion", { id: id }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/get_discussion", { id: id }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             showErrorModal(ctx.message);
                             return;
@@ -72,8 +74,9 @@
         });
         const urlarr = window.location.href.split("/").reverse();
         discussion.path = urlarr[1];
-        $.post("/api/get_discussion_list", { page: urlarr[0], path: urlarr[1] }).done(ctx => {
-            ctx = JSON.parse(ctx);
+        axios.post("/api/get_discussion_list", { page: urlarr[0], path: urlarr[1] }).then(ctx => {
+            ctx = ctx.data;
+            // ctx = JSON.parse(ctx);
             if (ctx.code) {
                 show_modal_error(ctx.message);
                 return;
@@ -81,8 +84,9 @@
             discussion.data = ctx.data;
             discussion.page_count = ctx.page_count;
             discussion.current_page = ctx.current_page;
-            $.post("/api/get_path_name", { path: urlarr[1] }).done(ctx => {
-                discussion.path_name = JSON.parse(ctx).name;
+            axios.post("/api/get_path_name", { path: urlarr[1] }).then(ctx => {
+
+                discussion.path_name = ctx.data.name;
                 discussion.done = true;
             });
         });
@@ -100,12 +104,13 @@
                 update() {
                     this.sending = true, this.error_message = "";
                     this.success_message = "";
-                    $.post("/api/discussion/update", { id: this.editing, title: this.title, top: this.top, content: this.text }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/discussion/update", { id: this.editing, title: this.title, top: this.top, content: this.text }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         this.sending = false;
                         if (ctx.code) {
                             showErrorModal(ctx.message);
-                            
+
                             return;
                         }
                         this.success_message = "更新完成."
@@ -115,10 +120,11 @@
                 send() {
                     const comp = this;
                     this.sending = true, this.error_message = "";
-                    $.post("/api/post_discussion", {
+                    axios.post("/api/post_discussion", {
                         title: comp.title, content: comp.text, path: discussion.path, top: comp.top
-                    }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         comp.sending = false;
                         if (ctx.code) {
                             comp.error_message = ctx.message;
@@ -166,8 +172,8 @@
                         {[data.last_comment_time]}
                     </td>
                     <td>
-                        <a v-if="base.isAdmin||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
-                        <a v-if="base.isAdmin||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
+                        <a v-if="data.managable||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
+                        <a v-if="base.managable||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
                     </td>
                 </tr>
 

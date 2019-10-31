@@ -89,7 +89,6 @@ def contest_list(page: int = 1):
     result = db.session.query(Contest).order_by(Contest.id.desc())
     count = result.count()
     import math
-    pages = int(math.ceil(count/config.CONTESTS_PER_PAGE))
     result: Iterable[Contest] = result.slice(
         (page-1)*config.CONTESTS_PER_PAGE, (page)*config.CONTESTS_PER_PAGE).all()
     ret = {"page_count": int(math.ceil(count/config.CONTESTS_PER_PAGE)), "list": [
@@ -227,7 +226,7 @@ def contest_raw_data(contestID):
         return "你没有权限这样做", 403
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
-    if not permission_manager.has_permission(user.uid, "contest.manage") and user.id != contest.owner_id:
+    if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
         return "你没有权限这样做", 403
     import time
     result = {
@@ -287,7 +286,6 @@ def contest_download_file(contest_id, problem_id, file):
     import flask
     if not session.get("uid"):
         return flask.abort(403)
-    user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contest_id)
     problem: Problem = Problem.by_id(contest.problems[int(problem_id)]["id"])
     if file not in problem.downloads:
@@ -338,7 +336,7 @@ def contest_show_problem(problemID:int,contestID:int):
         if not permission_manager.has_permission(user.id,"contest.manage") and user.id != contest.owner_id:
             return make_response(-1, message="你没有权限跟我说话")
     problem: Problem = Problem.by_id(
-        contest.problems[problemID]["id"])
+        contest.problems[int(problemID)]["id"])
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())

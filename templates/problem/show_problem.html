@@ -237,8 +237,9 @@
                     } else {
                         show_problem.selected_id = ctx.list[0].id;
                     }
-                    $.post("/api/get_discussion_list", { path: "discussion.problem." + show_problem.data.id, page: 1, count_limit: 10 }).done(ctx => {
-                        ctx = JSON.parse(ctx);
+                    axios.post("/api/get_discussion_list", { path: "discussion.problem." + show_problem.data.id, page: 1, countLimit: 10 }).then(ctx => {
+                        ctx = ctx.data;
+                        // ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             show_error_modal(ctx.message);
                             return;

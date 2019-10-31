@@ -17,7 +17,7 @@
 
             }
         });
-        axios.post("/api/contest/ranklist", { contestID: window.location.href.split("/").pop() }).done(ctx => {
+        axios.post("/api/contest/ranklist", { contestID: window.location.href.split("/").pop() }).then(ctx => {
             // ctx = JSON.parse(ctx);
             ctx = ctx.data;
             if (ctx.code) {

@@ -8,7 +8,9 @@ from werkzeug.utils import secure_filename
 import datetime
 import math
 import re
-
+from common.utils import unpack_argument
+from common.permission import require_permission
+from main import permission_manager
 legal_paths = re.compile(
     r"^(broadcast)|(discussion((.global)|(.problem((.global)|.(?P<id>[0-9]+)))))$")
 path_query = re.compile(
@@ -16,7 +18,7 @@ path_query = re.compile(
 
 
 def can_post_at(user: User, path: str):
-    if not user.is_admin and path.startswith("broadcast"):
+    if not permission_manager.has_permission(user.id, "discussion.manage") and path.startswith("broadcast"):
         return False
     match_result = legal_paths.match(path)
     if not match_result:
@@ -29,18 +31,19 @@ def can_post_at(user: User, path: str):
 
 
 @app.route("/api/discussion/remove", methods=["POST"])
-def discussion_remove():
+@unpack_argument
+def discussion_remove(discussionID: int):
     """
     删除讨论
-    discussion_id:讨论ID
+    discussionID:讨论ID
     """
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
-    discussion: Discussion = Discussion.by_id(request.form["discussion_id"])
+    discussion: Discussion = Discussion.by_id(discussionID)
     if not discussion:
         return make_response(-1, message="讨论ID不存在")
     user: User = User.by_id(session.get("uid"))
-    if not user.is_admin and user.id != discussion.uid:
+    if not permission_manager.has_permission(user.id, "discussion.manage") and user.id != discussion.uid:
         return make_response(-1, message="你没有权限这样做")
     db.session.delete(discussion)
     db.session.commit()
@@ -48,7 +51,8 @@ def discussion_remove():
 
 
 @app.route("/api/discussion/update", methods=["POST"])
-def discussion_update():
+@unpack_argument
+def discussion_update(id: int, content: str, title: str, top: bool):
     """
     更新讨论
     id:讨论ID
@@ -58,18 +62,17 @@ def discussion_update():
     """
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
-    discussion: Discussion = Discussion.by_id(request.form["id"])
+    discussion: Discussion = Discussion.by_id(id)
     if not discussion:
         return make_response(-1, message="讨论ID不存在")
     user: User = User.by_id(session.get("uid"))
-    if not user.is_admin and user.id != discussion.uid:
+    if not permission_manager.has_permission(user.id, "discussion.manage") and user.id != discussion.uid:
         return make_response(-1, message="你没有权限这样做")
     import datetime
-    discussion.content = request.form["content"] + \
+    discussion.content = content + \
         "\n\n最后编辑于"+str(datetime.datetime.now())
-    discussion.title = request.form["title"]
-    top = request.form["top"].lower() == "true"
-    if top and not user.is_admin:
+    discussion.title = title
+    if top and not permission_manager.has_permission(user.id, "discussion.manage"):
         return make_response(-1, message="你没有权限发送置顶讨论")
     discussion.top = top
     db.session.commit()
@@ -77,7 +80,8 @@ def discussion_update():
 
 
 @app.route("/api/post_discussion", methods=["POST"])
-def post_discussion():
+@unpack_argument
+def post_discussion(title: str, content: str, path: str, top: bool):
     """
     发送讨论
     参数:
@@ -95,19 +99,19 @@ def post_discussion():
     if not session.get("uid"):
         return make_response(-1, message="请登录")
     user: User = User.by_id(int(session.get("uid")))
-    if not user.is_admin and request.form["top"].lower() == "true":
+    if not permission_manager.has_permission(user.id, "discussion.manage") and top:
         return make_response(-1, message="只有管理员才能发置顶讨论")
-    if not can_post_at(user, request.form["path"]):
+    if not can_post_at(user, path):
         return make_response(-1, message="你无权在这里发帖")
-    if not request.form.get("title", ""):
+    if not title:
         return make_response(-1, message="标题不得为空")
     discussion = Discussion()
-    discussion.content = request.form["content"]
-    discussion.title = request.form["title"]
-    discussion.path = request.form["path"]
+    discussion.content = content
+    discussion.title = title
+    discussion.path = path
     import datetime
     discussion.time = datetime.datetime.now()
-    discussion.top = request.form["top"].lower() == "true"
+    discussion.top = top
     discussion.uid = user.id
     db.session.add(discussion)
     db.session.commit()
@@ -115,12 +119,13 @@ def post_discussion():
 
 
 @app.route("/api/post_comment", methods=["POST"])
-def post_comment():
+@unpack_argument
+def post_comment(content: str, discussionID: int):
     """
     发送评论
     参数:
     content:str 内容
-    discussion_id:int 讨论id
+    discussionID:int 讨论id
     返回
     {
         "code":-1,//是否成功执行
@@ -128,37 +133,39 @@ def post_comment():
         "last_page":"最后一页的页码"
     }
     """
-    if not Discussion.has(request.form.get("discussion_id", -1)):
+    if not Discussion.has(discussionID):
         return make_response(-1, message="讨论ID不合法")
-    content = request.form.get("content", "")
+    # content = request.form.get("content", "")
     if not content:
         return make_response(-1, message="内容不能为空")
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     comment: Comment = Comment()
-    comment.discussion_id = int(request.form.get("discussion_id"))
-    comment.content = request.form["content"]
+    comment.discussion_id = discussionID
+    comment.content = content
     comment.time = datetime.datetime.now()
     comment.uid = session.get("uid")
     db.session.add(comment)
     db.session.commit()
-    return make_response(0, last_page=int(math.ceil(db.session.query(Comment.id).filter(Comment.discussion_id == int(request.form["discussion_id"])).count()/config.COMMENTS_PER_PAGE)))
+    return make_response(0, last_page=int(math.ceil(db.session.query(Comment.id).filter(Comment.discussion_id == int(discussionID)).count()/config.COMMENTS_PER_PAGE)))
 
 
 @app.route("/api/get_discussion_list", methods=["POST"])
-def get_discussion_list():
+@unpack_argument
+def get_discussion_list(path: str, page: id, countLimit: int = 10**8):
     """
     获取讨论列表
     参数:
     path:str 讨论路径
     page:id 页面ID
-    count_limit:int 数量限制
+    countLimit:int 数量限制
     返回
     {
         "code":0,//调用失败返回-1 
         "message":-1,
-        "pafe_count":10,//总页数
+        "page_count":10,//总页数
         "current_page":10,//当前页 
+        "managable":"可否删除\编辑",
         "data":[
                 {
                 "uid":"用户ID",
@@ -173,17 +180,18 @@ def get_discussion_list():
         ]
     }
     """
+    page = int(page)
     result = db.session.query(Discussion).filter(or_(
-        Discussion.path == request.form["path"], Discussion.path.like(f"{request.form['path']}.%")))
-    page = int(request.form.get("page", 1))
+        Discussion.path == path, Discussion.path.like(f"{path}.%")))
     ret = {
         "page_count": int(math.ceil(result.count()/config.DISCUSSIONS_PER_PAGE)),
         "current_page": page,
-        "data": []
+        "data": [],
+        "managable": permission_manager.has_permission(session.get("uid", None), "discussion.manage")
     }
 
     result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSIONS_PER_PAGE,
-                                                                                         min(page*config.DISCUSSIONS_PER_PAGE, (page-1)*config.DISCUSSIONS_PER_PAGE+int(request.form.get("count_limit", 10**8))))
+                                                                                         min(page*config.DISCUSSIONS_PER_PAGE, (page-1)*config.DISCUSSIONS_PER_PAGE+int(countLimit)))
     for item in result:
         user: User = User.by_id(item.uid)
         comments = db.session.query(Comment).filter(
@@ -246,7 +254,8 @@ def get_comments():
 
 
 @app.route("/api/get_path_name", methods=["POST"])
-def get_path_name():
+@unpack_argument
+def get_path_name(path: str):
     """
     查询路径名
     参数:
@@ -257,7 +266,7 @@ def get_path_name():
         "name":"qwq"
     }
     """
-    if not path_query.match(request.form["path"]):
+    if not path_query.match(path):
         return make_response(-1, message="非法路径名")
     return make_response(0, name=({
         "discussion": "所有讨论",
@@ -265,11 +274,12 @@ def get_path_name():
         "discussion.problem": "所有题目讨论",
         "discussion.problem.global": "题目全局讨论",
         "broadcast": "公告"
-    }.get(request.form["path"], f"题目 {request.form['path'].split('.')[-1]} 的讨论")))
+    }.get(path, f"题目 {path.split('.')[-1]} 的讨论")))
 
 
 @app.route("/api/get_discussion", methods=["POST"])
-def get_discussion():
+@unpack_argument
+def get_discussion(id: int):
     """
     获取讨论信息
     参数:
@@ -285,7 +295,6 @@ def get_discussion():
         }
     }
     """
-    id = int(request.form["id"])
     import flask
     if not Discussion.has(id):
         flask.abort(404)
