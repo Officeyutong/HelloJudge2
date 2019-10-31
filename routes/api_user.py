@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 
@@ -12,12 +12,13 @@ from typing import Tuple
 @app.before_request
 def banned_check():
     if session.get("uid"):
-        user: User = User.by_id(session.get("uid"))
+        user: User = db.session.query(User.banned).filter(
+            User.id == session.get("uid"))
         if user.banned:
             session.pop("uid")
-        if user.is_admin:
-            user.raw_admin = True
-            db.session.commit()
+        # if user.is_admin:
+        #     user.raw_admin = True
+        #     db.session.commit()
 
 
 @app.route("/api/query_login_state", methods=["POST"])
@@ -83,7 +84,6 @@ def auth_email():
     验证用户邮箱
     username: 用户名
     token: 验证密钥
-
     """
     user: User = db.session.query(User).filter(and_(
         User.username == request.form["username"], User.auth_token == request.form["token"])).one_or_none()
@@ -242,7 +242,7 @@ def user_pass_email_auth():
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     operator: User = User.by_id(session.get("uid"))
-    if not operator.is_admin:
+    if not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限进行此操作")
     user: User = User.by_id(request.get_json()["uid"])
     user.auth_token = ""
@@ -273,7 +273,9 @@ def get_user_profile():
                 ],
                 "banned":"是否已封禁",
                 "hasEmailAuth":"是否已进行邮箱验证",
-                "rawAdmin":"是否是原始管理员"
+                "rawAdmin":"是否是原始管理员",
+                "permissions":[权限列表],
+                "permission_group":"权限组"
             }
         }
     """
@@ -335,7 +337,9 @@ def update_profile():
             "changePassword":"是否更改密码",
             "newPassword":"新密码",
             "banned":"是否已封禁",
-            "rawAdmin":"是否是原始管理员"
+            "rawAdmin":"是否是原始管理员",
+            "permissions":[新的权限列表],
+            "permission_group":"新的权限组"
         }
     }
     {
@@ -347,7 +351,7 @@ def update_profile():
         return make_response(-1, message="请先登录")
     operator: User = User.by_id(session.get("uid"))
     user: User = User.by_id(request.form["uid"])
-    if user.id != operator.id and not operator.is_admin:
+    if user.id != operator.id and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你无权进行此操作")
     data: dict = decode_json(request.form["data"])
     regex = re.compile(config.USERNAME_REGEX)
@@ -355,14 +359,22 @@ def update_profile():
         return make_response(-1, message="用户名必须符合以下正则表达式: {}".format(config.USERNAME_REGEX))
     if not re.compile(r"(.+)@(.+)").search(data["email"]):
         return make_response(-1, message="请输入合法的邮箱")
+    if not permission_manager.has_permission(operator.id, "permission.manage"):
+        if data["permission_group"] != user.permission_group:
+            return make_response(-1, message="你没有权限更改用户所属权限组")
+        if set(data["permissions"]) != set(user.permissions):
+            return make_response(-1, message="你没有权限更改用户权限")
+        user.permission_group = data["permission_group"]
+        user.permissions = data["permissions"]
     user.username = data["username"]
     user.email = data["email"]
     user.description = data["description"]
     if data["changePassword"]:
         user.password = data["newPassword"]
-    if data["banned"] != user.banned and not operator.is_admin:
+    if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限封禁\解封此用户")
 
     user.banned = data["banned"]
+
     db.session.commit()
     return make_response(0, message="操作完成")
