@@ -121,6 +121,7 @@ def show_contest(contestID: int):
         "code":0,
         "message":"",
         "data":{
+            "managable":"是否具有管理权限",
             "name":"比赛名",
             "description":"说明",
             "id":"比赛ID",
@@ -171,6 +172,7 @@ def show_contest(contestID: int):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
+        "managable": permission_manager.has_permission(user.id, "contest.manage")
     }
     problems = result["problems"]
     for i, problem_data in enumerate(contest.problems):
@@ -300,7 +302,7 @@ def contest_download_file(contest_id, problem_id, file):
 
 @app.route("/api/contest/problem/show", methods=["POST"])
 @unpack_argument
-def contest_show_problem(problemID:int,contestID:int):
+def contest_show_problem(problemID: int, contestID: int):
     """
     获取比赛题目信息
     参数:
@@ -333,7 +335,7 @@ def contest_show_problem(problemID:int,contestID:int):
         if not session.get("uid"):
             return make_response(-1, message="你没有权限跟我说话")
         user: User = User.by_id(session.get("uid"))
-        if not permission_manager.has_permission(user.id,"contest.manage") and user.id != contest.owner_id:
+        if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
             return make_response(-1, message="你没有权限跟我说话")
     problem: Problem = Problem.by_id(
         contest.problems[int(problemID)]["id"])

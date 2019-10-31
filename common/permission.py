@@ -19,6 +19,9 @@ class PermissionManager:
         # print(self.permission_getter(uid))
         conn.sadd(set_name, *permissions)
 
+    def has_any_permission(self, uid, *perms) -> bool:
+        return any((self.has_permission(uid, x) for x in perms))
+
     def has_permission(self, uid: int, permission: str) -> bool:
         if not uid:
             return False

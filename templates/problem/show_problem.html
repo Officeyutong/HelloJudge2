@@ -409,7 +409,7 @@
                         </tr>
                         <tr v-if="data.using_file_io" style="word-break: break-all;">
                             <td>输入/输出文件</td>
-                            <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
+                            <td>{[data.input_file_name]}<br />{[data.output_file_name]}</td>
                         </tr>
                         <tr>
                             <td>评测方式</td>
@@ -418,9 +418,9 @@
 
                     </tbody>
                 </table>
-                <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||base.isAdmin"
+                <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||data.managable"
                     target="_blank">编辑</a>
-                <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||base.isAdmin">删除</a>
+                <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||data.managable">删除</a>
                 <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
                 <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
                 <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>

@@ -17,7 +17,7 @@
             computed: {
                 showRanklist() {
 
-                    if (this.base.isAdmin) return true;
+                    if (this.data.managable) return true;
                     if (this.status(this.data.start_time, this.data.end_time) > 0) return true;
                     if (this.data.ranklist_visible) return true;
                     if (this.base.uid == this.data.owner_id) return true;
@@ -116,13 +116,13 @@
         </table>
         <a :href="'/contest/ranklist/'+data.id" class="ui yellow tiny button" v-if="showRanklist"
             target="_blank">排行榜</a>
-        <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id"
+        <a :href="'/contest/edit/'+data.id" class="ui red tiny button" v-if="data.managable||base.uid==data.owner_id"
             target="_blank">编辑</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id" class="ui red tiny button"
-            v-if="base.isAdmin||base.uid==data.owner_id" target="_blank">所有提交</a>
+            v-if="data.managable||base.uid==data.owner_id" target="_blank">所有提交</a>
         <a :href="'/submissions/1?filter=contest%3D'+data.id+',uid%3D'+base.uid" class="ui blue tiny button"
             target="_blank" v-if="base.isLogin">我的提交</a>
-        <div class="ui red tiny button" v-if="base.isAdmin||base.uid==data.owner_id" v-on:click="removeContest">删除比赛
+        <div class="ui red tiny button" v-if="data.managable||base.uid==data.owner_id" v-on:click="removeContest">删除比赛
         </div>
 
         <div class="ui divider" v-if="data.description!=''"></div>

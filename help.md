@@ -298,12 +298,12 @@ HelloJudge2具有权限系统。
 - | - 
 problem.create| 创建题目 
 problem.publicize|公开题目
-problem.viewall|查看私有题目
-submission.viewall|查看私有提交
+problem.manage|管理任意题目(包括查看私有题)
+submission.manage|管理任意提交(包括查看私有提交)
 submission.rejudge|重测提交
 contest.create|创建比赛
 contest.publicize|公开比赛
-contest.manage|管理其他人创建的比赛
+contest.manage|管理其他人创建的比赛(包括查看私有比赛(暂未实现))
 contest.enter.比赛ID|进入某场私有比赛(在正确输入私有比赛的邀请码之后，自动取得该权限)
 permission.manage|管理任意用户的权限设定(普通用户默认无权更改自己的权限设定)
 team.create|创建团队

@@ -1,4 +1,4 @@
-from main import web_app as app
+from main import web_app as app, permission_manager
 from main import db, config, basedir
 from flask import session, request, send_file, send_from_directory
 from utils import *
@@ -7,6 +7,8 @@ from models.problem import *
 from models.submission import *
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
+from common.utils import unpack_argument
+from common.permission import require_permission
 
 
 @app.route("/api/problem/remove", methods=["POST"])
@@ -23,7 +25,7 @@ def problem_remove():
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    if not user.is_admin and user.id != problem.uploader_id:
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     db.session.query(Submission).filter(
         Submission.problem_id == problem.id).delete()
@@ -51,7 +53,7 @@ def regenerate_filelist():
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
     problem: Problem = Problem.by_id(request.form["problem_id"])
-    if not user.is_admin and user.id == problem.uploader_id:
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import pathlib
     import os
@@ -83,6 +85,7 @@ def get_problem_info():
             "code":0,//非0表示调用成功
             "message":"qwq",//code非0的时候表示错误信息
             "data":{
+                "managable":"是否有管理权限",
                 "id":-1//题目ID,
                 "title":"qwq",//题目名
                 "backcground":"qwq",//题目背景
@@ -116,7 +119,7 @@ def get_problem_info():
     problem = problem.one()
     if not problem.public and not session.get("uid"):
         return make_response(-1, message="你没有权限查看此题目")
-    if not problem.public and not User.by_id(session.get("uid")).is_admin and int(session.get("uid")) != problem.uploader_id:
+    if not problem.public and not permission_manager.has_permission(session.get("uid", None), "problem.manage") and int(session.get("uid")) != problem.uploader_id:
         return make_response(-1, message="你没有权限查看此题目")
     result = problem.as_dict()
     last_submission: Submission = db.session.query(Submission).filter(and_(
@@ -147,6 +150,8 @@ def get_problem_info():
                 result["my_submission"], result["my_submission_status"] = any_submit.first()
     result["score"] = problem.get_total_score()
     result["create_time"] = str(result["create_time"])
+    result["managable"] = permission_manager.has_permission(
+        session.get("uid", None), "problem.manage")
     return make_response(0, data=result)
 
 
@@ -169,13 +174,11 @@ def upload_file(id):
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not problem.public and not session.get("uid"):
-        return make_response(-1, message="你没有权限执行此操作")
     if not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not problem.public and not user.is_admin and user.id != problem.uploader_id:
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
     import zipfile
@@ -227,9 +230,9 @@ def download_file(id: int, filename: str):
     if session.get("uid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if not problem.public and not user.is_admin and user.id != problem.uploader_id:
+        if not problem.public and not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
             flask.abort(403)
-        if problem.public and not user.is_admin and user.id != problem.uploader_id and filename not in problem.downloads:
+        if problem.public and not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id and filename not in problem.downloads:
             flask.abort(403)
     else:
         if not problem.public or filename not in problem.downloads:
@@ -261,13 +264,13 @@ def remove_file():
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
     problem = problem.one()
-    if not problem.public and not session.get("uid"):
-        return make_response(-1, message="你没有权限执行此操作")
+    # if not problem.public and not session.get("uid"):
+    #     return make_response(-1, message="你没有权限执行此操作")
     if not session.get("uid"):
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not problem.public and not user.is_admin and user.id != problem.uploader_id:
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
     upload_path = os.path.join(
@@ -317,7 +320,7 @@ def update_problem():
         return make_response(-1, message="你没有权限执行此操作")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not user.is_admin and user.id != problem.uploader_id:
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     data = decode_json(request.form["data"])
     for subtask in data["subtasks"]:
@@ -339,10 +342,10 @@ def update_problem():
                 subtask["testcases"][i]["full_score"] = score
             subtask["testcases"][-1]["full_score"] = subtask["score"] - \
                 score*(len(subtask["testcases"])-1)
-    if not user.is_admin and problem.public == False and data["public"] == True:
+    if not permission_manager.has_any_permission(user.id, "problem.manage", "problem.publicize") and problem.public == False and data["public"] == True:
         return make_response(-1, message="你没有权限公开题目")
     for k, v in data.items():
-        if k == "create_time":
+        if k in {"create_time"}:
             continue
         setattr(problem, k, v)
 
@@ -375,7 +378,8 @@ def problem_list():
     else:
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if user.is_admin:
+        # 有查看私有题的权限
+        if permission_manager.has_permission(user.id, "problem.manage"):
             result = db.session.query(Problem)
         else:
             result = db.session.query(Problem).filter(
@@ -433,7 +437,7 @@ def search_problem(search_keyword=""):
     else:
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
-        if user.is_admin:
+        if permission_manager.has_permission(user.id, "problem.manage"):
             result = db.session.query(Problem)
         else:
             result = db.session.query(Problem).filter(
@@ -468,7 +472,7 @@ def create_problem():
         return make_response(-1, message="你尚未登录!")
     user: User = db.session.query(User).filter(
         User.id == session.get("uid")).one()
-    if not user.is_admin and not config.ALLOW_PRIVATE_PROBLEMS:
+    if not permission_manager.has_any_permission(user.id, "problem.manage", "problem.create"):
         return make_response(-1, message="你没有权限进行此操作")
     from datetime import datetime
     problem = Problem(uploader_id=user.id,
