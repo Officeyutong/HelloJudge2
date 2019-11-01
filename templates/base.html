@@ -211,7 +211,7 @@
             baseMixin = {
                 data: {
                     base: {
-                        isLogin: false, username: "", uid: -1, email: "", isAdmin: false
+                        isLogin: false, username: "", uid: -1, email: ""
                     }
                 }, methods: {
                     makeHTML(v) {
@@ -227,10 +227,6 @@
                 el: "#main-sidebar",
                 mixins: [baseMixin],
                 data: {
-                    is_login: false,
-                    username: "",
-                    uid: -1,
-                    email: "",
                     show_discussion_detail: false
                 }, methods: {
                     logout: function () {
@@ -248,23 +244,13 @@
             })
             $.post("/api/query_login_state").done((ctx) => {
                 ctx = JSON.parse(ctx);
-                sidebar.is_login = ctx.result;
-                sidebar.uid = ctx.uid;
+                baseMixin.data.base.isLogin = ctx.result;
                 if (ctx.result) {
-                    $.post("/api/get_user_profile", { uid: ctx.uid }).done((ctx) => {
-                        ctx = JSON.parse(ctx).data;
-                        console.log(ctx);
-                        sidebar.username = ctx.username;
-                        sidebar.email = ctx.email;
-                        baseMixin.data.base.username = ctx.username;
-                        baseMixin.data.base.email = ctx.email;
-                        baseMixin.data.base.uid = sidebar.uid;
-                        baseMixin.data.base.isLogin = sidebar.is_login;
-                        baseMixin.data.base.isAdmin = ctx.is_admin;
-                        baseMixin.data.base.rawAdmin = ctx.rawAdmin;
-
-                    })
-
+                    baseMixin.data.base.username = ctx.username;
+                    baseMixin.data.base.email = ctx.email;
+                    baseMixin.data.base.uid = ctx.uid;
+                    baseMixin.data.base.mangable = ctx.backend_managable;
+                    
                 }
             });
 
@@ -307,33 +293,33 @@
         <!-- <a class="item" target="_blank" href="/discussions/discussion.problem/1"
             v-if="show_discussion_detail">全部题目讨论</a> -->
         <a class="item" target="_blank" href="/ranklist/1"><i class="signal icon"></i>排名</a>
-        <a class="item" target="_blank" href="/ide" v-if="is_login">
+        <a class="item" target="_blank" href="/ide" v-if="base.isLogin">
             <i class="code icon"></i>
             在线IDE</a>
         <a class="item" target="_blank" href="/help">
             <i class="help circle icon"></i>
             帮助</a>
-        <a class="item" target="_blank" href="/login" v-if="!is_login">
+        <a class="item" target="_blank" href="/login" v-if="!base.isLogin">
             请登录...
         </a>
-        <a class="item" href="/register" v-if="!is_login">
+        <a class="item" href="/register" v-if="!base.isLogin">
             或者注册...
         </a>
-        <a class="item" :href="'/profile_edit/'+uid" v-if="is_login" target="_blank">
+        <a class="item" :href="'/profile_edit/'+base.uid" v-if="base.backend_managable" target="_blank">
             <i class="address card icon"></i>
             个人信息编辑
         </a>
-        <a class="item" href="/admin" v-if="base.isAdmin" target="_blank">
+        <a class="item" href="/admin" v-if="base.mangable" target="_blank">
             <i class="sitemap icon"></i>
             后台管理
         </a>
-        <a class="item" :href="'/profile/'+uid" v-if="is_login">
-            <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(email)"></img>
-            <span>{[username]}</span>
+        <a class="item" :href="'/profile/'+base.uid" v-if="base.isLogin">
+            <img class="ui avatar image" :src="'https://www.gravatar.com/avatar/'+md5(base.email)"></img>
+            <span>{[base.username]}</span>
         </a>
 
 
-        <a class="item" v-on:click="logout" v-if="is_login"><i class="x icon"></i>登出</a>
+        <a class="item" v-on:click="logout" v-if="base.isLogin"><i class="x icon"></i>登出</a>
     </div>
     <div class="pusher" style="background-color: rgb(236, 233, 233);">
         <div class="ui" style="margin-top:50px;margin-left:50px;top:50px;position: fixed">

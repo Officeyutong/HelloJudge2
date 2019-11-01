@@ -121,6 +121,7 @@ def get_submission_info():
         "code":0,//非0表示调用成功
         "message":"qwq",//调用失败时的信息
         "data":{
+            "managable":"是否可管理",
             "id":-1,//提交ID
             "uid":-1,//用户ID
             "language":"qwq",//语言ID
@@ -188,7 +189,8 @@ def get_submission_info():
     problem: Problem = db.session.query(
         Problem.can_see_results, Problem.uploader_id).filter(Problem.id == submit.problem_id).one()
 
-
+    ret["managable"] = permission_manager.has_permission(
+        session.get("uid", None), "submission.manage")
     return make_response(0, data=ret)
 
 

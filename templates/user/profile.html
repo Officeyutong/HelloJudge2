@@ -48,7 +48,7 @@
                             <span class="date">注册于 {[data.register_time]}</span>
                         </div>
                         <div class="meta">
-                            <span class="is-admin">{[data.is_admin?"管理员":"非管理员"]}</span>
+                            <span class="is-admin">{[data.group_name]}</span>
                         </div>
 
                     </div>
@@ -59,7 +59,7 @@
                     <div class="extra content" v-if="data.banned">
                         <span style="color:red">此账户已被封禁</span>
                     </div>
-                    <div class="extra content" v-if="base.isAdmin||base.uid==data.id">
+                    <div class="extra content" v-if="data.managable||base.uid==data.id">
                         <a :href="'/profile_edit/'+data.id" style="color:black">编辑</a>
 
                     </div>

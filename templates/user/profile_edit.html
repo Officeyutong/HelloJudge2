@@ -47,7 +47,14 @@
                     this.loading = true;
                     $.post("/api/update_profile", {
                         uid: this.data.id, data: JSON.stringify({
-                            banned: this.data.banned, username: this.data.username, email: this.data.email, description: this.data.description, changePassword: this.password != "", newPassword: md5_with_salt(this.password)
+                            banned: this.data.banned,
+                            username: this.data.username,
+                            email: this.data.email,
+                            description: this.data.description,
+                            changePassword: this.password != "",
+                            newPassword: md5_with_salt(this.password),
+                            permission_group: this.data.permission_group,
+                            permissions: this.data.permissions
                         })
                     }).done(ctx => {
                         this.loading = false;
@@ -131,9 +138,28 @@
                         </div>
                     </div>
                 </div>
-                <div class="ui divider" v-if="base.isAdmin"></div>
+                <div class="ui divider"></div>
+                <div class="ui field">
+                    <label>
+                        权限组
+                    </label>
+                    <input type="text" v-model="data.permission_group">
+                </div>
+                <div class="ui field">
+                    <label>组权限列表</label>
+                    <div class="ui list">
+                        <div class="item" v-for="item in data.group_permissions">{[item]}</div>
+                    </div>
+                </div>
+                <div class="ui field">
+                    <label>用户权限列表</label>
+                    <div class="ui list">
+                        <div class="item" v-for="item in data.permissions">{[item]}</div>
+                    </div>
+                </div>
+                <div class="ui divider" v-if="data.managable"></div>
 
-                <div class="ui field" v-if="base.isAdmin">
+                <div class="ui field" v-if="data.managable">
                     <div class="ui toggle checkbox">
                         <input type="checkbox" v-model="data.banned">
                         <label>账户封禁</label>
@@ -141,15 +167,15 @@
                 </div>
                 <!-- {[base.rawAdmin]}  {[base.uid]}  {[data.id]}
                 {[base.rawAdmin&&base.uid==data.id]} -->
-                <div class="ui green button" v-if="base.isAdmin&&!data.hasEmailAuth" v-on:click="forcePassEmailAuth">
+                <div class="ui green button" v-if="data.managable&&!data.hasEmailAuth" v-on:click="forcePassEmailAuth">
                     强行通过邮箱验证
                 </div>
                 <div class="ui divider"></div>
 
                 <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="submit">提交</div>
-                <div v-if="test(base.rawAdmin),test(base.uid==data.id),base.rawAdmin&&base.uid==data.id"
+                <div v-if="test(base.rawAdmin),test(base.uid==data.id),data.canSetAdmin&&base.uid==data.id"
                     class="ui green button" v-on:click="toggleAdminMode">
-                    {[data.is_admin?"关闭管理员模式":"打开管理员模式"]}
+                    {[(data.permission_group=="admin")?"关闭管理员模式":"打开管理员模式"]}
                 </div>
             </div>
         </div>

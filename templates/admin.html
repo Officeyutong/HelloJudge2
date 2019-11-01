@@ -14,7 +14,8 @@
                 data: null,
                 done: false,
                 currentTab: "general",
-                ratedContests: []
+                ratedContests: [],
+                permissionGroups: []
             }, methods: {
                 reloadRatedContests() {
                     axios.post("/api/admin/rating/rated_contests").then(x => {
@@ -55,11 +56,22 @@
                         }
                         this.reloadRatedContests();
                     });
+                }, updatePermissionGroups() {
+                    axios.post("/api/admin/rating/permission_groups/update", {
+                        groups: this.permissionGroups
+                    }).then(x => {
+                        let data = x.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        window.location.reload();
+                    });
                 }
             }, mounted() {
                 axios.all([
-                    axios.post("/api/admin/show"), axios.post("/api/admin/rating/rated_contests")
-                ]).then(axios.spread((show, rating) => {
+                    axios.post("/api/admin/show"), axios.post("/api/admin/rating/rated_contests"), axios.post("/api/admin/rating/permission_groups/get")
+                ]).then(axios.spread((show, rating, groups) => {
                     show = show.data;
                     if (show.code) {
                         showErrorModal(show.message);
@@ -67,6 +79,7 @@
                     }
                     this.data = show.data;
                     this.ratedContests = rating.data.data;
+                    this.permissionGroups = groups.data.result;
                     this.done = true;
                 }));
             }
@@ -83,6 +96,11 @@
         <div class="item" v-bind:class="{active:currentTab=='rating'}" v-on:click="currentTab='rating'">Rating管理</div>
         <div class="item" v-bind:class="{active:currentTab=='settingPreview'}" v-on:click="currentTab='settingPreview'">
             设置预览</div>
+        <div class="item" v-bind:class="{active:currentTab=='permissionGroup'}"
+            v-on:click="currentTab='permissionGroup'">
+            权限组设定</div>
+
+
     </div>
     <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='general'}">
         <div class="ui three column grid">
@@ -198,6 +216,32 @@
                 </tr>
             </tbody>
         </table>
+    </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='permissionGroup'}">
+        <div v-for="item,i in permissionGroups">
+            <div class="ui header">
+                <h3>{[item.name]}</h3>
+
+            </div>
+            <div class="ui form">
+                <div class="ui field">
+                    <label>权限组ID</label>
+                    <input v-model="item.id">
+                </div>
+                <div class="ui field">
+                    <label>权限组名</label>
+                    <input v-model="item.name">
+                </div>
+                <div class="ui field">
+                    <label>权限列表</label>
+                    <textarea v-model="item.permissions"></textarea>
+                </div>
+                <div class="ui red button" v-on:click="permissionGroups.splice(i,1)">删除</div>
+            </div>
+            <div class="ui divider"></div>
+        </div>
+        <div class="ui green button" v-on:click="permissionGroups.push({id:'qwq',name:'qwq',permission:''})">添加</div>
+        <div class="ui green button" v-on:click="updatePermissionGroups">提交</div>
     </div>
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">

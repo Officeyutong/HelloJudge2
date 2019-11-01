@@ -16,10 +16,10 @@ class User(db.Model):
     description = db.Column(db.Text(), default="")
     # 电子邮件
     email = db.Column(db.String(30))
-    # 是否为管理员
-    is_admin = db.Column(db.Boolean, default=False)
-    # 是否是原始管理员(用于切换管理员模式)
-    raw_admin = db.Column(db.Boolean, nullable=False, default=False)
+    # # 是否为管理员
+    # is_admin = db.Column(db.Boolean, default=False)
+    # # 是否是原始管理员(用于切换管理员模式)
+    # raw_admin = db.Column(db.Boolean, nullable=False, default=False)
     # 重置密码所需token
     reset_token = db.Column(db.String(128), default="")
     # 验证账号所需token,留空表示已验证

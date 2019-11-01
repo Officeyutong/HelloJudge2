@@ -6,20 +6,25 @@
 <script>
     var register_frame;
     $(document).ready(() => {
-        if (sidebar.is_login) {
-            window.location.href = "/";
-            return;
-        }
+
         register_frame = new Vue({
             el: "#register-frame",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 error_message: "",
                 username: "",
                 email: "",
                 password: "",
                 password2: ""
-            }, methods: {
+            },
+            mounted() {
+                if (base.isLogin) {
+                    window.location.href = "/";
+                    return;
+                }
+            },
+            methods: {
                 register: function () {
                     // console.log("Logining..");
                     this.error_message = "";

@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir
+from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models import *
@@ -159,7 +159,7 @@ def import_from_syzoj():
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
-    if not user.is_admin:
+    if not permission_manager.has_any_permission(user.id, "problem.create", "problem.manage"):
         return make_response(-1, message="你没有权限执行此操作")
     try:
 
@@ -179,6 +179,8 @@ def import_from_syzoj():
                           create_time=datetime.datetime.now()
                           )
         if request.form["willPublic"].lower() == "true":
+            if not permission_manager.has_any_permission(user.id, "problem.publicize", "problem.manage"):
+                return make_response(-1, message="你没有权限公开题目")
             problem.public = True
         problem.example = []
         problem.hint = "### 样例\n" + \

@@ -13,7 +13,7 @@ def test(qwq: int):
 
 
 @app.route("/api/admin/show", methods=["POST"])
-@require_permission(manager=permission_manager, permission="admin")
+@require_permission(manager=permission_manager, permission="backend.manage")
 def admin_show():
     """
     获取后台信息
@@ -39,9 +39,9 @@ def admin_show():
 
 
 @app.route("/api/admin/rating/remove", methods=["POST"])
-@require_permission(permission_manager, permission="admin")
+@require_permission(permission_manager, permission="backend.manage")
 @unpack_argument
-def admin_rated_contest_remove(contestID:int):
+def admin_rated_contest_remove(contestID: int):
     """
     删除一场比赛及其之后比赛的rating造成的影响
     {
@@ -72,7 +72,7 @@ def admin_rated_contest_remove(contestID:int):
 
 
 @app.route("/api/admin/rating/rated_contests", methods=["POST"])
-@require_permission(permission_manager, permission="admin")
+@require_permission(permission_manager, permission="backend.manage")
 def admin_rated_contests():
     """ 
     获取rated比赛列表
@@ -103,7 +103,7 @@ def admin_rated_contests():
 
 
 @app.route("/api/admin/rating/append", methods=["POST"])
-@require_permission(permission_manager, "admin")
+@require_permission(permission_manager, "backend.manage")
 @unpack_argument
 def admin_rating_append(contestID):
     """
@@ -154,3 +154,52 @@ def admin_rating_append(contestID):
     db.session.commit()
 
     return make_response(0, message="完成")
+
+
+@app.route("/api/admin/rating/permission_groups/get", methods=["POST"])
+def admin_get_permission_groups():
+    """
+    {
+        "code":"",
+        "result":[
+            {
+                "id":"权限组ID",
+                "name":"权限组名",
+                "permissions":"权限列表(字符串)"
+            }
+        ]
+    }
+    """
+    result = [
+
+    ]
+    for item in db.session.query(PermissionGroup).all():
+        result.append({
+            "id": item.id, "name": item.name, "permissions": "\n".join(item.permissions)
+        })
+    return make_response(0, result=result)
+
+
+@app.route("/api/admin/rating/permission_groups/update", methods=["POST"])
+@unpack_argument
+@require_permission(manager=permission_manager, permission="permission.manage")
+def admin_update_permission_groups(groups: list):
+    """
+    [
+        {
+            "id","name","permissions":"xxx"
+        }
+    ]
+
+    {
+        "code":"",
+        "message":""
+    }
+    """
+    db.session.query(PermissionGroup).delete()
+    # for x in groups:
+    # print(type(db.session))
+    db.session.add_all((PermissionGroup(
+        id=x["id"], name=x["name"], permissions=x["permissions"].split("\n")) for x in groups))
+    db.session.commit()
+    return make_response(0, message="更新成功")

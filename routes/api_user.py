@@ -13,12 +13,9 @@ from typing import Tuple
 def banned_check():
     if session.get("uid"):
         user: User = db.session.query(User.banned).filter(
-            User.id == session.get("uid"))
+            User.id == session.get("uid")).one()
         if user.banned:
             session.pop("uid")
-        # if user.is_admin:
-        #     user.raw_admin = True
-        #     db.session.commit()
 
 
 @app.route("/api/query_login_state", methods=["POST"])
@@ -32,8 +29,11 @@ def query_login_state():
             "code":0,//0表示调用成功
             "result": true,//表示是否已登录
             "uid":-1//如果已登录则表示用户ID,
-            "is_admin":"是否是管理员",
-            "rawAdmin":"原始管理员"
+            "group":"用户组ID",
+            "group_name":"用户组名",
+            "backend_managable":"是否可以进行后台管理"
+            "username":"用户名",
+            "email":"电子邮件"
         }
 
     """
@@ -41,11 +41,14 @@ def query_login_state():
         "result": session.get("uid") is not None
     }
     if session.get("uid"):
-        user: User = db.session.query(User).filter(
+        user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(
             User.id == session.get("uid")).one()
         result["uid"] = user.id
-        result["is_admin"] = user.is_admin
-        result["rawAdmin"] = user.raw_admin
+        group: PermissionGroup = db.session.query(PermissionGroup.name).filter(
+            PermissionGroup.id == user.permission_group).one()
+        result.update(group=user.permission_group, group_name=group.name,
+                      backend_managable=permission_manager.has_permission(user.id, "backend.manage"))
+        result.update(username=user.username, email=user.email)
     return make_response(0, **result)
 
 
@@ -265,7 +268,6 @@ def get_user_profile():
                 "username":"用户名",
                 "email":"邮箱",
                 "description":"描述",
-                "is_admin":"是否为管理员",
                 "ac_problems":"通过题目",
                 "rating_history":[],
                 "joined_teams":[
@@ -273,9 +275,12 @@ def get_user_profile():
                 ],
                 "banned":"是否已封禁",
                 "hasEmailAuth":"是否已进行邮箱验证",
-                "rawAdmin":"是否是原始管理员",
                 "permissions":[权限列表],
-                "permission_group":"权限组"
+                "permission_group":"权限组",
+                "group_name":"权限组名",
+                "managable":"是否有权限管理",
+                "canSetAdmin":"是否有权限切换管理员模式",
+                "group_permissions":"权限组权限列表"
             }
         }
     """
@@ -305,7 +310,17 @@ def get_user_profile():
         # print(contest_name)
         item["contest_name"] = contest_name.name
     ret["hasEmailAuth"] = user.auth_token == ""
-    ret["rawAdmin"] = user.raw_admin
+    group: PermissionGroup = db.session.query(PermissionGroup).filter(
+        PermissionGroup.id == user.permission_group).one()
+    ret["group_name"] = group.name
+    ret["group_permissions"] = group.permissions
+    # ret["permissions"] = list(set(db.session.query(PermissionGroup.name).filter(
+    #     PermissionGroup.id == user.permission_group).one().permissions).union(ret["permissions"]))
+    ret["managable"] = permission_manager.has_permission(
+        session.get("uid"), "user.manage")
+    ret["canSetAdmin"] = permission_manager.has_permission(
+        session.get("uid"), "permission.manage")
+
     return make_response(0, data=ret)
 
 
@@ -317,9 +332,18 @@ def user_toggle_admin_mode():
     if not session.get("uid"):
         return make_response(-1, message="请先登录！")
     user: User = User.by_id(session.get("uid"))
-    if not user.raw_admin:
+    if not permission_manager.has_permission(user.id, "permission.manage"):
         return make_response(-1, message="你没有权限进行此操作")
-    user.is_admin = not user.is_admin
+    # 在default组的，移动到admin
+    if user.permission_group == "default":
+        user.permission_group = "admin"
+    else:
+        user.permission_group = "default"
+
+    from main import redis_connection_pool
+    from redis import Redis
+    Redis(connection_pool=redis_connection_pool).delete(
+        f"hj2-perm-{session.get('uid')}")
     db.session.commit()
     return make_response(0, message="操作成功")
 
@@ -364,8 +388,15 @@ def update_profile():
             return make_response(-1, message="你没有权限更改用户所属权限组")
         if set(data["permissions"]) != set(user.permissions):
             return make_response(-1, message="你没有权限更改用户权限")
-        user.permission_group = data["permission_group"]
-        user.permissions = data["permissions"]
+    user.permission_group = data["permission_group"]
+    if db.session.query(PermissionGroup.id).filter(PermissionGroup.id == user.permission_group).one_or_none() is None:
+        return make_response(-1, message="非法权限组ID")
+    user.permissions = data["permissions"]
+    # 移除缓存
+    from main import redis_connection_pool
+    from redis import Redis
+    client = Redis(connection_pool=redis_connection_pool)
+    client.delete(f"hj2-perm-{user.id}")
     user.username = data["username"]
     user.email = data["email"]
     user.description = data["description"]
@@ -373,8 +404,6 @@ def update_profile():
         user.password = data["newPassword"]
     if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限封禁\解封此用户")
-
     user.banned = data["banned"]
-
     db.session.commit()
     return make_response(0, message="操作完成")

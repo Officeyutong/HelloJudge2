@@ -73,11 +73,17 @@
             $.post("/api/get_user_profile", { uid: ctx.data.uid }).done(ctx => {
                 submission.user_profile = JSON.parse(ctx).data;
                 const done = function (ctx) {
+                    if (typeof (ctx) == "string") {
+                        ctx = JSON.parse(ctx);
+                        submission.problem_data = ctx.data;
+                    } else {
+                        submission.problem_data = ctx.data.data;
+                    }
                     if (ctx.code) {
                         showErrorModal(ctx.message);
                         return;
                     }
-                    submission.problem_data = ctx.data.data;
+
                     $.post("/api/get_judge_status").done(ctx => {
                         submission.judge_status = JSON.parse(ctx).data;
                         if (submission.data.status == "judging" || submission.data.status == "waiting") {
@@ -200,7 +206,7 @@
                 </tr>
             </tbody>
         </table>
-        <div class="ui very tiny red button" v-if="base.isAdmin" v-on:click="rejudge">
+        <div class="ui very tiny red button" v-if="data.managable" v-on:click="rejudge">
             重测
         </div>
         <div class="ui divider"></div>

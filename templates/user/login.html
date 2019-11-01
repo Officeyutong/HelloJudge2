@@ -7,20 +7,24 @@
     var login_frame;
 
     $(document).ready(() => {
-        if (sidebar.is_login) {
-            window.location.href = "/";
-            return;
-        }
         login_frame = new Vue({
             el: "#login-frame",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 error_message: "",
                 identifier: "",
                 password: "",
                 success_message: "",
                 loading: false
-            }, methods: {
+            },
+            mounted() {
+                if (this.base.isLogin) {
+                    window.location.href = "/";
+                    return;
+                }
+            },
+            methods: {
                 login: function () {
                     console.log("Logining..");
                     this.error_message = this.success_message = "";
@@ -71,7 +75,7 @@
             <div class="ui active dimmer" v-if="loading">
                 <div class="ui loader"></div>
             </div>
-            <div  class="ui form" v-bind:class="{error:error_message!='',success:success_message!=''}">
+            <div class="ui form" v-bind:class="{error:error_message!='',success:success_message!=''}">
                 <div class="ui field">
                     <label>用户名或邮箱:</label>
                     <input type="text" placeholder="用户名或邮箱.." v-model="identifier">
