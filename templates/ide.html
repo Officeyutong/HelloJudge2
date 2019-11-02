@@ -31,6 +31,9 @@
                 },
                 loadFromBroswer() {
                     let obj = window.localStorage.getItem("hellojudge2-ide");
+                    if (!obj) {
+                        return;
+                    }
                     let data = JSON.parse(obj);
                     this.code = data.code, this.input = data.input, this.selectedLang = data.lang;
                     this.parameter = data.parameter;
@@ -44,7 +47,7 @@
                         x = JSON.parse(x);
                         if (x.code) {
                             showErrorModal(x.message);
-                            
+
                             return;
                         }
                         console.log(x);
