@@ -52,7 +52,7 @@
                             email: this.data.email,
                             description: this.data.description,
                             changePassword: this.password != "",
-                            newPassword: md5_with_salt(this.password),
+                            newPassword: this.md5WithSalt(this.password),
                             permission_group: this.data.permission_group,
                             permissions: this.data.permissions
                         })

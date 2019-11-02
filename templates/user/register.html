@@ -37,7 +37,7 @@
                         return;
                     }
                     $.post("/api/register", {
-                        username: register_frame.username, password: md5_with_salt(register_frame.password), email: register_frame.email
+                        username: register_frame.username, password: this.md5WithSalt(register_frame.password), email: register_frame.email
                     }).done(function (ctx) {
                         ctx = JSON.parse(ctx);
                         console.log(ctx);

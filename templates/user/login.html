@@ -33,7 +33,7 @@
                         return;
                     }
                     $.post("/api/login", {
-                        identifier: login_frame.identifier, password: md5_with_salt(login_frame.password)
+                        identifier: login_frame.identifier, password: this.md5WithSalt(login_frame.password)
                     }).done(function (ctx) {
                         ctx = JSON.parse(ctx);
                         console.log(ctx);

@@ -55,7 +55,7 @@
             }
             return theRequest;
         }
-        const md5_with_salt = function (password) {
+        const md5WithSalt = function (password) {
             return hex_md5(password + "{{SALT}}")
         };
         const copy_text = function (text) {
@@ -218,7 +218,7 @@
                         return converter.makeHtml(v);
                     }, md5: hex_md5,
                     md5WithSalt(v) {
-                        return md5_with_salt(v);
+                        return md5WithSalt(v);
                     }
                 }
             };
