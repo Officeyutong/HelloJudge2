@@ -53,7 +53,9 @@ Flask的调试模式
 ##### USERNAME_REGEX 
 新建用户的用户名必须满足这个正则表达式
 ##### REDIS_URI
-Redis的URI。
+Redis的地址(用于评测队列)
+##### CACHE_URL
+Redis的地址(用于缓存)
 ##### JUDGERS
 Web端认可的评测机列表。
 
