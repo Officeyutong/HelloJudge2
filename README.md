@@ -11,17 +11,11 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 ## 更新方式
 在项目根目录下，直接执行```git pull```进行更新。
 
-## 数据库更新记录
-每次数据库更新后请进行数据迁移:
-- ```python3.7 manage.py db migrate```
-- ```python3.7 manage.py db upgrade```
-### 8ea050b32bff577a72c99c6dffda5960546b0867
-修改了自定义编译参数的结构。
-请手动进行以下修改:
+## 关于数据库
+从2019.11.2开始，所有更新不再需要手动修改数据库。
 
-- ```submissions```表中的```selected_compile_parameters```列的所有值全都修改为```[]```
-- ```submissions```表中所有```language```列中的```cpp11```,```cpp98```,```cpp17```,```cpp14```均改为```cpp```
-- ```problems```表中的```extra_parameter```改为```[{"lang": "cpp", "name": "C++98", "parameter": "-std=c++98", "force": false}, {"lang": "cpp", "name": "C++11", "parameter": "-std=c++11", "force": false}, {"lang": "cpp", "name": "C++14", "parameter": "-std=c++14", "force": false}, {"lang": "cpp", "name": "C++17", "parameter": "-std=c++17", "force": false}, {"lang": ".*", "name": "O2\\u4f18\\u5316", "parameter": "-O2", "force": false}]```
+每次更新后执行```python3.7 manage.py db upgrade```即可。
+
 ## 架设
 ### Web端
 #### 前置需求
@@ -37,9 +31,8 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 5. 初始化数据库，参考下文
 6. 直接使用```python3.7 run.py```启动或者部署到uWSGI上运行。
 #### 初始化数据库
-1. 运行```python3.7 manage.py db init```
-2. 进入```migrations/script.py.mako```,在```import sqlalchemy as sa```的下一行写上```import ormtypes```
-3. 运行```python3.7 manage.py db migrate```,```python3.7 manage.py db upgrade```
+
+1. 运行```python3.7 manage.py db upgrade```
 
 #### 配置文件主要内容
 
@@ -111,6 +104,17 @@ SPJ的执行时间上限(ms)
 |ACE_MODE|用于ACE.js的代码样式，见static/ace/mode-xxx.js|c_cpp|
 #### 其他
 评测端部署指南见[https://gitee.com/yutong_java/HelloJudge2-Judger](https://gitee.com/yutong_java/HelloJudge2-Judger)
+
+## 权限管理
+
+
+使用manage.py进行部分权限管理(用户添加\删除权限，设置管理员).
+
+- setadmin 用户名 - 设置管理员 (将用户移动到admin组并添加permission.manage权限,然后刷新缓存)
+- addperm 用户名 权限字符串 - 用户添加权限(会刷新缓存)
+- removeperm 用户名 权限字符串 - 用户删除权限(会刷新缓存)
+
+
 
 ## 捐助
 如果您觉得此项目对您有帮助，欢迎通过以下方式对作者进行捐助。

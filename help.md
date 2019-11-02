@@ -294,22 +294,126 @@ HelloJudge2具有权限系统。
 
 目前支持的权限如下表：
 
-权限字符串  | 解释
-- | - 
-problem.create| 创建题目 
-problem.publicize|公开题目
-problem.manage|管理任意题目(包括查看私有题)
-submission.manage|管理任意提交(包括查看私有提交)
-contest.create|创建比赛
-contest.publicize|公开比赛
-contest.manage|管理其他人创建的比赛(包括查看私有比赛(暂未实现))
-contest.enter.比赛ID|进入某场私有比赛(在正确输入私有比赛的邀请码之后，自动取得该权限)
-permission.manage|管理任意用户的权限设定
-team.create|创建团队
-team.manage|管理任意团队
-user.manage|用户管理
-discussion.manage| 管理其他人的讨论以及发送公告
-backend.manage| 后台管理
-
-
+<table class="ui very basic celled table">
+    <thead>
+        <tr>
+            <th>
+                权限字符串
+            </th>
+            <th>
+                说明
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                problem.create
+            </td>
+            <td>创建题目</td>
+        </tr>
+        <tr>
+            <td>
+                problem.publicize
+            </td>
+            <td>公开题目</td>
+        </tr>
+        <tr>
+            <td>
+                problem.manage
+            </td>
+            <td>
+                题目管理(查看私有题，修改任意题目)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                submission.manage
+            </td>
+            <td>
+                提交管理(查看私有提交，重测)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                contest.create
+            </td>
+            <td>
+                创建比赛
+            </td>
+        </tr>
+        <tr>
+            <td>
+                contest.publicize
+            </td>
+            <td>
+                公开比赛(暂未实现)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                contest.manage
+            </td>
+            <td>
+                管理任意比赛
+            </td>
+        </tr>
+        <tr>
+            <td>
+                contest.enter.比赛ID
+            </td>
+            <td>
+                进入某场私有比赛(在正确输入私有比赛的邀请码之后，自动取得该权限)(暂未实现)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                permission.manage
+            </td>
+            <td>
+                管理权限组，用户权限
+            </td>
+        </tr>
+        <tr>
+            <td>
+                team.create
+            </td>
+            <td>
+                创建团队
+            </td>
+        </tr>
+        <tr>
+            <td>
+                team.manage
+            </td>
+            <td>
+                团队管理 
+            </td>
+        </tr>
+        <tr>
+            <td>
+                user.manage
+            </td>
+            <td>
+                用户管理(修改用户个人信息等)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                discussion.manage
+            </td>
+            <td>
+                讨论管理
+            </td>
+        </tr>
+        <tr>
+            <td>
+                backend.manage
+            </td>
+            <td>
+                后台管理
+            </td>
+        </tr>
+    </tbody>
+</table>
 
