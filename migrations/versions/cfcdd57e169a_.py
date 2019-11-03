@@ -95,7 +95,7 @@ def upgrade():
         update users set permissions="[]" where 1=1
         """)
     conn.execute("""
-        update users set permissions="['permission.manage']" where raw_admin=1
+        update users set permissions="[\"permission.manage\"]" where raw_admin=1
         """)
         
     conn.execute(
