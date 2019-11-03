@@ -172,7 +172,7 @@ def show_contest(contestID: int):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
-        "managable": permission_manager.has_permission(user.id, "contest.manage")
+        "managable": permission_manager.has_permission(session.get("uid",None), "contest.manage")
     }
     problems = result["problems"]
     for i, problem_data in enumerate(contest.problems):
