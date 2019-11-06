@@ -344,8 +344,28 @@ def update_problem():
                 score*(len(subtask["testcases"])-1)
     if not permission_manager.has_any_permission(user.id, "problem.manage", "problem.publicize") and problem.public == False and data["public"] == True:
         return make_response(-1, message="你没有权限公开题目")
+    # 更改题目ID
+    if data["newProblemID"] != problem.id:
+        old_id: int = int(problem.id)
+        new_id: int = int(data["newProblemID"])
+        if db.session.query(Problem.id).filter(Problem.id == new_id).one_or_none():
+            return make_response(-1, message="题目ID已存在!")
+
+        # 移动题目数据文件夹
+        import shutil
+        import pathlib
+        path = pathlib.Path(config.UPLOAD_DIR)
+        try:
+            shutil.move(path/str(old_id), path/str(new_id))
+        except Exception as ex:
+            pass
+        # 修改提交中涉及的题目ID
+        db.session.query(Submission).filter(
+            Submission.problem_id == old_id).update({Submission.problem_id: new_id})
+        # 至于比赛...不管了
+        problem.id = new_id
     for k, v in data.items():
-        if k in {"create_time"}:
+        if k in {"create_time", "id", "newProblemID"}:
             continue
         setattr(problem, k, v)
 

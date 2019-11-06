@@ -211,11 +211,11 @@
             if (ctx.code != 0) {
                 console.log("Bad problem id");
                 console.log(ctx);
-                $("#no-perm-text").text(ctx.message);
-                $("#no-perm-modal").modal("show");
+                showErrorModal(ctx.message);
                 return;
             }
             problem_edit.data = ctx.data;
+            problem_edit.data.newProblemID = ctx.data.id;
             problem_edit.done = true;
             problem_edit.$nextTick(() => {
                 $('.tabular.menu .item').tab();
@@ -253,7 +253,9 @@
                 <div class="ui equal width form">
                     <div class="field">
                         <label>题目ID</label>
-                        <div class="ui small label">{[data.id]}</div>
+                        <!-- <div class="ui small label">{[data.id]}</div> -->
+                        <input type="text" v-model.number="data.newProblemID">
+                        <div>注意:修改题目ID后，所有正在使用此题目的比赛将无法正常访问.</div>
                     </div>
                     <div class="field">
                         <label>题目名</label>
