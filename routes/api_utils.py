@@ -351,6 +351,6 @@ def testdata_download(id):
     zip_file = tempfile.mktemp("zip")
     zipf = zipfile.ZipFile(zip_file, "w")
     for publicized_file in problem.downloads:
-        zipf.write(problem_path/publicized_file)
+        zipf.write(problem_path/publicized_file, arcname=publicized_file)
     zipf.close()
     return flask.send_file(zip_file, as_attachment=True, attachment_filename="testdata.zip")
