@@ -386,6 +386,11 @@
                                     :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
                         </tr>
                         <tr>
+                            <td>上传时间</td>
+                            <td style="word-break: break-all;">{[data.create_time]}</td>
+                        </tr>
+                        
+                        <tr>
                             <td>是否公开</td>
                             <td>{[data.public?"Yes":"No"]}</td>
                         </tr>
