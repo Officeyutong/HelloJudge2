@@ -173,7 +173,7 @@
                     </td>
                     <td>
                         <a v-if="data.managable||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
-                        <a v-if="base.managable||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
+                        <a v-if="data.managable||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
                     </td>
                 </tr>
 
