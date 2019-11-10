@@ -22,7 +22,7 @@ def upgrade():
     conn: Connection = op.get_bind()
     op.add_column('submissions', sa.Column('selected_compile_parameters', ormtypes.json_pickle.JsonPickle(), nullable=False))
     conn.execute("""
-        update submissions set extra_parameter='[]'
+        update submissions set extra_compile_parameter='[]'
     """)
     # ### end Alembic commands ###
 

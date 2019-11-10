@@ -95,17 +95,15 @@ def upgrade():
         update users set permissions="[]" where 1=1
         """)
     conn.execute("""
-        update users set permissions="[\"permission.manage\"]" where raw_admin=1
+        update users set permissions='["permission.manage"]' where raw_admin=1
         """)
-        
-    conn.execute(
-        User.__table__.update().where(User.raw_admin == True).values(permission_group="admin")
-    )
-    conn.execute(
-        User.__table__.update().where(User.raw_admin == False).values(
-            permission_group="default")
-    )
+    conn.execute("""
+        update users set permission_group='admin' where raw_admin=1
+        """)
 
+    conn.execute("""
+        update users set permission_group='default' where raw_admin!=1
+        """)
 
     # ### end Alembic commands ###
 

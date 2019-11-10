@@ -182,27 +182,38 @@
         const converter = new showdown.Converter({
             extensions: [
                 {
-                    type: 'lang', regex: /¨D¨D([\s\S]+?)¨D¨D/g, replace: (x, y) => {
+                    type: 'output', regex: /\$\$([\S\s]+?)\\#$/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
-
-                        return katex.renderToString(x.replace(/¨D/g, ""), {
+                        // console.log(x);
+                        // console.log(y);
+                        // console.log();
+                        let result = katex.renderToString(y, {
                             throwOnError: false,
                             displayMode: true
                         });
+                        // console.log(result);
+                        // console.log("qwq");
+                        return result;
                     }
                 },
                 {
-                    type: 'lang', regex: /¨D([\S\s]+?)¨D/g, replace: (x, y) => {
+                    type: 'output', regex: /\$([\S\s]+?)\$/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
-                        return katex.renderToString(x.replace(/¨D/g, ""), {
+                        // console.log(x);
+                        // console.log(y);
+                        // console.log();
+                        let result = katex.renderToString(y, {
                             throwOnError: false,
                             displayMode: false
                         });
+                        // console.log(result);
+                        // console.log("qwq");
+                        return result;
                     }
                 }
-            ], tables: true
+            ], tables: true, literalMidWordUnderscores: true
         });
         $(document).ready(() => {
             // $("a").forEach((x) => {
@@ -250,7 +261,7 @@
                     baseMixin.data.base.email = ctx.email;
                     baseMixin.data.base.uid = ctx.uid;
                     baseMixin.data.base.mangable = ctx.backend_managable;
-                    
+
                 }
             });
 
