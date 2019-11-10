@@ -182,12 +182,10 @@
         const converter = new showdown.Converter({
             extensions: [
                 {
-                    type: 'output', regex: /\$\$([\S\s]+?)\\#$/g, replace: (x, y) => {
+                    type: 'output', regex: /\$\$([\S\s]+?)\$\$/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
-                        // console.log(x);
-                        // console.log(y);
-                        // console.log();
+
                         let result = katex.renderToString(y, {
                             throwOnError: false,
                             displayMode: true
@@ -201,9 +199,6 @@
                     type: 'output', regex: /\$([\S\s]+?)\$/g, replace: (x, y) => {
                         // console.log(x);
                         // console.log(y);
-                        // console.log(x);
-                        // console.log(y);
-                        // console.log();
                         let result = katex.renderToString(y, {
                             throwOnError: false,
                             displayMode: false
