@@ -155,18 +155,23 @@
             delimiters: ['{[', ']}'],
             props: ["status"],
             template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
+            data() {
+                return {
+                    judgeStatus: judge_status
+                }
+            },
             methods: {
                 get_icon: function (x) {
-                    if (!judge_status.done) return "";
-                    return judge_status.data[x].icon;
+                    if (!this.judgeStatus.done) return "";
+                    return this.judgeStatus.data[x].icon;
 
                 }, get_color: function (x) {
-                    if (!judge_status.done) return "black";
-                    return judge_status.data[x].color;
+                    if (!this.judgeStatus.done) return "black";
+                    return this.judgeStatus.data[x].color;
                 }, get_text(x) {
-                    if (!judge_status.done) return x;
-                    if (judge_status.data.hasOwnProperty(x))
-                        return judge_status.data[x].text;
+                    if (!this.judgeStatus.done) return x;
+                    if (this.judgeStatus.data.hasOwnProperty(x))
+                        return this.judgeStatus.data[x].text;
                     else return x;
                 }
             }
