@@ -84,6 +84,7 @@
             discussion.data = ctx.data;
             discussion.page_count = ctx.page_count;
             discussion.current_page = ctx.current_page;
+            discussion.managable = ctx.managable;
             axios.post("/api/get_path_name", { path: urlarr[1] }).then(ctx => {
 
                 discussion.path_name = ctx.data.name;
@@ -172,8 +173,8 @@
                         {[data.last_comment_time]}
                     </td>
                     <td>
-                        <a v-if="data.managable||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
-                        <a v-if="data.managable||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
+                        <a v-if="managable||base.uid==data.uid" v-on:click="editDiscussion(data.id)">编辑</a>
+                        <a v-if="managable||base.uid==data.uid" v-on:click="removeDiscussion(data.id)">删除</a>
                     </td>
                 </tr>
 
