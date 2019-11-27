@@ -181,9 +181,12 @@ def upload_file(id):
     if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
     import os
+    import shutil
     import zipfile
     from io import BytesIO
-    upload_path = os.path.join(basedir, f"{config.UPLOAD_DIR}/%d" % id)
+    import pathlib
+    upload_path = pathlib.Path(os.path.join(
+        basedir, f"{config.UPLOAD_DIR}/%d" % id))
     os.makedirs(upload_path, exist_ok=True)
 
     def handle_zipfile(fileobj):
@@ -192,7 +195,9 @@ def upload_file(id):
         for f in zipf.filelist:
             if not f.is_dir() and "/" not in f.filename:
                 zipf.extract(f, upload_path)
-                with open(os.path.join(upload_path, f.filename)+".lock", "w") as file:
+                new_file_name = secure_filename(f.filename)
+                shutil.move(upload_path/f.filename, upload_path/new_file_name)
+                with open(os.path.join(upload_path, new_file_name)+".lock", "w") as file:
                     import time
                     file.write(f"{time.time()}")
     for file in request.files:
@@ -200,8 +205,8 @@ def upload_file(id):
             handle_zipfile(request.files[file])
             continue
         request.files[file].save(os.path.join(
-            upload_path, file))
-        with open(os.path.join(upload_path, file)+".lock", "w") as file:
+            upload_path, secure_filename(file)))
+        with open(os.path.join(upload_path, secure_filename(file))+".lock", "w") as file:
             import time
             file.write(f"{time.time()}")
     problem.files = generate_file_list(id)
@@ -224,9 +229,12 @@ def download_file(id: int, filename: str):
     import flask
     if problem.count() == 0:
         flask.abort(404)
-    problem = problem.one()
+    problem: Problem = problem.one()
+    # filename = secure_filename(filename)
     if not problem.public and not session.get("uid"):
         flask.abort(403)
+    if not any((x["name"] == filename for x in problem.files)):
+        flask.abort(404)
     if session.get("uid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
@@ -272,6 +280,8 @@ def remove_file():
         User.id == session.get("uid")).one()
     if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
         return make_response(-1, message="你没有权限执行此操作")
+    if not any((x["name"] == request.form["file"] for x in problem.files)):
+        return make_response(-1, message="此文件不存在!")
     import os
     upload_path = os.path.join(
         basedir, f"{config.UPLOAD_DIR}/{request.form['id']}")
