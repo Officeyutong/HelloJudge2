@@ -22,6 +22,29 @@
         const url = window.location.href.split("/");
         const submission_id = url[url.length - 1];
         $("title").text("查看提交 - " + submission_id + " - {{APP_NAME}}")
+        Vue.component(
+            "memory-cost-label", {
+            delimiters: ["{[", "]}"],
+            props: {
+                bytes: Number, unit: String
+            }, computed: {
+                value() {
+                    if (this.unit == "b") {
+                        return this.bytes + " Bytes"
+                    } else if (this.unit == "kb") {
+                        return parseInt(this.bytes / 1024) + " KBytes"
+                    } else if (this.unit == "mb") {
+                        return parseInt(this.bytes / 1024 / 1024) + " MBytes"
+                    }
+                    else if (this.unit == "gb") {
+                        return parseInt(this.bytes / 1024 / 1024 / 1024) + " GBytes"
+                    }
+                    return "What are you doing???";
+
+                }
+            }, template: "<div>{[value]}</div>"
+        }
+        );
         submission = new Vue({
             delimiters: ['{[', ']}'],
             el: "#submission",
@@ -40,6 +63,7 @@
                 //是否为比赛提交
                 contestSubmit: false,
                 contestID: -1, problemID: -1,
+                usingMemoryUnit: "kb"
             }, computed: {
                 problem_subtasks: function () {
                     var obj = {};
@@ -170,7 +194,8 @@
                 <tr v-if="data.memory_cost!=-1">
                     <td>空间开销</td>
                     <td>
-                        {[data.memory_cost]} bytes
+                        <memory-cost-label v-bind:bytes="data.memory_cost" v-bind:unit="usingMemoryUnit">
+                        </memory-cost-label>
                     </td>
                 </tr>
 
@@ -199,6 +224,25 @@
                     <td>{[data.language_name]}</td>
                 </tr>
                 <tr>
+                    <td class="first-column">内存显示单位</td>
+                    <td>
+                        <div class="ui buttons">
+                            <div class="ui button" v-bind:class="{active:usingMemoryUnit=='b'}"
+                                v-on:click="usingMemoryUnit='b'">Bytes
+                            </div>
+                            <div class="ui button" v-bind:class="{active:usingMemoryUnit=='kb'}"
+                                v-on:click="usingMemoryUnit='kb'">
+                                KBytes</div>
+                            <div class="ui button" v-bind:class="{active:usingMemoryUnit=='mb'}"
+                                v-on:click="usingMemoryUnit='mb'">
+                                MBytes</div>
+                            <div class="ui button" v-bind:class="{active:usingMemoryUnit=='gb'}"
+                                v-on:click="usingMemoryUnit='gb'">
+                                GBytes</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
                     <td class="first-column">附加信息</td>
                     <td>
                         <pre style="white-space: pre-wrap; word-wrap: break-word;">{[data.message]}</pre>
@@ -206,6 +250,7 @@
                 </tr>
             </tbody>
         </table>
+
         <div class="ui very tiny red button" v-if="data.managable" v-on:click="rejudge">
             重测
         </div>
@@ -263,7 +308,11 @@
                             <judge-status :status="testcase.status"></judge-status>
                         </td>
                         <td>{[testcase.time_cost]}ms</td>
-                        <td>{[testcase.memory_cost]} bytes</td>
+                        <td>
+                            <memory-cost-label v-bind:bytes="testcase.memory_cost" v-bind:unit="usingMemoryUnit">
+                            </memory-cost-label>
+
+                        </td>
                         <td>
                             {[testcase.message]}
                         </td>
