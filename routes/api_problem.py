@@ -250,7 +250,7 @@ def download_file(id: int, filename: str):
         basedir, f"{config.UPLOAD_DIR}/{id}/{filename}")
     if not os.path.exists(file):
         flask.abort(404)
-    return send_file(file, as_attachment=True)
+    return send_file(file, as_attachment=True, conditional=True)
 
 
 @app.route("/api/remove_file", methods=["POST"])
