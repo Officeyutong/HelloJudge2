@@ -25,6 +25,7 @@ def admin_show():
         "userCount": db.session.query(User).count(),
         "discussionCount": db.session.query(Discussion).count(),
         "acceptedSubmissionCount": db.session.query(Submission).filter(Submission.status == "accepted").count(),
+        "unAuthorizedCount": db.session.query(User).filter(User.auth_token != "").count(),
         "settings": []
     }
     settings = result["settings"]
@@ -203,3 +204,15 @@ def admin_update_permission_groups(groups: list):
         id=x["id"], name=x["name"], permissions=x["permissions"].split("\n")) for x in groups))
     db.session.commit()
     return make_response(0, message="更新成功")
+
+
+@app.route("/api/admin/remove_unauthorized_accounts", methods=["POST"])
+@require_permission(permission_manager, "backend.manage")
+def admin_remove_unauthorized_accounts():
+    query = db.session.query(User).filter(User.auth_token != "")
+    # for x in query.all():
+    #     print(x)
+    count: int = query.count()
+    query.delete()
+    db.session.commit()
+    return make_response(0, message=f"删除了 {count} 个用户")

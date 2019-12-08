@@ -15,7 +15,11 @@
                 done: false,
                 currentTab: "general",
                 ratedContests: [],
-                permissionGroups: []
+                permissionGroups: [],
+
+                userTab: {
+                    loading: false, successMessage: "", errorMessage: ""
+                }
             }, methods: {
                 reloadRatedContests() {
                     axios.post("/api/admin/rating/rated_contests").then(x => {
@@ -67,6 +71,26 @@
                         }
                         window.location.reload();
                     });
+                }, removeUnauthorizedAccounts() {
+                    $("#remove-users-modal").modal({
+                        closable: false,
+                        onApprove: () => {
+                            this.userTab.loading = true;
+                            this.userTab.successMessage = this.userTab.errorMessage = "";
+                            axios.post("/api/admin/remove_unauthorized_accounts").then(resp => {
+                                this.userTab.loading = false;
+                                let data = resp.data;
+                                if (data.code) {
+                                    this.userTab.errorMessage = data.message;
+                                    return;
+                                } else {
+                                    this.userTab.successMessage = data.message;
+                                }
+                            });
+                        }
+                    }).modal("show");
+                    // this.loading = true;
+
                 }
             }, mounted() {
                 axios.all([
@@ -99,6 +123,9 @@
         <div class="item" v-bind:class="{active:currentTab=='permissionGroup'}"
             v-on:click="currentTab='permissionGroup'">
             权限组设定</div>
+        <div class="item" v-bind:class="{active:currentTab=='user'}" v-on:click="currentTab='user'">
+            用户管理</div>
+
 
 
     </div>
@@ -243,6 +270,33 @@
         <div class="ui green button" v-on:click="permissionGroups.push({id:'qwq',name:'qwq',permission:''})">添加</div>
         <div class="ui green button" v-on:click="updatePermissionGroups">提交</div>
     </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='user'}">
+        <div class="ui success message" v-if="userTab.successMessage!=''">
+            <div class="ui header">
+                操作成功
+            </div>
+            <div>
+                {[userTab.successMessage]}
+            </div>
+        </div>
+        <div class="ui error message" v-if="userTab.errorMessage!=''">
+            <div class="ui header">
+                操作失败
+            </div>
+            <div>
+                {[userTab.errorMessage]}
+            </div>
+        </div>
+        <div class="ui header">
+            <h3>未邮箱认证用户</h3>
+        </div>
+        <div>
+            当前共有 {[data.unAuthorizedCount]} 用户已注册但尚未邮箱认证(不包括未开启邮箱认证时注册的用户).
+        </div>
+        <div class="ui red button" v-on:click="removeUnauthorizedAccounts" style="margin-top: 30px;">
+            删除它们
+        </div>
+    </div>
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">
     <div class="ui header">
@@ -250,6 +304,18 @@
     </div>
     <div class="content">
         <p>进行此操作后，这场比赛以及在这场比赛之后的比赛都将会被取消Rated.</p>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">确定</div>
+        <div class="ui red cancel button">关闭</div>
+    </div>
+</div>
+<div class="ui tiny modal" id="remove-users-modal">
+    <div class="ui header">
+        您确定要删除这些用户吗？
+    </div>
+    <div class="content">
+        <p>进行此操作后，这些账户以及他们所创建的数据将不复存在。</p>
     </div>
     <div class="actions">
         <div class="ui green approve button">确定</div>
