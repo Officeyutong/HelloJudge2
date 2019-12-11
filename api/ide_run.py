@@ -11,7 +11,7 @@ def push_into_queue(code: str, input: str, lang: str, parameter: str = "") -> st
     """
     import uuid
     run_id = str(uuid.uuid1())
-    queue.send_task("task.ide_run", (lang,
+    queue.send_task("judgers.ide_run.run", (lang,
                                      run_id, code, input, {
                                          "compile_time_limit": config.COMPILE_TIME_LIMIT,
                                          "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
