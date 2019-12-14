@@ -7,3 +7,4 @@ from .comment import *
 from .contest import *
 from .team import *
 from .permission_group import *
+from .remote_accounts import *

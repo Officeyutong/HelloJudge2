@@ -26,7 +26,7 @@ basedir = os.path.dirname(__file__)
 logger = web_app.logger
 socket = SocketIO(web_app)
 queue = celery.Celery(
-    web_app.name,  broker=config.REDIS_URI, backend=config.REDIS_URI)
+    web_app.name,  broker=config.REDIS_URI)
 redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 

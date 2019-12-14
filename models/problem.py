@@ -58,6 +58,10 @@ class Problem(db.Model):
     can_see_results = db.Column(db.Boolean, default=True, nullable=False)
     # 创建日期
     create_time = db.Column(db.DateTime, nullable=False)
+    # 远程评测OJ
+    remote_judge_oj = db.Column(db.String(10), nullable=True)
+    # 远程题目ID
+    remote_problem_id = db.Column(db.String(20), nullable=True)
 
     def as_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(
