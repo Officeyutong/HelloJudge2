@@ -117,6 +117,11 @@ REQUIRE_REGISTER_AUTH = False
 REGISTER_AUTH_EMAIL = "请前往 http://[此处替换为网站地址]/auth_email/{auth_token} 激活账号。此链接仅有效一次。"
 # 比赛失败提交罚时(分钟)
 FAIL_SUBMIT_PENALTY = 20
+# 远程评测可用OJ
+REMOTE_JUDGE_OJS = {
+    "luogu": {"display": "洛谷"},
+    "codeforces": {"display": "Codeforces"}
+}
 # 友情链接
 FRIEND_LINKS = [
     {

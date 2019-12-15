@@ -152,3 +152,7 @@ def view_admin():
 @app.route("/ide")
 def view_ide():
     return render_template("ide.html")
+
+@app.route("/remote_judge/accounts")
+def view_remote_judge_accounts():
+    return render_template("remote_judge/accounts.html")
