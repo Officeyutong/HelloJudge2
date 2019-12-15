@@ -1,0 +1,123 @@
+{%extends "base.html"%}
+{%block title%}
+添加 Remote Judge 题目
+{%endblock%}
+{%block head%}
+<script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
+{%endblock%}
+{%block body%}
+<script>
+    let main, socket, sessionID;
+    $(document).ready(() => {
+        main = new Vue({
+            el: "#main",
+            delimiters: ['{[', ']}'],
+            data: {
+                errorMessage: "",
+                successMessage: "",
+                remoteProblemID: "",
+                oj: "",
+                availableOJs: {},
+                selectedOJ: "",
+                running: false,
+                message: "",
+                openInNewTab: true,
+                done: false
+            }, methods: {
+
+                start() {
+                    this.running = true;
+
+                    this.message = "开始工作..";
+                    this.errorMessage = this.successMessage = "";
+                    socket = io.connect("/ws/remote_judge");
+
+                    socket.on("set_client_session_id", x => {
+                        console.log(x);
+                        sessionID = x.client_session_id;
+                        socket.emit("fetch_problem", {
+                            oj: this.selectedOJ,
+                            remoteProblemID: this.remoteProblemID,
+                            sessionID: sessionID
+                        });
+                    });
+                    socket.on("server_response", resp => {
+                        this.running = false;
+                        socket.close();
+                        if (resp.ok) {
+                            this.successMessage = resp.message;
+                            if (this.openInNewTab) {
+                                window.open("/show_remote_problem/" + resp.peoblemID, "_blank")
+                            }
+                        } else {
+                            this.errorMessage = resp.errorMessage;
+                        }
+
+                    });
+
+                }
+            }, mounted() {
+                axios.post("/api/remote_judge/get_available_ojs").then(resp => {
+                    this.availableOJs = resp.data.data;
+                    this.selectedOJ = Object.keys(this.availableOJs)[0];
+                    this.done = true;
+                });
+            }
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 500px;">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>添加 Remote Judge 题目</h1>
+        </div>
+        <div class="ui stack segment">
+            <div v-if="done" id="main" class="ui form"
+                v-bind:class="{error:errorMessage!='',success:successMessage!=''}">
+                <div class="ui field">
+                    <label>远程题目ID</label>
+                    <input type="text" v-model="remoteProblemID">
+                </div>
+                <div class="ui field">
+                    <label>OJ</label>
+                    <div class="ui compact menu">
+                        <div class="ui simple dropdown item">
+                            {[availableOJs[selectedOJ].display]}
+                            <i class="dropdown icon"></i>
+                            <div class="menu">
+                                <a class="item" v-for="value,key in availableOJs" v-on:click="selectedOJ=key">
+                                    {[value.display]}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="openInNewTab">
+                        <label>在新标签页打开</label>
+                    </div>
+                </div>
+
+                <div class="ui positive message" v-if="message!=''">
+                    <div class="header">工作中</div>
+                    <p>{[message]}</p>
+                </div>
+                <div class="ui error message">
+                    <div class="header">错误</div>
+                    <p>{[errorMessage]}</p>
+                </div>
+                <div class="ui success message">
+                    <div class="header">成功</div>
+                    <p>{[successMessage]}</p>
+                </div>
+                <div v-if="done" class="ui green button" v-on:click="start" v-bind:class="{loading:running}">
+                    开始
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

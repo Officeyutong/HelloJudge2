@@ -33,7 +33,7 @@ def view_global_ranklist(id):
 
 
 @app.route("/problems")
-@app.route("/problems/<int:id>")    
+@app.route("/problems/<int:id>")
 def view_problems(id=-1):
     return render_template("problem/problems.html")
 
@@ -153,6 +153,12 @@ def view_admin():
 def view_ide():
     return render_template("ide.html")
 
+
 @app.route("/remote_judge/accounts")
 def view_remote_judge_accounts():
     return render_template("remote_judge/accounts.html")
+
+
+@app.route("/remote_judge/add_problem")
+def view_remote_judge_add_problem():
+    return render_template("remote_judge/add_problem.html")

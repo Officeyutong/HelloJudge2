@@ -1,0 +1,435 @@
+{%extends "base.html"%}
+{%block head%}
+
+<style>
+    .problem-meta {
+        padding-bottom: 30px;
+        word-wrap: break-all;
+    }
+</style>
+<script src="/static/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="/static/ace/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+
+{%endblock%}
+{%block body%}
+
+<!-- <script src="/static/vue2-ace.js"></script> -->
+<script>
+    let problem;
+    Vue.component("editor", {
+        delimiters: ['{[', ']}'],
+        render: function (h) {
+            var height = this.height ? this.px(this.height) : '100%'
+            var width = this.width ? this.px(this.width) : '100%'
+            return h('div', {
+                attrs: {
+                    style: "height: " + height + '; width: ' + width,
+                }
+            })
+        },
+        props: {
+            value: {
+                type: String,
+                required: true
+            },
+            lang: String,
+            theme: String,
+            height: true,
+            width: true,
+            options: Object
+        },
+        data: function () {
+            return {
+                editor: null,
+                contentBackup: ""
+            }
+        },
+        methods: {
+            px: function (n) {
+                if (/^\d*$/.test(n)) {
+                    return n + "px";
+                }
+                return n;
+            }
+        },
+        watch: {
+            value: function (val) {
+                if (this.contentBackup !== val) {
+                    this.editor.session.setValue(val, 1);
+                    this.contentBackup = val;
+                }
+            },
+            theme: function (newTheme) {
+                this.editor.setTheme('ace/theme/' + newTheme);
+            },
+            lang: function (newLang) {
+                this.editor.getSession().setMode('ace/mode/' + newLang);
+            },
+            options: function (newOption) {
+                this.editor.setOptions(newOption);
+            },
+            height: function () {
+                this.$nextTick(function () {
+                    this.editor.resize()
+                })
+            },
+            width: function () {
+                this.$nextTick(function () {
+                    this.editor.resize()
+                })
+            }
+        },
+        beforeDestroy: function () {
+            this.editor.destroy();
+            this.editor.container.remove();
+        },
+        mounted: function () {
+            var vm = this;
+            var lang = this.lang || 'text';
+            var theme = this.theme || 'chrome';
+
+            // require('brace/ext/emmet');
+
+            var editor = vm.editor = ace.edit(this.$el);
+            this.$emit('init', editor);
+
+            editor.$blockScrolling = Infinity;
+            //editor.setOption("enableEmmet", true);
+            editor.getSession().setMode('ace/mode/' + lang);
+            editor.setTheme('ace/theme/' + theme);
+            editor.setValue(this.value, 1);
+            this.contentBackup = this.value;
+            editor.setFontSize(18);
+            editor.setOption("wrap", "free");
+            ace.require("ace/ext/language_tools");
+            editor.setOptions({
+                enableBasicAutocompletion: true,
+                enableSnippets: true,
+                enableLiveAutocompletion: true
+            });
+            editor.on('change', function () {
+                var content = editor.getValue();
+                vm.$emit('input', content);
+                vm.contentBackup = content;
+            });
+            if (vm.options)
+                editor.setOptions(vm.options);
+        }
+    });
+    $(document).ready(() => {
+        // ace.require("ace/ext/language_tools");
+        problem = new Vue({
+            el: "#show-problem",
+            delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                data: {},
+                langs: {},
+                selected_id: "",
+                code: "",
+                uploader_profile: {},
+                done: false, recent_discussion: [], usedParameters: []
+            }, methods: {
+                submit: function () {
+
+                }, 
+                removeProblem() {
+                    $("#warning-modal").modal({
+                        onApprove: function () {
+                            $.post("/api/problem/remove", { problem_id: show_problem.data.id }).done(ctx => {
+                                ctx = JSON.parse(ctx);
+                                if (ctx.code) {
+                                    showErrorModal(ctx.message);
+                                    return;
+                                }
+                                window.location.href = "/";
+                            })
+                        },
+                        closable: false
+                    }).modal("show");
+                }
+            }
+        });
+        Vue.component("problem-meta", {
+            delimiters: ['{[', ']}'],
+            data() {
+                return {
+                    "html_content": ""
+                }
+            },
+            template: '<div class="ui container problem-meta"  v-if="value!=\'\'"><div class="ui fluid two column grid"><div class="ui column">\
+                            <div class="ui header"><h3>{[name]}</h3></div></div><div class="ui right aligned column">\
+                                <div class="ui tiny orange circular icon button" @click="copy_text(value)"><i class="clipboard outline icon"></i></div>\
+                                    </div></div>    <div class="ui stack segment"><div  v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" style="white-space:pre-wrap;word-break:break-word;" v-else></pre>    </div></div>',
+            props: {
+                //内容
+                value: {
+                    type: String, default: ""
+                }, name: {
+                    //显示名
+                    type: String, default: ""
+                }, render: {
+                    //是否渲染Markdown
+                    type: Boolean, default: true
+                }, use_pre: {
+                    //是否使用预格式化块
+                    type: Boolean, default: false
+                }
+            },
+            methods: {
+                copy_text: copy_text
+            }, mounted() {
+                // const converter = new showdown.Converter();
+                if (this.render)
+                    this.html_content = converter.makeHtml(this.value);
+                else {
+                    this.html_content = this.value;
+                }
+            }
+        });
+
+
+
+    });
+
+</script>
+<div style="top:10%;max-width: 700px;">
+
+    <div id="show-problem" v-if="done">
+
+        <div class="ui header">
+            <h1> {[data.id]}: {[data.title]} </h1>
+        </div>
+
+        <problem-meta name="题目背景" v-bind:value="data.background"></problem-meta>
+        <problem-meta name="题目内容" v-bind:value="data.content"></problem-meta>
+        <problem-meta name="输入格式" v-bind:value="data.input_format"></problem-meta>
+        <problem-meta name="输出格式" v-bind:value="data.output_format"></problem-meta>
+        <div class="ui two column grid" v-for="item,index in data.example">
+            <div class="ui column">
+                <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render="false"
+                    :use_pre="true">
+                </problem-meta>
+            </div>
+            <div class="ui column">
+                <problem-meta v-bind:name="'样例 '+(index+1)+' 输出'" v-bind:value="item.output" :render="false"
+                    :use_pre="true">
+                </problem-meta>
+            </div>
+        </div>
+        <div class="ui container problem-meta">
+            <div class="ui header">
+                <h3>子任务</h3>
+            </div>
+            <table class="ui table">
+                <thead>
+                    <tr>
+                        <th>子任务名</th>
+                        <th>评分方式</th>
+                        <th>时间限制</th>
+                        <th>内存限制</th>
+                        <th>说明</th>
+                        <th>分数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="subtask in data.subtasks">
+                        <td>{[subtask.name]}</td>
+                        <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
+                        <td>{[subtask.time_limit]} ms</td>
+                        <td>{[subtask.memory_limit]} MB</td>
+                        <td v-html="makeHTML(subtask.comment)"></td>
+                        <td>{[subtask.score]}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- <div class="ui " -->
+        </div>
+        <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
+        <div class="ui container problem-meta">
+            <div class="ui header">
+                <h3>提交代码</h3>
+            </div>
+            <div class="ui one column grid">
+                <div class="ui column">
+                    <div class="ui two column grid" style="min-height: 500px;">
+                        <div class="ui four wide column">
+                            <div class="ui vertical pointing menu"
+                                style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
+                                <a class="item" v-for="val,key in langs" :data-id="key"
+                                    v-bind:class="{active:selected_id==key}" @click="selected_id=key">
+                                    <span>
+                                        <span class="ui header">
+                                            <h4>{[val.display]}</h4>
+                                        </span>{[val.version]}
+                                    </span>
+                                    <!-- <p></p> -->
+                                </a>
+                            </div>
+                        </div>
+                        <div class="twelve wide stretched column" style="padding-left: 0;">
+                            <div class="ui container">
+                                <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
+                                    style="left:30px;min-height: 500px;">
+                                </editor>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui column">
+                    <div class="ui segment">
+                        <table class="ui very basic celled table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>参数</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
+                                    <td> {[item.name]} </td>
+                                    <td> {[item.parameter]} </td>
+                                    <td>
+                                        <div class="ui toggle checkbox" v-bind:class="{disabled:item.force}">
+                                            <input type="checkbox" hidden
+                                                :checked="(usedParameters.includes(i)?1:null)||item.force">
+                                            <label
+                                                v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="ui center aligned container" style="margin-top: 30px;">
+                <div class="ui icon green button" @click="submit">
+                    <i class="paper plane outline icon"></i>
+                    提交！
+                </div>
+            </div>
+        </div>
+        <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
+            <div class="ui segment stacked" style="max-width: 300px">
+                <table class="ui very basic fluid collapsing celled table">
+
+                    <tbody>
+                        <tr>
+                            <td>题目上传者</td>
+                            <td style="word-break: break-all;"><a
+                                    :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
+                        </tr>
+                        <tr>
+                            <td>上传时间</td>
+                            <td style="word-break: break-all;">{[data.create_time]}</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>是否公开</td>
+                            <td>{[data.public?"Yes":"No"]}</td>
+                        </tr>
+                        <tr>
+                            <td>题目分数</td>
+                            <td>{[total_score]}</td>
+                        </tr>
+                        <tr>
+                            <td>我的提交</td>
+                            <td>
+                                <div v-if="data.my_submission==-1">尚未提交</div><a v-else
+                                    :href="'/show_submission/'+data.my_submission" target="_blank">
+                                    <judge-status :status="data.my_submission_status"></judge-status>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>通过数/提交数/通过率</td>
+                            <td>{[data.accepted_count]}/{[data.submission_count]}/{[parseInt(100*data.accepted_count/data.submission_count)]}%
+                            </td>
+                        </tr>
+                        <tr v-if="data.using_file_io" style="word-break: break-all;">
+                            <td>输入/输出文件</td>
+                            <td>{[data.input_file_name]}<br />{[data.output_file_name]}</td>
+                        </tr>
+                        <tr>
+                            <td>评测方式</td>
+                            <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+                <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||data.managable"
+                    target="_blank">编辑</a>
+                <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||data.managable">删除</a>
+                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
+                <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
+                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>
+                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
+                    <div class="ui header">
+                        <h4>文件下载</h4>
+                    </div>
+                    <a v-for="file,i in data.downloads" v-if="i<=5"
+                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]} </span></a>
+                    <div class="ui right aligned container">
+                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="ui stack segment" style="max-width: 300px">
+                <div class="ui header">
+                    <h4>讨论</h4>
+                </div>
+                <table class="ui very basic fluid collapsing celled table" v-if="recent_discussion.length!=0">
+                    <tbody>
+                        <tr v-for="item in recent_discussion">
+                            <td>
+                                <a :href="'/show_discussion/'+item.id" target="_blank">{[item.title]}</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div v-else>无</div>
+                <a :href="'/discussions/discussion.problem.'+data.id+'/1'" target="_blank">查看更多..</a>
+            </div>
+        </div>
+    </div>
+    <div class="ui basic modal" id="no-perm-modal">
+        <div class="ui icon header">
+            <i class="error icon"></i>
+            错误
+        </div>
+        <div class="content">
+            <div class="ui center aligned container">
+                <p id="no-perm-text"></p>
+            </div>
+        </div>
+        <div class="actions">
+            <div class="ui green ok inverted button" onclick="window.location.href='/'">
+                <i class="checkmark icon"></i>
+                返回主页
+            </div>
+        </div>
+    </div>
+</div>
+<div class="ui modal" id="warning-modal">
+    <div class="ui header">
+        警告
+    </div>
+    <div class="content">
+        <p>删除题目会发生以下后果</p>
+        <p>1.所有关于该题目的提交会被删除</p>
+        <p>2.所有现在正在使用该题目的比赛将会无法正常访问</p>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">
+            确定
+        </div>
+        <div class="ui blue cancel button">
+            取消
+        </div>
+    </div>
+</div>
+{%endblock%}
