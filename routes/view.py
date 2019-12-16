@@ -162,3 +162,8 @@ def view_remote_judge_accounts():
 @app.route("/remote_judge/add_problem")
 def view_remote_judge_add_problem():
     return render_template("remote_judge/add_problem.html")
+
+
+@app.route("/remote_judge/show_problem/<string:id>")
+def view_remote_judge_show_problem(id):
+    return render_template("remote_judge/show_problem.html")

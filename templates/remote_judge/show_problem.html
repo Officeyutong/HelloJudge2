@@ -123,20 +123,58 @@
             delimiters: ['{[', ']}'],
             mixins: [baseMixin],
             data: {
-                data: {},
-                langs: {},
-                selected_id: "",
+                problemData: {},
+                userData: {},
+                selectedLanguage: "",
+                selectedAccount: "",
                 code: "",
-                uploader_profile: {},
-                done: false, recent_discussion: [], usedParameters: []
-            }, methods: {
+                done: false,
+                running: false,
+                captcha: {
+                    login: "", submit: ""
+                }
+            },
+            mounted() {
+                axios.post("/api/remote_judge/get_problem_info", { problem_id: window.location.href.split("/").pop() }).then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    data = data.data;
+                    this.problemData = data.problemData;
+                    this.userData = data.userData;
+                    this.selectedLanguage = data.userData.lastLanguage;
+                    this.code = data.userData.lastCode;
+                    this.selectedAccount = Object.keys(this.userData.accounts)[0];
+                    $("title").text(this.problemData.title + " - " + this.problemData.id + " - {{APP_NAME}}");
+                    this.done = true;
+                    console.log(data);
+                });
+            },
+            methods: {
                 submit: function () {
+                    let submitData = {
+                        problemID: this.problemData.id,
+                        remoteAccountID: this.selectedAccount,
+                        code: this.code,
+                        loginCaptcha: this.captcha.login,
+                        submitCaptcha: this.captcha.submit,
+                        language: this.selectedLanguage
+                    };
+                    console.log(submitData);
+                    let socket = io.connect("/ws/remote_judge");
+                    socket.on("message", resp => {
+                        
+                    });
+                    socket.on("server_response", resp => {
 
-                }, 
+                    });
+                },
                 removeProblem() {
                     $("#warning-modal").modal({
-                        onApprove: function () {
-                            $.post("/api/problem/remove", { problem_id: show_problem.data.id }).done(ctx => {
+                        onApprove: () => {
+                            $.post("/api/problem/remove", { problem_id: this.problemData.id }).done(ctx => {
                                 ctx = JSON.parse(ctx);
                                 if (ctx.code) {
                                     showErrorModal(ctx.message);
@@ -154,13 +192,13 @@
             delimiters: ['{[', ']}'],
             data() {
                 return {
-                    "html_content": ""
+                    htmlContent: ""
                 }
             },
             template: '<div class="ui container problem-meta"  v-if="value!=\'\'"><div class="ui fluid two column grid"><div class="ui column">\
                             <div class="ui header"><h3>{[name]}</h3></div></div><div class="ui right aligned column">\
-                                <div class="ui tiny orange circular icon button" @click="copy_text(value)"><i class="clipboard outline icon"></i></div>\
-                                    </div></div>    <div class="ui stack segment"><div  v-html="html_content" v-if="!use_pre"></div><pre v-html="html_content" style="white-space:pre-wrap;word-break:break-word;" v-else></pre>    </div></div>',
+                                <div class="ui tiny orange circular icon button" @click="copyText(value)"><i class="clipboard outline icon"></i></div>\
+                                    </div></div>    <div class="ui stack segment"><div  v-html="htmlContent" v-if="!usePre"></div><pre v-html="htmlContent" style="white-space:pre-wrap;word-break:break-word;" v-else></pre>    </div></div>',
             props: {
                 //内容
                 value: {
@@ -168,22 +206,22 @@
                 }, name: {
                     //显示名
                     type: String, default: ""
-                }, render: {
+                }, renderMarkdown: {
                     //是否渲染Markdown
                     type: Boolean, default: true
-                }, use_pre: {
+                }, usePre: {
                     //是否使用预格式化块
                     type: Boolean, default: false
                 }
             },
             methods: {
-                copy_text: copy_text
+                copyText: copy_text
             }, mounted() {
                 // const converter = new showdown.Converter();
-                if (this.render)
-                    this.html_content = converter.makeHtml(this.value);
+                if (this.renderMarkdown)
+                    this.htmlContent = converter.makeHtml(this.value);
                 else {
-                    this.html_content = this.value;
+                    this.htmlContent = this.value;
                 }
             }
         });
@@ -198,54 +236,27 @@
     <div id="show-problem" v-if="done">
 
         <div class="ui header">
-            <h1> {[data.id]}: {[data.title]} </h1>
+            <h1> {[problemData.id]}: {[problemData.title]} </h1>
         </div>
 
-        <problem-meta name="题目背景" v-bind:value="data.background"></problem-meta>
-        <problem-meta name="题目内容" v-bind:value="data.content"></problem-meta>
-        <problem-meta name="输入格式" v-bind:value="data.input_format"></problem-meta>
-        <problem-meta name="输出格式" v-bind:value="data.output_format"></problem-meta>
-        <div class="ui two column grid" v-for="item,index in data.example">
+        <problem-meta name="题目背景" v-bind:value="problemData.background"></problem-meta>
+        <problem-meta name="题目内容" v-bind:value="problemData.content"></problem-meta>
+        <problem-meta name="输入格式" v-bind:value="problemData.input_format"></problem-meta>
+        <problem-meta name="输出格式" v-bind:value="problemData.output_format"></problem-meta>
+        <div class="ui two column grid" v-for="item,index in problemData.example">
             <div class="ui column">
-                <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render="false"
-                    :use_pre="true">
+                <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render-markdown="false"
+                    :use-pre="true">
                 </problem-meta>
             </div>
             <div class="ui column">
-                <problem-meta v-bind:name="'样例 '+(index+1)+' 输出'" v-bind:value="item.output" :render="false"
-                    :use_pre="true">
+                <problem-meta v-bind:name="'样例 '+(index+1)+' 输出'" v-bind:value="item.output" :render-markdown="false"
+                    :use-pre="true">
                 </problem-meta>
             </div>
         </div>
-        <div class="ui container problem-meta">
-            <div class="ui header">
-                <h3>子任务</h3>
-            </div>
-            <table class="ui table">
-                <thead>
-                    <tr>
-                        <th>子任务名</th>
-                        <th>评分方式</th>
-                        <th>时间限制</th>
-                        <th>内存限制</th>
-                        <th>说明</th>
-                        <th>分数</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="subtask in data.subtasks">
-                        <td>{[subtask.name]}</td>
-                        <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
-                        <td>{[subtask.time_limit]} ms</td>
-                        <td>{[subtask.memory_limit]} MB</td>
-                        <td v-html="makeHTML(subtask.comment)"></td>
-                        <td>{[subtask.score]}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <!-- <div class="ui " -->
-        </div>
-        <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
+
+        <problem-meta name="提示" v-bind:value="problemData.hint"></problem-meta>
         <div class="ui container problem-meta">
             <div class="ui header">
                 <h3>提交代码</h3>
@@ -256,12 +267,12 @@
                         <div class="ui four wide column">
                             <div class="ui vertical pointing menu"
                                 style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
-                                <a class="item" v-for="val,key in langs" :data-id="key"
-                                    v-bind:class="{active:selected_id==key}" @click="selected_id=key">
+                                <a class="item" v-for="value,key in problemData.remoteOJ.availableLanguages"
+                                    v-bind:class="{active:selectedLanguage==key}" @click="selectedLanguage=key">
                                     <span>
                                         <span class="ui header">
-                                            <h4>{[val.display]}</h4>
-                                        </span>{[val.version]}
+                                            <h4>{[value.display]}</h4>
+                                        </span>
                                     </span>
                                     <!-- <p></p> -->
                                 </a>
@@ -269,43 +280,32 @@
                         </div>
                         <div class="twelve wide stretched column" style="padding-left: 0;">
                             <div class="ui container">
-                                <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                                    style="left:30px;min-height: 500px;">
+                                <editor v-model="code"
+                                    v-bind:lang="problemData.remoteOJ.availableLanguages[selectedLanguage].aceMode"
+                                    theme="github" style="left:30px;min-height: 500px;">
                                 </editor>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="ui column">
-                    <div class="ui segment">
-                        <table class="ui very basic celled table">
-                            <thead>
-                                <tr>
-                                    <th>名称</th>
-                                    <th>参数</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
-                                    <td> {[item.name]} </td>
-                                    <td> {[item.parameter]} </td>
-                                    <td>
-                                        <div class="ui toggle checkbox" v-bind:class="{disabled:item.force}">
-                                            <input type="checkbox" hidden
-                                                :checked="(usedParameters.includes(i)?1:null)||item.force">
-                                            <label
-                                                v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+
             </div>
             <div class="ui center aligned container" style="margin-top: 30px;">
-                <div class="ui icon green button" @click="submit">
+                <div class="ui compact menu" v-if="userData.accounts">
+                    <div class="ui simple dropdown item">
+                        {[userData.accounts[selectedAccount].oj]} - {[userData.accounts[selectedAccount].username]}
+                        <i class="dropdown icon"></i>
+                        <div class="menu">
+                            <a class="item" v-for="value,key in userData.accounts" v-on:click="selectedAccount=key">
+                                {[value.oj]} - {[value.username]}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div v-else>
+                    您还未添加任何远程评测账户
+                </div>
+                <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
                     <i class="paper plane outline icon"></i>
                     提交！
                 </div>
@@ -319,62 +319,50 @@
                         <tr>
                             <td>题目上传者</td>
                             <td style="word-break: break-all;"><a
-                                    :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
+                                    :href="'/profile/'+problemData.uploaderProfile.uid">{[problemData.uploaderProfile.username]}</a>
+                            </td>
                         </tr>
                         <tr>
                             <td>上传时间</td>
-                            <td style="word-break: break-all;">{[data.create_time]}</td>
+                            <td style="word-break: break-all;">{[problemData.createTime]}</td>
                         </tr>
-                        
+
                         <tr>
                             <td>是否公开</td>
-                            <td>{[data.public?"Yes":"No"]}</td>
-                        </tr>
-                        <tr>
-                            <td>题目分数</td>
-                            <td>{[total_score]}</td>
+                            <td>{[problemData.public?"Yes":"No"]}</td>
                         </tr>
                         <tr>
                             <td>我的提交</td>
                             <td>
-                                <div v-if="data.my_submission==-1">尚未提交</div><a v-else
-                                    :href="'/show_submission/'+data.my_submission" target="_blank">
-                                    <judge-status :status="data.my_submission_status"></judge-status>
+                                <div v-if="userData.id==-1">尚未提交</div><a v-else :href="'/show_submission/'+userData.id"
+                                    target="_blank">
+                                    <judge-status :status="userData.status"></judge-status>
                                 </a>
                             </td>
                         </tr>
                         <tr>
                             <td>通过数/提交数/通过率</td>
-                            <td>{[data.accepted_count]}/{[data.submission_count]}/{[parseInt(100*data.accepted_count/data.submission_count)]}%
+                            <td>{[problemData.acceptedCount]}/{[problemData.submissionCount]}/{[parseInt(100*problemData.acceptedCount/problemData.submissionCount)]}%
                             </td>
                         </tr>
-                        <tr v-if="data.using_file_io" style="word-break: break-all;">
-                            <td>输入/输出文件</td>
-                            <td>{[data.input_file_name]}<br />{[data.output_file_name]}</td>
-                        </tr>
+
                         <tr>
                             <td>评测方式</td>
-                            <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
+                            <td>远程评测: {[problemData.remoteOJ.display]}</td>
                         </tr>
 
                     </tbody>
                 </table>
-                <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||data.managable"
-                    target="_blank">编辑</a>
-                <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||data.managable">删除</a>
-                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
-                <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
-                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>
-                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
-                    <div class="ui header">
-                        <h4>文件下载</h4>
-                    </div>
-                    <a v-for="file,i in data.downloads" v-if="i<=5"
-                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]} </span></a>
-                    <div class="ui right aligned container">
-                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
-                    </div>
-                </div>
+                <a :href="'/problem_edit/'+problemData.id"
+                    v-if="base.uid==problemData.uploaderProfile.uid||userData.managable" target="_blank">编辑</a>
+                <a v-on:click="removeProblem"
+                    v-if="base.uid==problemData.uploaderProfile.uid||userData.managable">删除</a>
+                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+problemData.id"
+                    target="_blank">我的提交</a>
+                <a :href="'/submissions/1?filter=problem%3D'+problemData.id" target="_blank">全部提交</a>
+                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+problemData.id"
+                    target="_blank">通过提交</a>
+
 
 
             </div>
@@ -382,9 +370,10 @@
                 <div class="ui header">
                     <h4>讨论</h4>
                 </div>
-                <table class="ui very basic fluid collapsing celled table" v-if="recent_discussion.length!=0">
+                <table class="ui very basic fluid collapsing celled table"
+                    v-if="problemData.recentDiscussions.length!=0">
                     <tbody>
-                        <tr v-for="item in recent_discussion">
+                        <tr v-for="item in problemData.recentDiscussions">
                             <td>
                                 <a :href="'/show_discussion/'+item.id" target="_blank">{[item.title]}</a>
                             </td>
@@ -392,7 +381,7 @@
                     </tbody>
                 </table>
                 <div v-else>无</div>
-                <a :href="'/discussions/discussion.problem.'+data.id+'/1'" target="_blank">查看更多..</a>
+                <a :href="'/discussions/discussion.problem.'+problemData.id+'/1'" target="_blank">查看更多..</a>
             </div>
         </div>
     </div>

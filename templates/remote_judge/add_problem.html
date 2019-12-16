@@ -7,7 +7,7 @@
 {%endblock%}
 {%block body%}
 <script>
-    let main, socket, sessionID;
+    let main, socket;
     $(document).ready(() => {
         main = new Vue({
             el: "#main",
@@ -32,29 +32,25 @@
                     this.errorMessage = this.successMessage = "";
                     socket = io.connect("/ws/remote_judge");
 
-                    socket.on("set_client_session_id", x => {
-                        console.log(x);
-                        sessionID = x.client_session_id;
-                        socket.emit("fetch_problem", {
-                            oj: this.selectedOJ,
-                            remoteProblemID: this.remoteProblemID,
-                            sessionID: sessionID
-                        });
-                    });
                     socket.on("server_response", resp => {
                         this.running = false;
+                        this.message = "";
                         socket.close();
+                        console.log(resp);
                         if (resp.ok) {
                             this.successMessage = resp.message;
                             if (this.openInNewTab) {
-                                window.open("/show_remote_problem/" + resp.peoblemID, "_blank")
+                                window.open("/remote_judge/show_problem/" + resp.problemID, "_blank")
                             }
                         } else {
-                            this.errorMessage = resp.errorMessage;
+                            this.errorMessage = resp.message;
                         }
 
                     });
-
+                    socket.emit("fetch_problem", {
+                        oj: this.selectedOJ,
+                        remoteProblemID: this.remoteProblemID
+                    });
                 }
             }, mounted() {
                 axios.post("/api/remote_judge/get_available_ojs").then(resp => {

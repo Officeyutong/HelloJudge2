@@ -45,6 +45,8 @@ class Problem(db.Model):
     # 输出文件名
     output_file_name = db.Column(db.String(30), default="")
     # 题目类型
+    # traditional - 传统题
+    # remote_judge 远程评测
     problem_type = db.Column(db.String(20), default="traditional")
     # 附加编译参数
     extra_parameter = db.Column(JsonPickle, default=[

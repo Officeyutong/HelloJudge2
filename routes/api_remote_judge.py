@@ -6,21 +6,10 @@ from common.permission import require_permission
 from flask import session, request, send_file, send_from_directory
 from utils import make_response
 from flask_socketio import emit, join_room
-from models import RemoteAccount
+from models import RemoteAccount, User, Problem, Submission, Discussion
 from typing import List, Dict
-from models import Problem
+from sqlalchemy.sql.expression import and_
 import uuid
-
-
-@socket.on("connect", namespace="/ws/remote_judge")
-def remote_judge_socketio():
-    """
-    客户端连接，生成一个UUID作为客户端标识符
-    """
-    print("Connected...")
-    uid = str(uuid.uuid1())
-    join_room(room=uid)
-    emit("set_client_session_id", {"client_session_id": uid}, room=uid)
 
 
 @socket.on("submit", namespace="/ws/remote_judge")
@@ -28,22 +17,30 @@ def remote_judge_submit(data):
     """
     客户端提交代码
     {
-        "problem_id":hj2题目ID,
-        "remote_user_id":"远程用户ID",
+        "problemID":hj2题目ID,
+        "remoteAccountID":"远程用户ID",
         "code":"用户代码",
         "language":"用户选择的语言",
-        "login_captcha":"登录验证码",
-        "submit_captcha":"提交验证码"
+        "loginCaptcha":"登录验证码",
+        "submitCaptcha":"提交验证码"
     }
     """
 
 
 @socket.on("fetch_problem", namespace="/ws/remote_judge")
 def remote_judge_add_remote_problem(data: dict):
+    """
+    客户端发送添加题目请求
+    """
+    import datetime
+    from flask import request
     oj, remoteProblemID = data["oj"], data["remoteProblemID"]
     if oj not in config.REMOTE_JUDGE_OJS:
         return make_response(-1, message="不合法的OJ")
-    import datetime
+    if not permission_manager.has_permission(session.get("uid"), "problem.manage"):
+        emit("server_response", {
+             "message": "你没有权限这样做", "ok": False}, room=request.sid)
+        return
     problem = Problem(create_time=datetime.datetime.now())
     problem.uploader_id = int(session.get("uid"))
     db.session.add(problem)
@@ -52,9 +49,9 @@ def remote_judge_add_remote_problem(data: dict):
         oj,
         remoteProblemID,
         str(problem.id),
-        data["sessionID"]
+        request.sid
     ])
-    emit("message", {"message": "正在爬取"}, room=data["sessionID"])
+    emit("message", {"message": "正在爬取"}, room=request.sid)
 
 
 @app.route("/api/remote_judge/get_available_ojs", methods=["POST"])
@@ -66,6 +63,9 @@ def remote_judge_get_available_ojs():
 @csrf.exempt
 @unpack_argument
 def remote_judge_update(ok: bool, data: dict, uuid: str, client_session_id: str):
+    """
+    提交时状态更新,评测端调用
+    """
     if uuid not in config.JUDGERS:
         return make_response(-1, message="未认证评测机")
     emit("server_response", {"ok": ok, "data": data},
@@ -78,20 +78,20 @@ def remote_judge_update(ok: bool, data: dict, uuid: str, client_session_id: str)
 @unpack_argument
 def remote_judge_update_fetch(ok: bool,  uuid: str, client_session_id: str, hj2_problem_id: str, result: dict = None, message: str = ""):
     """
-    更新爬取题目状态
+    更新添加题目状态,评测端调用
     """
     if uuid not in config.JUDGERS:
         return make_response(-1, message="未认证评测机")
     if not ok:
         emit("server_response", {"ok": False,
-                                 "message": message}, room=client_session_id)
+                                 "message": message}, room=client_session_id, namespace="/ws/remote_judge")
         db.session.query(Problem).filter(Problem.id == hj2_problem_id).delete()
-        return
+        return make_response(0, message="done")
     problem: Problem = db.session.query(Problem).filter(
         Problem.id == hj2_problem_id).one()
     # print(result)
     problem.title = result["title"]
-    problem.background = "内存限制: {} MB\n\n时间限制: {} ms".format(
+    problem.background = "内存限制: {} MB\n\n时间限制: {} ms\n\n".format(
         result["memoryLimit"], result["timeLimit"])+result["background"]
     problem.content = result["content"]
     problem.hint = result["hint"]
@@ -100,11 +100,149 @@ def remote_judge_update_fetch(ok: bool,  uuid: str, client_session_id: str, hj2_
     problem.remote_judge_oj = result["remoteOJ"]
     problem.remote_problem_id = result["remoteProblemID"]
     problem.example = result["examples"]
-
+    problem.problem_type = "remote_judge"
+    problem.downloads = []
+    problem.extra_parameter = []
+    problem.files = []
+    problem.provides = []
+    problem.subtasks = []
     db.session.commit()
     emit("server_response", {
-         "ok": ok, "problemID": hj2_problem_id}, room=client_session_id, namespace="/ws/remote_judge")
+         "ok": ok, "problemID": hj2_problem_id, "message": "添加成功"}, room=client_session_id, namespace="/ws/remote_judge")
     return make_response(0, message="done")
+
+
+@app.route("/api/remote_judge/get_problem_info", methods=["POST"])
+@require_permission(permission_manager, "remote_judge.use")
+@unpack_argument
+def remote_judge_get_problem_info(problem_id: str):
+    """
+    {
+        "code":0,
+        "data":{
+            "problemData":{
+                "title":"题目名",
+                "content":"题目内容",
+                "background":"题目背景",
+                "inputFormat":"输入格式",
+                "outputFormat":'输出格式',
+                "examples":[{"input":"样例输入","output":"样例输出"}],
+                "createTime":"创建时间",
+                "uploaderProfile":{
+                    "uid":"用户ID",
+                    "username":"用户名"
+                },
+                "remoteProblemID":"远程题目ID",
+                "remoteOJ":{
+                    "id":"远程OJID",
+                    "display":"远程OJ显示名",
+                    "availableLanguages":[
+                        {"id":"0","display":"C++"}
+                    ]
+                },
+                "public":"是否公开",
+                "hint":"提示",
+                "recentDiscussions":[
+                    {
+                        "id":123,
+                        "title":"qw"
+                    }
+                ],
+                "acceptedCount":"",
+                "submissionCount":""
+            },
+            "userData":{
+                "lastCode":"上次提交的代码",
+                "lastLanguage":"上次选择的语言",
+                "status":"qwq",
+                "id":"",
+                "accounts":{
+                    "id":{
+                        "username":"用户名",
+                        "oj":"OJ",
+                        "accountID":"ID"
+                    }
+                }
+            }
+        }
+
+    }
+    """
+    problem: Problem = db.session.query(Problem).filter(
+        Problem.id == problem_id).one_or_none()
+    if not problem:
+        return make_response(-1, message="未知题目ID")
+    if problem.problem_type != "remote_judge":
+        return make_response(-1, message="此题目非远程评测题目")
+    if not permission_manager.has_permission(session.get("uid"), "remote_judge.use") and problem.uploader_id != int(session.get("uid")):
+        return make_response(-1, message="你没有权限查看该题目")
+    uploader: User = db.session.query(User.id, User.username).filter(
+        User.id == problem.uploader_id).one()
+    last_submission: Submission = db.session.query(Submission.code, Submission.language).filter(and_(
+        Submission.problem_id == problem.id,
+        Submission.uid == session.get("uid")
+    )).order_by(Submission.id.desc())
+    last_code, last_language, submission_id, status = "", next(iter(
+        config.REMOTE_JUDGE_OJS[problem.remote_judge_oj]["availableLanguages"].keys())), -1, None
+    if last_submission.count():
+        last_submission = last_submission.first()
+        last_code = last_submission.code
+        last_language = last_submission.language
+        status = last_submission.status
+        submission_id = Submission.id
+    discussions = [
+
+    ]
+    discussions_query = db.session.query(Discussion.id, Discussion.title).filter(
+        Discussion.path == f"discussion.problem.{problem.id}").order_by(Discussion.id.desc()).limit(5)
+    for item in discussions_query:
+        discussions.append({
+            "id": item.id,
+            "title": item.title
+        })
+    accounts = {}
+    for item in db.session.query(RemoteAccount.account_id, RemoteAccount.username, RemoteAccount.oj).filter(RemoteAccount.uid == session.get("uid", -1)):
+        accounts[item.account_id] = {
+            "username": item.username,
+            "oj": config.REMOTE_JUDGE_OJS[item.oj]["display"],
+            "accountID": item.account_id
+        }
+    return make_response(0, data={
+        "problemData": {
+            "title": problem.title,
+            "content": problem.content,
+            "background": problem.background,
+            "inputFormat": problem.input_format,
+            "outputFormat": problem.output_format,
+            "examples": problem.example,
+            "createTime": problem.create_time,
+            "uploaderProfile": {
+                "uid": uploader.id,
+                "username": uploader.username
+            },
+            "remoteProblemID": problem.remote_problem_id,
+            "remoteOJ": {
+                "id": problem.remote_judge_oj,
+                **config.REMOTE_JUDGE_OJS[problem.remote_judge_oj]
+            },
+            "public": problem.public,
+            "hint": problem.hint,
+            "recentDiscussions": discussions,
+            "acceptedCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).filter(Submission.status == "accepted").count(),
+            "submissionCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).count(),
+            "id": problem.id
+
+        },
+        "userData": {
+            "lastCode": last_code,
+            "lastLanguage": last_language,
+            "status": status,
+            "id": submission_id,
+            "managable": permission_manager.has_permission(
+                session.get("uid", None), "problem.manage"),
+            "accounts": accounts
+        }
+    })
 
 
 @app.route("/api/remote_judge/get_accounts", methods=["POST"])

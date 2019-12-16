@@ -217,9 +217,13 @@
                 return;
             }
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
+
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
             show_problem.usedParameters = ctx.data.lastUsedParameters;
+            if (show_problem.data.problem_type === "remote_judge") {
+                window.location.href = "/remote_judge/show_problem/" + show_problem.data.id;
+            }
             // console.log(show_problem.usedParameters);
             // console.log(ctx)
             $.post("/api/get_user_profile", { uid: ctx.data.uploader_id }).done(ctx => {
@@ -389,7 +393,7 @@
                             <td>上传时间</td>
                             <td style="word-break: break-all;">{[data.create_time]}</td>
                         </tr>
-                        
+
                         <tr>
                             <td>是否公开</td>
                             <td>{[data.public?"Yes":"No"]}</td>
