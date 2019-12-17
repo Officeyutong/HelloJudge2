@@ -58,6 +58,8 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "unaccepted"
     if extra_status == "compile_error":
         submit.status = "compile_error"
+    elif extra_status == "waiting" or extra_status == "judging":
+        submit.status = extra_status
     # print(
     #     f"Update judge status for {submission_id} to {judge_result} ,judger = {judger},message={message}")
     for k, v in submit.judge_result.items():

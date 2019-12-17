@@ -71,6 +71,8 @@ class Problem(db.Model):
         return ret
 
     def get_total_score(self):
+        if self.problem_type == "remote_judge":
+            return 100
         return sum(map(lambda x: int(x["score"]), self.subtasks))
 
     @staticmethod

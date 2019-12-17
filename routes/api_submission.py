@@ -178,10 +178,14 @@ def get_submission_info():
 
     import importlib
     try:
-        ret["ace_mode"] = importlib.import_module(
-            "langs."+submit.language).ACE_MODE
-        ret["language_name"] = importlib.import_module(
-            "langs."+ret["language"]).DISPLAY
+        try:
+            lang_module = importlib.import_module(
+                "langs."+submit.language)
+            ret["ace_mode"] = lang_module.ACE_MODE
+            ret["language_name"] = lang_module.DISPLAY
+        except Exception as ex:
+            pass
+
     except Exception as ex:
         import traceback
         traceback.print_exc()

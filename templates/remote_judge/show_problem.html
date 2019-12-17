@@ -1,6 +1,6 @@
 {%extends "base.html"%}
 {%block head%}
-
+<script src="https://cdn.bootcss.com/socket.io/2.2.0/socket.io.js"></script>
 <style>
     .problem-meta {
         padding-bottom: 30px;
@@ -130,9 +130,17 @@
                 code: "",
                 done: false,
                 running: false,
+                message: "",
+                errorMessage: "",
                 captcha: {
                     login: "", submit: ""
+                },
+                requireLoginCaptcha: false,
+                requireSubmitCaptcha: false,
+                captchaData: {
+                    login: "", submit: ""
                 }
+
             },
             mounted() {
                 axios.post("/api/remote_judge/get_problem_info", { problem_id: window.location.href.split("/").pop() }).then(resp => {
@@ -154,6 +162,7 @@
             },
             methods: {
                 submit: function () {
+                    this.running = true;
                     let submitData = {
                         problemID: this.problemData.id,
                         remoteAccountID: this.selectedAccount,
@@ -165,10 +174,25 @@
                     console.log(submitData);
                     let socket = io.connect("/ws/remote_judge");
                     socket.on("message", resp => {
-                        
+                        this.message = resp.message;
+                        console.log("message: ", resp)
                     });
                     socket.on("server_response", resp => {
-
+                        this.running = false;
+                        let data = resp.data;
+                        if (data.require_login_captcha) {
+                            this.captchaData.login = data.captcha;
+                            this.requireLoginCaptcha = true;
+                        }
+                        console.log("server response: ", resp);
+                    });
+                    socket.emit("submit", {
+                        problemID: this.problemData.id,
+                        remoteAccountID: this.selectedAccount,
+                        code: this.code,
+                        language: this.selectedLanguage,
+                        loginCaptcha: this.captcha.login,
+                        submitCaptcha: this.captcha.submit
                     });
                 },
                 removeProblem() {
@@ -290,24 +314,45 @@
                 </div>
 
             </div>
-            <div class="ui center aligned container" style="margin-top: 30px;">
-                <div class="ui compact menu" v-if="userData.accounts">
-                    <div class="ui simple dropdown item">
-                        {[userData.accounts[selectedAccount].oj]} - {[userData.accounts[selectedAccount].username]}
-                        <i class="dropdown icon"></i>
-                        <div class="menu">
-                            <a class="item" v-for="value,key in userData.accounts" v-on:click="selectedAccount=key">
-                                {[value.oj]} - {[value.username]}
-                            </a>
+            <div class="ui one column grid">
+                <div class="ui column">
+                    <div class="ui center aligned container" style="margin-top: 30px;">
+                        <div class="ui compact menu" v-if="userData.accounts">
+                            <div class="ui simple dropdown item">
+                                {[userData.accounts[selectedAccount].oj]} -
+                                {[userData.accounts[selectedAccount].username]}
+                                <i class="dropdown icon"></i>
+                                <div class="menu">
+                                    <a class="item" v-for="value,key in userData.accounts"
+                                        v-on:click="selectedAccount=key">
+                                        {[value.oj]} - {[value.username]}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else>
+                            您还未添加任何远程评测账户
+                        </div>
+                        <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
+                            <i class="paper plane outline icon"></i>
+                            提交！
                         </div>
                     </div>
                 </div>
-                <div v-else>
-                    您还未添加任何远程评测账户
-                </div>
-                <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
-                    <i class="paper plane outline icon"></i>
-                    提交！
+                <div class="ui column">
+                    <div class="ui segment stacked" v-if="requireLoginCaptcha">
+                        <div>请输入登录验证码: </div><img :src="'data:image/png;base64,'+captchaData.login">
+                        <div class="ui input"><input type="text" v-model="captcha.login"></div>
+                    </div>
+
+                    <div class="ui segment stacked" v-if="requireSubmitCaptcha">
+                        <div>请输入提交验证码: </div><img :src="'data:image/png;base64,'+captchaData.submit">
+                        <div class="ui input"><input type="text" v-model="captcha.submit"></div>
+                    </div>
+                    <div class="ui message" v-if="running">
+                        <div class="ui header">工作中</div>
+                        {[message]}
+                    </div>
                 </div>
             </div>
         </div>

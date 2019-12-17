@@ -4,7 +4,7 @@ from main import queue
 from common.utils import unpack_argument
 from common.permission import require_permission
 from flask import session, request, send_file, send_from_directory
-from utils import make_response
+from utils import make_response, decode_json, encode_json
 from flask_socketio import emit, join_room
 from models import RemoteAccount, User, Problem, Submission, Discussion
 from typing import List, Dict
@@ -25,6 +25,48 @@ def remote_judge_submit(data):
         "submitCaptcha":"提交验证码"
     }
     """
+    if not permission_manager.has_permission(session.get("uid"), "remote_judge.use"):
+        emit("server_response", {"ok": False,
+                                 "message": "你没有权限这样做"}, room=request.sid)
+        return
+    problem: Problem = Problem.by_id(data["problemID"])
+    if not problem.public and int(session.get("uid")) != problem.uploader_id and not permission_manager.has_permission(permission_manager, "problem.manage"):
+        emit("server_response", {"ok": False,
+                                 "message": "你没有权限使用此题目"}, room=request.sid)
+        return
+    if len(data["code"]) > config.MAX_CODE_LENGTH:
+        emit("server_response", {"ok": False,
+                                 "message": "代码过长"}, room=request.sid)
+        return
+    remote_account: RemoteAccount = db.session.query(RemoteAccount).filter(
+        RemoteAccount.account_id == data["remoteAccountID"]).one_or_none()
+    if not remote_account or remote_account.uid != int(session.get("uid")):
+        emit("server_response", {"ok": False,
+                                 "message": "非法账户ID"}, room=request.sid)
+        return
+    if data["language"] not in config.REMOTE_JUDGE_OJS[problem.remote_judge_oj]["availableLanguages"]:
+        emit("server_response", {"ok": False,
+                                 "message": "非法语言"}, room=request.sid)
+        return
+
+    queue.send_task("judgers.remote.submit", [
+        problem.remote_judge_oj,
+        decode_json(remote_account.session),
+        remote_account.account_id,
+        problem.remote_problem_id,
+        data["language"],
+        data["code"],
+        data["loginCaptcha"],
+        data["submitCaptcha"],
+        request.sid,
+        remote_account.username,
+        remote_account.password,
+        problem.id,
+        int(session.get("uid")),
+        problem.public,
+        10
+    ])
+    emit("message", {"message": "提交中..."}, room=request.sid)
 
 
 @socket.on("fetch_problem", namespace="/ws/remote_judge")
@@ -59,7 +101,42 @@ def remote_judge_get_available_ojs():
     return make_response(0, data=config.REMOTE_JUDGE_OJS)
 
 
-@app.route("/api/judge/remote_judge/update_submit", methods=["POST"])
+@app.route("/api/judge/remote_judge/create_submission", methods=["POST"])
+@csrf.exempt
+@unpack_argument
+def remote_judge_create_submission(
+    uuid: str,
+    client_session_id: str,
+    code: str,
+    language: str,
+    uid: int,
+    hj2_problem_id: str,
+    public: bool,
+    message: str
+):
+    """
+    评测端向远程OJ提交代码成功后，创建相应的提交记录
+    """
+    if uuid not in config.JUDGERS:
+        return make_response(-1, message="未认证评测机")
+    import datetime
+    submission: Submission = Submission(
+        uid=uid,
+        language=language,
+        problem_id=hj2_problem_id,
+        submit_time=datetime.datetime.now(),
+        public=public,
+        code=code,
+        status="waiting",
+    )
+    db.session.add(submission)
+    db.session.commit()
+    emit("server_response", {"ok": True, "data": {"submission_id": submission.id}},
+         room=client_session_id, namespace="/ws/remote_judge")
+    return make_response(0, data={"submission_id": submission.id})
+
+
+@app.route("/api/judge/remote_judge/update_submit_status", methods=["POST"])
 @csrf.exempt
 @unpack_argument
 def remote_judge_update(ok: bool, data: dict, uuid: str, client_session_id: str):
@@ -70,6 +147,24 @@ def remote_judge_update(ok: bool, data: dict, uuid: str, client_session_id: str)
         return make_response(-1, message="未认证评测机")
     emit("server_response", {"ok": ok, "data": data},
          room=client_session_id, namespace="/ws/remote_judge")
+    return make_response(0, message="done")
+
+
+@app.route("/api/judge/remote_judge/update_session", methods=["POST"])
+@csrf.exempt
+@unpack_argument
+def remote_judge_update_session(uuid: str, account_id: str, session: dict):
+    """
+    登录后更新session
+    """
+    print(locals())
+    # print(kwargs)
+    if uuid not in config.JUDGERS:
+        return make_response(-1, message="未认证评测机")
+    account: RemoteAccount = db.session.query(RemoteAccount).filter(
+        RemoteAccount.account_id == account_id).one()
+    account.session = encode_json(session)
+    db.session.commit()
     return make_response(0, message="done")
 
 
@@ -178,7 +273,7 @@ def remote_judge_get_problem_info(problem_id: str):
         return make_response(-1, message="你没有权限查看该题目")
     uploader: User = db.session.query(User.id, User.username).filter(
         User.id == problem.uploader_id).one()
-    last_submission: Submission = db.session.query(Submission.code, Submission.language).filter(and_(
+    last_submission: Submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id,
         Submission.uid == session.get("uid")
     )).order_by(Submission.id.desc())
@@ -201,7 +296,12 @@ def remote_judge_get_problem_info(problem_id: str):
             "title": item.title
         })
     accounts = {}
-    for item in db.session.query(RemoteAccount.account_id, RemoteAccount.username, RemoteAccount.oj).filter(RemoteAccount.uid == session.get("uid", -1)):
+    for item in db.session.query(RemoteAccount.account_id, RemoteAccount.username, RemoteAccount.oj).filter(
+        and_(
+            RemoteAccount.uid == session.get("uid", -1),
+            RemoteAccount.oj == problem.remote_judge_oj
+        )
+    ):
         accounts[item.account_id] = {
             "username": item.username,
             "oj": config.REMOTE_JUDGE_OJS[item.oj]["display"],
