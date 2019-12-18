@@ -9,15 +9,6 @@ from sqlalchemy.sql.expression import *
 from typing import Tuple
 
 
-@app.before_request
-def banned_check():
-    if session.get("uid"):
-        user: User = db.session.query(User.banned).filter(
-            User.id == session.get("uid")).one()
-        if user.banned:
-            session.pop("uid")
-
-
 @app.route("/api/query_login_state", methods=["POST"])
 def query_login_state():
     """
@@ -77,6 +68,8 @@ def login():
     if user.auth_token != "":
         return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
     session["uid"] = query.one().id
+    import time
+    session["login_time"] = str(int(time.time()))
     session.permanment = True
     return make_response(0)
 
@@ -154,6 +147,8 @@ def register():
     db.session.commit()
     session.permanment = True
     session["uid"] = user.id
+    import time
+    session["login_time"] = str(int(time.time()))
     return make_response(0)
 
 
@@ -171,7 +166,14 @@ def logout():
     """
     if session.get("uid") is None:
         return make_response(-1, message="你尚未登录!")
-    session.pop("uid")
+    user: User = db.session.query(User).filter(
+        User.id == session.get("uid")).one()
+    # 之后强制所有客户端下线重新登录
+    import time
+
+    user.force_logout_before = int(time.time())
+    db.session.commit()
+
     return make_response(0)
 
 
@@ -232,6 +234,9 @@ def reset_password():
         return make_response(-1, message="Bad reset token")
     user.password = request.form["password"]
     user.reset_token = ""
+    # 之后强制所有客户端下线重新登录
+    import time
+    user.force_logout_before = int(time.time())
     db.session.commit()
     return make_response(0, message="密码重置完成，请使用新密码登录。")
 
@@ -402,6 +407,8 @@ def update_profile():
     user.description = data["description"]
     if data["changePassword"]:
         user.password = data["newPassword"]
+        import time
+        user.force_logout_before = int(time.time())
     if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限封禁\解封此用户")
     user.banned = data["banned"]

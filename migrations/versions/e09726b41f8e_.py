@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: b162c3c10243
-Revises: f9bead1db1dc
-Create Date: 2019-12-17 12:24:20.680559
+Revision ID: e09726b41f8e
+Revises: 053758da21bf
+Create Date: 2019-12-18 22:39:05.119377
 
 """
 from alembic import op
@@ -11,8 +11,8 @@ import ormtypes
 from sqlalchemy.dialects import mysql
 
 # revision identifiers, used by Alembic.
-revision = 'b162c3c10243'
-down_revision = 'f9bead1db1dc'
+revision = 'e09726b41f8e'
+down_revision = '053758da21bf'
 branch_labels = None
 depends_on = None
 
@@ -47,12 +47,6 @@ def upgrade():
                existing_type=mysql.TINYINT(display_width=1),
                type_=sa.Boolean(),
                existing_nullable=True)
-    op.add_column('remote_accounts', sa.Column('session', sa.String(length=256), nullable=False))
-    conn = op.get_bind()
-    # 设置
-    conn.execute(
-        """UPDATE remote_accounts set session = "{}" where 1 = 1"""
-    )
     op.alter_column('submissions', 'public',
                existing_type=mysql.TINYINT(display_width=1),
                type_=sa.Boolean(),
@@ -60,6 +54,10 @@ def upgrade():
     op.alter_column('users', 'banned',
                existing_type=mysql.TINYINT(display_width=1),
                type_=sa.Boolean(),
+               existing_nullable=False)
+    op.alter_column('users', 'force_logout_before',
+               existing_type=mysql.FLOAT(),
+               type_=sa.BigInteger(),
                existing_nullable=False)
     op.alter_column('users', 'permission_group',
                existing_type=mysql.TINYTEXT(collation='utf8mb4_bin'),
@@ -74,6 +72,10 @@ def downgrade():
                existing_type=sa.Text(length=20),
                type_=mysql.TINYTEXT(collation='utf8mb4_bin'),
                existing_nullable=False)
+    op.alter_column('users', 'force_logout_before',
+               existing_type=sa.BigInteger(),
+               type_=mysql.FLOAT(),
+               existing_nullable=False)
     op.alter_column('users', 'banned',
                existing_type=sa.Boolean(),
                type_=mysql.TINYINT(display_width=1),
@@ -82,7 +84,6 @@ def downgrade():
                existing_type=sa.Boolean(),
                type_=mysql.TINYINT(display_width=1),
                existing_nullable=True)
-    op.drop_column('remote_accounts', 'session')
     op.alter_column('problems', 'using_file_io',
                existing_type=sa.Boolean(),
                type_=mysql.TINYINT(display_width=1),

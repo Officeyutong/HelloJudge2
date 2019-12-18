@@ -38,6 +38,9 @@ class User(db.Model):
         db.Text(20), nullable=False, default="default")
     # 用户特有权限列表
     permissions = db.Column(JsonPickle, nullable=False, default=[])
+    # 强制退出登陆时间在此之前的客户端
+    # 通常用于用户 退出\修改密码 后强行下线所有客户端
+    force_logout_before = db.Column(db.BigInteger, nullable=False, default=0)
     @staticmethod
     def by_id(id):
         return db.session.query(User).filter(User.id == id).one_or_none()

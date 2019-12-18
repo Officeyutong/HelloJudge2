@@ -64,7 +64,7 @@ def remote_judge_submit(data):
         problem.id,
         int(session.get("uid")),
         problem.public,
-        10
+        [60, 60, 60, 60, 60]+[10]*6*5
     ])
     emit("message", {"message": "提交中..."}, room=request.sid)
 
