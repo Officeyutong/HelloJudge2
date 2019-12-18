@@ -171,6 +171,8 @@
                         submitCaptcha: this.captcha.submit,
                         language: this.selectedLanguage
                     };
+                    this.requireLoginCaptcha = this.requireSubmitCaptcha = false;
+                    this.errorMessage = "";
                     console.log(submitData);
                     let socket = io.connect("/ws/remote_judge");
                     socket.on("message", resp => {
@@ -181,10 +183,21 @@
                         this.running = false;
                         let data = resp.data;
                         if (data.require_login_captcha) {
+                            this.captcha.login = "";
                             this.captchaData.login = data.captcha;
                             this.requireLoginCaptcha = true;
                         }
+                        if (data.require_submit_captcha) {
+                            this.captcha.submit = "";
+                            this.captchaData.submit = data.captcha;
+                            this.requireSubmitCaptcha = true;
+                        }
                         console.log("server response: ", resp);
+                        if (resp.ok) {
+                            window.location.href = "/show_submission/" + resp.data.submission_id;
+                        } else {
+                            this.errorMessage = data.message;
+                        }
                     });
                     socket.emit("submit", {
                         problemID: this.problemData.id,
@@ -340,18 +353,28 @@
                     </div>
                 </div>
                 <div class="ui column">
+                    <div class="ui error message" v-if="errorMessage!=''">
+                        <div class="ui header">错误</div>
+                        <p>{[errorMessage]}</p>
+                    </div>
                     <div class="ui segment stacked" v-if="requireLoginCaptcha">
-                        <div>请输入登录验证码: </div><img :src="'data:image/png;base64,'+captchaData.login">
-                        <div class="ui input"><input type="text" v-model="captcha.login"></div>
+                        <div class="ui header">
+                            <h3>请输入登录验证码</h3>
+                        </div>
+                        <div><img :src="'data:image/png;base64,'+captchaData.login">
+                            <div class="ui input"><input type="text" v-model="captcha.login"></div>
+
+                        </div>
                     </div>
 
                     <div class="ui segment stacked" v-if="requireSubmitCaptcha">
-                        <div>请输入提交验证码: </div><img :src="'data:image/png;base64,'+captchaData.submit">
-                        <div class="ui input"><input type="text" v-model="captcha.submit"></div>
-                    </div>
-                    <div class="ui message" v-if="running">
-                        <div class="ui header">工作中</div>
-                        {[message]}
+                        <div class="ui header">
+                            <h3>请输入登录验证码</h3>
+                        </div>
+                        <div><img :src="'data:image/png;base64,'+captchaData.submit">
+                            <div class="ui input"><input type="text" v-model="captcha.submit"></div>
+
+                        </div>
                     </div>
                 </div>
             </div>

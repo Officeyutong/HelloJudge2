@@ -284,7 +284,7 @@ def remote_judge_get_problem_info(problem_id: str):
         last_code = last_submission.code
         last_language = last_submission.language
         status = last_submission.status
-        submission_id = Submission.id
+        submission_id = last_submission.id
     discussions = [
 
     ]
