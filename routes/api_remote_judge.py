@@ -137,6 +137,7 @@ def remote_judge_create_submission(
     )
     db.session.add(submission)
     db.session.commit()
+    print("Submit done. ", submission.id)
     emit("server_response", {"ok": True, "data": {"submission_id": submission.id}},
          room=client_session_id, namespace="/ws/remote_judge")
     return make_response(0, data={"submission_id": submission.id})
