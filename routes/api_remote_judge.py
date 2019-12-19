@@ -64,7 +64,7 @@ def remote_judge_submit(data):
         problem.id,
         int(session.get("uid")),
         problem.public,
-        [60, 60, 60, 60, 60]+[10]*6*5
+        list(reversed(config.TRACK_DELAY_INTERVAL))
     ])
     emit("message", {"message": "提交中..."}, room=request.sid)
 
