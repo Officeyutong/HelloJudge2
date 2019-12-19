@@ -342,14 +342,17 @@
                                     </a>
                                 </div>
                             </div>
+                            <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
+                                <i class="paper plane outline icon"></i>
+                                提交！
+                            </div>
                         </div>
                         <div v-else>
-                            您还未添加任何远程评测账户
+                            <div class="ui error message">
+                                您还未添加任何远程评测账户!
+                            </div>
                         </div>
-                        <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
-                            <i class="paper plane outline icon"></i>
-                            提交！
-                        </div>
+
                     </div>
                 </div>
                 <div class="ui column">
