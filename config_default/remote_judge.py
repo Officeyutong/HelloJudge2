@@ -1,3 +1,5 @@
+# 使用的消息队列
+REMOTE_JUDGE_BROKER = "redis://127.0.0.1/2"
 # 远程评测可用OJ
 REMOTE_JUDGE_OJS = {
     "luogu": {

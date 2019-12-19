@@ -1,6 +1,6 @@
 from main import web_app as app
 from main import db, config, basedir, permission_manager, redis_connection_pool, csrf, socket
-from main import queue
+from main import remote_judge_queue
 from common.utils import unpack_argument
 from common.permission import require_permission
 from flask import session, request, send_file, send_from_directory
@@ -49,7 +49,7 @@ def remote_judge_submit(data):
                                  "message": "非法语言"}, room=request.sid)
         return
 
-    queue.send_task("judgers.remote.submit", [
+    remote_judge_queue.send_task("judgers.remote.submit", [
         problem.remote_judge_oj,
         decode_json(remote_account.session),
         remote_account.account_id,

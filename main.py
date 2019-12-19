@@ -27,6 +27,8 @@ logger = web_app.logger
 socket = SocketIO(web_app)
 queue = celery.Celery(
     web_app.name,  broker=config.REDIS_URI)
+remote_judge_queue = celery.Celery(
+    web_app.name,  broker=config.REMOTE_JUDGE_BROKER)
 redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 
