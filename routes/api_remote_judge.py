@@ -87,7 +87,13 @@ def remote_judge_add_remote_problem(data: dict):
     problem.uploader_id = int(session.get("uid"))
     db.session.add(problem)
     db.session.commit()
-    queue.send_task("judgers.remote.fetch_problem", [
+    print("Fetching: ", [
+        oj,
+        remoteProblemID,
+        str(problem.id),
+        request.sid
+    ])
+    remote_judge_queue.send_task("judgers.remote.fetch_problem", [
         oj,
         remoteProblemID,
         str(problem.id),
