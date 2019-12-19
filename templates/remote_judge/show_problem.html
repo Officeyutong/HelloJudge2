@@ -330,7 +330,7 @@
             <div class="ui one column grid">
                 <div class="ui column">
                     <div class="ui center aligned container" style="margin-top: 30px;">
-                        <div class="ui compact menu" v-if="userData.accounts">
+                        <div class="ui compact menu" v-if="Object.keys(userData.accounts).length">
                             <div class="ui simple dropdown item">
                                 {[userData.accounts[selectedAccount].oj]} -
                                 {[userData.accounts[selectedAccount].username]}
