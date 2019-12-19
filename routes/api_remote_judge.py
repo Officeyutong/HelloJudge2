@@ -79,7 +79,7 @@ def remote_judge_add_remote_problem(data: dict):
     oj, remoteProblemID = data["oj"], data["remoteProblemID"]
     if oj not in config.REMOTE_JUDGE_OJS:
         return make_response(-1, message="不合法的OJ")
-    if not permission_manager.has_permission(session.get("uid"), "problem.manage"):
+    if not permission_manager.has_permission(session.get("uid"), "problem.create"):
         emit("server_response", {
              "message": "你没有权限这样做", "ok": False}, room=request.sid)
         return
