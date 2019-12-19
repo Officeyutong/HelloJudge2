@@ -202,7 +202,11 @@ def admin_update_permission_groups(groups: list):
     # print(type(db.session))
     db.session.add_all((PermissionGroup(
         id=x["id"], name=x["name"], permissions=x["permissions"].split("\n")) for x in groups))
+
     db.session.commit()
+    from main import redis_connection_pool
+    from redis import Redis
+    Redis(connection_pool=redis_connection_pool).flushdb()
     return make_response(0, message="更新成功")
 
 
