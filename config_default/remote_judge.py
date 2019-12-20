@@ -8,8 +8,14 @@ REMOTE_JUDGE_OJS = {
             "1": {"display": "Pascal", "aceMode": "pascal"},
             "2": {"display": "C", "aceMode": "c_cpp"},
             "3": {"display": "C++", "aceMode": "c_cpp"},
-            "4": {"display": "Python 2", "aceMode": "python"},
-            "5": {"display": "Python 3", "aceMode": "python"},
+            "4": {"display": "C++ 11", "aceMode": "c_cpp"},
+            "6": {"display": "Python 2", "aceMode": "python"},
+            "7": {"display": "Python 3", "aceMode": "python"},
+            "8": {"display": "Java 8", "aceMode": "java"},
+            "9": {"display": "Node v8.9", "aceMode": "javascript"},
+            "11": {"display": "C++ 14", "aceMode": "c_cpp"},
+            "12": {"display": "C++ 17", "aceMode": "c_cpp"},
+
         }
     },
     # "codeforces": {"display": "Codeforces"}
