@@ -283,7 +283,7 @@ def remote_judge_get_problem_info(problem_id: str):
     last_submission: Submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id,
         Submission.uid == session.get("uid")
-    )).order_by(Submission.id.desc())
+    )).order_by(Submission.score.desc()).order_by(Submission.id.desc())
     last_code, last_language, submission_id, status = "", next(iter(
         config.REMOTE_JUDGE_OJS[problem.remote_judge_oj]["availableLanguages"].keys())), -1, None
     if last_submission.count():
