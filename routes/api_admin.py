@@ -209,19 +209,24 @@ def admin_update_permission_groups(groups: list):
                          for current in groups}
 
     def lookup_circles(current: str, path: list):
+        path.append(current)
         if permission_groups[current].get("visited", False):
             return True
         permission_groups[current]["visited"] = True
-        path.append(current)
         if permission_groups[current]["inherit"]:
             if lookup_circles(permission_groups[current]["inherit"], path):
                 return True
         return False
+
+    def clear_visited_marks():
+        for val in permission_groups.values():
+            val["visited"] = False
     for val in permission_groups.values():
         if val["inherit"] and val["inherit"] not in permission_groups:
             return make_response(-1, message="权限组 {} 的父权限组 {} 不存在".format(val["id"], val["inherit"]))
         path = []
-        if not val.get("visited", False) and lookup_circles(val["id"], path):
+        clear_visited_marks()
+        if lookup_circles(val["id"], path):
             return make_response(-1, message="存在环形继承: {}".format(path))
     db.session.query(PermissionGroup).delete()
     # for x in groups:
