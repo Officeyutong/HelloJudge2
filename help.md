@@ -414,6 +414,14 @@ HelloJudge2具有权限系统。
                 后台管理
             </td>
         </tr>
+        <tr>
+            <td>
+                remote_judge.use
+            </td>
+            <td>
+                使用远程评测
+            </td>
+        </tr>
     </tbody>
 </table>
 
