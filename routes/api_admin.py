@@ -166,7 +166,8 @@ def admin_get_permission_groups():
             {
                 "id":"权限组ID",
                 "name":"权限组名",
-                "permissions":"权限列表(字符串)"
+                "permissions":"权限列表(字符串)",
+                "inherit":"继承自"
             }
         ]
     }
@@ -176,7 +177,10 @@ def admin_get_permission_groups():
     ]
     for item in db.session.query(PermissionGroup).all():
         result.append({
-            "id": item.id, "name": item.name, "permissions": "\n".join(item.permissions)
+            "id": item.id,
+            "name": item.name,
+            "permissions": "\n".join(item.permissions),
+            "inherit": item.inherit
         })
     return make_response(0, result=result)
 
@@ -188,7 +192,7 @@ def admin_update_permission_groups(groups: list):
     """
     [
         {
-            "id","name","permissions":"xxx"
+            "id","name","permissions":"xxx","inherit":""
         }
     ]
 
@@ -197,11 +201,33 @@ def admin_update_permission_groups(groups: list):
         "message":""
     }
     """
+
+    permission_groups = {current["id"]: {"id": current["id"],
+                                         "name": current["name"],
+                                         "permissions": current["permissions"].split("\n"),
+                                         "inherit": current["inherit"]}
+                         for current in groups}
+
+    def lookup_circles(current: str, path: list):
+        if permission_groups[current].get("visited", False):
+            return True
+        permission_groups[current]["visited"] = True
+        path.append(current)
+        if permission_groups[current]["inherit"]:
+            if lookup_circles(permission_groups[current]["inherit"], path):
+                return True
+        return False
+    for val in permission_groups.values():
+        if val["inherit"] and val["inherit"] not in permission_groups:
+            return make_response(-1, message="权限组 {} 的父权限组 {} 不存在".format(val["id"], val["inherit"]))
+        path = []
+        if not val.get("visited", False) and lookup_circles(val["id"], path):
+            return make_response(-1, message="存在环形继承: {}".format(path))
     db.session.query(PermissionGroup).delete()
     # for x in groups:
     # print(type(db.session))
     db.session.add_all((PermissionGroup(
-        id=x["id"], name=x["name"], permissions=x["permissions"].split("\n")) for x in groups))
+        id=x["id"], name=x["name"], permissions=x["permissions"].split("\n"), inherit=x["inherit"]) for x in groups))
 
     db.session.commit()
     from main import redis_connection_pool
@@ -214,8 +240,6 @@ def admin_update_permission_groups(groups: list):
 @require_permission(permission_manager, "backend.manage")
 def admin_remove_unauthorized_accounts():
     query = db.session.query(User).filter(User.auth_token != "")
-    # for x in query.all():
-    #     print(x)
     count: int = query.count()
     query.delete()
     db.session.commit()

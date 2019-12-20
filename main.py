@@ -34,12 +34,25 @@ redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 def get_permissions(uid: int):
     from models import User, PermissionGroup
-    user: User = db.session.query(User.permissions, User.permission_group).filter(User.id==uid).one()
-    permissions=set(user.permissions)
-    group:PermissionGroup=db.session.query(PermissionGroup.permissions).filter(PermissionGroup.id==user.permission_group).one()
+    user: User = db.session.query(
+        User.permissions, User.permission_group).filter(User.id == uid).one()
+    permissions = set(user.permissions)
+    group: PermissionGroup = db.session.query(PermissionGroup.permissions, PermissionGroup.inherit).filter(
+        PermissionGroup.id == user.permission_group).one()
+    permissions = permissions.union(group.permissions)
+    while group.inherit:
+        group = db.session.query(PermissionGroup.permissions, PermissionGroup.inherit).filter(
+            PermissionGroup.id == group.inherit).one()
+        permissions = permissions.union(group.permissions)
     return permissions.union(group.permissions)
 
 
 permission_manager = PermissionManager(
     redis_connection_pool, db, get_permissions)
-import routes
+
+
+def _import_routes():
+    import routes
+
+
+_import_routes()

@@ -9,3 +9,5 @@ class PermissionGroup(db.Model):
     name = db.Column(db.String(50), nullable=False, default="新建权限组")
     # 权限列表
     permissions = db.Column(json_pickle.JsonPickle, nullable=False, default=[])
+    # 继承自
+    inherit = db.Column(db.String(20), nullable=False, default="")

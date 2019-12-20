@@ -15,7 +15,6 @@ REMOTE_JUDGE_OJS = {
             "9": {"display": "Node v8.9", "aceMode": "javascript"},
             "11": {"display": "C++ 14", "aceMode": "c_cpp"},
             "12": {"display": "C++ 17", "aceMode": "c_cpp"},
-
         }
     },
     # "codeforces": {"display": "Codeforces"}
