@@ -422,6 +422,38 @@ HelloJudge2具有权限系统。
                 使用远程评测
             </td>
         </tr>
+        <tr>
+            <td>
+                problemset.create
+            </td>
+            <td>
+                创建习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                problemset.use.ID
+            </td>
+            <td>
+                使用某个私有习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                problemset.use.public
+            </td>
+            <td>
+                使用公共习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                problemset.manage
+            </td>
+            <td>
+                管理习题集
+            </td>
+        </tr>
     </tbody>
 </table>
 

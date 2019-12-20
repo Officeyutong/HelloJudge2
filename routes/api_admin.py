@@ -207,6 +207,8 @@ def admin_update_permission_groups(groups: list):
                                          "permissions": current["permissions"].split("\n"),
                                          "inherit": current["inherit"]}
                          for current in groups}
+    if "admin" not in permission_groups or "default" not in permission_groups:
+        return make_response(-1, message="必须存在 admin 组和 default 组")
 
     def lookup_circles(current: str, path: list):
         path.append(current)

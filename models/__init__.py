@@ -8,3 +8,4 @@ from .contest import *
 from .team import *
 from .permission_group import *
 from .remote_accounts import *
+from .problem_set import *
