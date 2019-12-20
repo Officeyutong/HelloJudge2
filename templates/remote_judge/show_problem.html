@@ -280,7 +280,7 @@
         <problem-meta name="题目内容" v-bind:value="problemData.content"></problem-meta>
         <problem-meta name="输入格式" v-bind:value="problemData.input_format"></problem-meta>
         <problem-meta name="输出格式" v-bind:value="problemData.output_format"></problem-meta>
-        <div class="ui two column grid" v-for="item,index in problemData.example">
+        <div class="ui two column grid" v-for="item,index in problemData.examples">
             <div class="ui column">
                 <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render-markdown="false"
                     :use-pre="true">
