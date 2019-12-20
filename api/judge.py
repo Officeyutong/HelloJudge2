@@ -56,7 +56,7 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "judging"
     else:
         submit.status = "unaccepted"
-    if not extra_status:
+    if extra_status:
         submit.status = extra_status
     # if extra_status == "compile_error":
     #     submit.status = "compile_error"
