@@ -143,7 +143,8 @@ def get_submission_info():
             "ace_mode":"ACE.js语言ID",
             "time_cost":"时间开销",
             "memory_cost":"内存开销",
-            "extra_compile_parameter":"附加编译参数"
+            "extra_compile_parameter":"附加编译参数",
+            "isRemoteSubmission":"是否为远程提交"
         }
     }
     """
@@ -191,10 +192,11 @@ def get_submission_info():
         traceback.print_exc()
         ret["ace_mode"] = ret["language_name"] = ""
     problem: Problem = db.session.query(
-        Problem.can_see_results, Problem.uploader_id).filter(Problem.id == submit.problem_id).one()
+        Problem.can_see_results, Problem.uploader_id, Problem.problem_type).filter(Problem.id == submit.problem_id).one()
 
     ret["managable"] = permission_manager.has_permission(
         session.get("uid", None), "submission.manage")
+    ret["isRemoteSubmission"] = problem.problem_type == "remote_judge"
     return make_response(0, data=ret)
 
 

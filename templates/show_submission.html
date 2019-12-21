@@ -251,7 +251,7 @@
             </tbody>
         </table>
 
-        <div class="ui very tiny red button" v-if="data.managable" v-on:click="rejudge">
+        <div class="ui very tiny red button" v-if="data.managable && !data.isRemoteSubmission" v-on:click="rejudge">
             重测
         </div>
         <div class="ui divider"></div>
