@@ -30,7 +30,7 @@ def remote_judge_submit(data):
                                  "message": "你没有权限这样做"}, room=request.sid)
         return
     problem: Problem = Problem.by_id(data["problemID"])
-    if not problem.public and int(session.get("uid")) != problem.uploader_id and not permission_manager.has_permission(permission_manager, "problem.manage"):
+    if not problem.public and int(session.get("uid")) != problem.uploader_id and not permission_manager.has_permission(session.get("uid"), "problem.manage"):
         emit("server_response", {"ok": False,
                                  "message": "你没有权限使用此题目"}, room=request.sid)
         return
