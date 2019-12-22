@@ -26,7 +26,7 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 #### 部署指南
 1. ```git clone https://gitee.com/yutong_java/HelloJudge2```，下载本项目至本地
 2. 使用pip安装requirements.txt中的依赖包(```pip3 install -r requirements.txt```)。
-3. 将```config_default.py```复制为```config.py```。
+3. 将```config.sample.py```重命名为```config.py```
 4. 修改config.py
 5. 初始化数据库，参考下文
 6. 直接使用```python3.7 run.py```启动或者部署到uWSGI上运行。
@@ -35,6 +35,8 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 1. 运行```python3.7 manage.py db upgrade```
 
 #### 配置文件主要内容
+
+见```config.sample.py```。
 
 ##### SESSION_KEY
 用来加密session的密钥，在第一次运行OJ之前，请填写一个随机滚键盘生成的字符串。
@@ -55,7 +57,11 @@ Flask的调试模式
 ##### REDIS_URI
 Redis的地址(用于评测队列)
 ##### CACHE_URL
-Redis的地址(用于缓存)
+Redis的地址(用于缓存) 
+##### REMOTE_JUDGE_BROKER
+Redis 的地址(用于远程评测队列)
+
+如果不想在同一个评测机实例上同时进行远程评测和本地评测，请务必保证此项不与REDIS_URI相同。
 ##### JUDGERS
 Web端认可的评测机列表。
 
