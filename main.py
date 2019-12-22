@@ -47,7 +47,7 @@ def get_permissions(uid: int):
     return permissions.union(group.permissions)
 
 
-permission_manager = PermissionManager(
+permission_manager: PermissionManager = PermissionManager(
     redis_connection_pool, db, get_permissions)
 
 

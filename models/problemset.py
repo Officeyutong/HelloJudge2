@@ -6,6 +6,8 @@ class ProblemSet(db.Model):
     __tablename__ = "problem_set"
     # id
     id = db.Column(db.Integer, primary_key=True)
+    # 所有者用户ID
+    owner_uid = db.Column(db.Integer, nullable=False)
     # 名称
     name = db.Column(db.String(100), nullable=False, default="新建习题集")
     # 是否私有

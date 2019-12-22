@@ -57,6 +57,9 @@ class Submission(db.Model):
     message = db.Column(db.Text, default="")
     # 评测机名
     judger = db.Column(db.String(20), default="")
+    # 此提交对应的习题集ID
+    problemset_id = db.Column(
+        db.Integer, nullable=True, default=-1, index=True)
 
     def to_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(
