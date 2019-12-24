@@ -111,6 +111,40 @@ def api_problemset_update(id: int, name: str, private: bool, invitationCode: str
 
 @app.route("/api/problemset/get", methods=["POST"])
 def api_problemset_get(id: int):
+    """
+    {
+        "data":{
+            "owner":{
+                "uid":"",
+                "username":"
+            },
+            "name":"qwq",
+            "id":-1,
+            "private":true,
+            "showRanklist":"",
+            "problems":[
+                {
+                    "title":"qwq",
+                    "id":"",
+                    ""
+                }
+            ],
+            "ranklist":[
+                {
+                    "uid":"qwq",
+                    "username":"qwq",
+                    "problems":[
+                        {
+                            "score":1,
+                            "status":"qwq"
+                        }
+                    ]
+                }
+            ],
+            "createTime":"qwq"
+        }
+    }
+    """
     problemset: ProblemSet = db.session.query(
         ProblemSet).filter(ProblemSet.id == id).one_or_none()
     if not problemset:
@@ -121,5 +155,5 @@ def api_problemset_get(id: int):
     else:
         if not permission_manager.has_permission(session.get("uid"), "problemset.use.public"):
             return make_response(-1, message="你没有权限进行此操作")
-    
+
     return make_response(0, message="更新成功")
