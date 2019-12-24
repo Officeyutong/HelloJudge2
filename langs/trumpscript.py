@@ -5,7 +5,7 @@ OUTPUT_FILE = "{filename}.tr"
 # 编译命令行
 COMPILE = "cp {source} {output} {extra}"
 # 运行命令行
-RUN = 'sh -c "/root/TrumpScript/bin/TRUMP {program} {redirect}"'
+RUN = 'sh -c "/root/TrumpScript/bin/TRUMP --Wall --shut-up {program} {redirect}"'
 # 显示名
 DISPLAY = "TrumpScript 3.7"
 # 版本
