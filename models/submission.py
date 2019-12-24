@@ -10,7 +10,7 @@ class Submission(db.Model):
     # 用户ID
     uid = db.Column(db.Integer, index=True)
     # 语言ID
-    language = db.Column(db.String(10))
+    language = db.Column(db.String(20))
     # 题目ID
     problem_id = db.Column(db.Integer)
     # 提交时间
