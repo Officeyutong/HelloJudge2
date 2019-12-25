@@ -167,3 +167,10 @@ def view_remote_judge_add_problem():
 @app.route("/remote_judge/show_problem/<string:id>")
 def view_remote_judge_show_problem(id):
     return render_template("remote_judge/show_problem.html")
+
+
+@app.route("/problemset/list")
+@app.route("/problemset/list/")
+@app.route("/problemset/list/<int:page>")
+def view_problemset_list(page: int = -1):
+    return render_template("problemset/list.html")

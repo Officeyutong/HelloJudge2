@@ -1,0 +1,104 @@
+{%extends "base.html"%}
+{%block title%}
+习题集列表
+{%endblock%}
+{%block body%}
+
+<script>
+    let problemset;
+    $(document).ready(() => {
+        let page = parseInt(window.location.href.split("/").pop());
+        if (isNaN(page)) page = 1;
+        admin = new Vue({
+            el: "#problemset-list",
+            delimiters: ['{[', ']}'],
+            data: {
+                data: null,
+                done: false,
+                currentPage: page,
+                pageCount: 0
+
+            }, methods: {
+                jumpto(page) {
+                    console.log(page);
+                }
+            }, mounted() {
+                axios.post("/api/problemset/list", { page: this.currentPage }).then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+
+                    this.data = data.data;
+                    this.pageCount = this.data.pageCount;
+                    this.done = true;
+                    console.log(this.data.items);
+                });
+            }
+        });
+
+    });
+</script>
+<div id="problemset-list" v-if="done">
+    <div class="ui header">
+        <h1>习题集</h1>
+    </div>
+    <div class="ui segment stacked">
+        <table class="ui very basic celled table">
+            <thead>
+                <tr>
+                    <th>
+                        名称
+                    </th>
+                    <th>
+                        权限
+                    </th>
+
+                    <th>
+                        题目数量
+                    </th>
+                    <th>
+                        创建者
+                    </th>
+                    <th>
+                        创建时间
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in data.items">
+                    <td>
+                        <a :href="'/problemset/show/'+item.id">{[item.id]}. {[item.name]}</a>
+                    </td>
+                    <td v-bind:class="{positive:item.accessible||!item.private,negative:!(item.accessible||!item.private)}">
+                        <div v-if="item.private">
+                            <i class="lock icon" v-if="!item.accessible"></i>
+                            <i class="lock open icon" v-else></i>
+                        </div>
+                        <div v-else>
+                            公开
+                        </div>
+                    </td>
+                    <td>
+                        <div v-if="item.problemCount!=-1">
+                            {[item.problemCount]}
+                        </div>
+                    </td>
+                    <td>
+                        <a :href="'/profile/'+item.owner.uid">{[item.owner.username]}</a>
+                    </td>
+
+                    <td>
+                        {[item.createTime]}
+                    </td>
+
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+    <page-menu v-bind:page-count="pageCount" v-bind:callback="jumpto" v-bind:current-page="currentPage"></page-menu>
+</div>
+
+{%endblock%}

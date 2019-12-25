@@ -13,4 +13,5 @@ from .api_ide import *
 from .api_ranklist import *
 from .api_remote_judge import *
 from .api_common import *
+from .api_problemset import *
 from .websocket import *
