@@ -1,0 +1,117 @@
+{%extends "base.html"%}
+{%block title%}
+- 习题集
+{%endblock%}
+{%block body%}
+
+<script>
+    let problemset;
+    $(document).ready(() => {
+        let id = parseInt(window.location.pathname.split("/").pop());
+        problemset = new Vue({
+            el: "#problemset-list",
+            delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                data: null,
+                done: false,
+                currentID: id,
+            }, methods: {
+
+            }, mounted() {
+                axios.post("/api/problemset/get_public", { id: this.currentID }).then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+
+                    this.data = data.data;
+                    $("title").text(this.data.name + " - {{APP_NAME}}");
+
+                    this.done = true;
+                });
+            }
+        });
+
+    });
+</script>
+<div id="problemset-list" v-if="done">
+    <div class="ui header">
+        <h1>{[data.name]}</h1>
+    </div>
+    <div class="ui two column grid">
+        <div class="ui row">
+            <div class="ui eleven wide column">
+                <div v-if="data.description!=''">
+                    <div class="ui header">
+                        <h3>简介</h3>
+                    </div>
+
+                    <div class="ui segment stacked">
+                        <div v-html="makeHTML(data.description)"></div>
+                    </div>
+                </div>
+                <div class="ui header">
+                    <h3>题目列表</h3>
+                </div>
+                <div class="ui segment stacked">
+                    <div class="ui list">
+                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;" target="_blank"
+                            :href="'/show_problem/'+problem.id">
+                            {[problem.id]} - {[problem.title]}
+                        </a>
+                    </div>
+                </div>
+                <div v-if="data.showRanklist">
+                    <div class="ui header">
+                        <h3>排行榜</h3>
+                    </div>
+                    <div class="ui segment stacked">
+                        <table class="ui very basic celled table">
+                            <thead>
+                                <tr>
+                                    <th v-for="problem in data.problems">
+                                        <a target="_blank" :href="'/show_problem/'+problem.id">
+                                            {[problem.id]}. {[problem.title]}
+                                        </a>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="user in data.ranklist">
+                                    <td v-for="problem in user.problems"
+                                        v-bind:class="{positive:problem.status=='accepted',negative:problem.status=='unaccepted'}">
+                                        <a :href="'/show_submission/'+problem.submissionID">{[problem.score]}</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="ui five wide column">
+                <div class="ui segment stacked">
+                    <table class="ui very basic table">
+                        <tbody>
+                            <tr>
+                                <td>创建时间</td>
+                                <td>{[data.createTime]}</td>
+                            </tr>
+                            <tr>
+                                <td>所有者</td>
+                                <td><a :href="'/profile/'+data.owner.uid" target="_blank">{[data.owner.username]}</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>权限</td>
+                                <td>{[data.private ? "私有" : "公开"]}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

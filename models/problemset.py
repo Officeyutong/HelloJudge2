@@ -21,3 +21,5 @@ class ProblemSet(db.Model):
     problems = db.Column(JsonPickle, nullable=False, default=[])
     # 创建时间
     create_time = db.Column(db.DateTime, nullable=False)
+    # 说明
+    description = db.Column(db.Text, default="")

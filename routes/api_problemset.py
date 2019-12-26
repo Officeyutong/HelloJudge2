@@ -12,7 +12,8 @@ import math
 
 @app.route("/api/problemset/list", methods=["POST"])
 @require_permission(permission_manager, "problemset.use.public")
-def api_problemset_list(page: int = 1):
+@unpack_argument
+def api_problemset_list(page: int):
     """
     {
         "data":{
@@ -39,7 +40,7 @@ def api_problemset_list(page: int = 1):
                                                ProblemSet.owner_uid,
                                                ProblemSet.problems,
                                                ProblemSet.private,
-                                               ProblemSet.create_time)
+                                               ProblemSet.create_time).order_by(ProblemSet.id.desc())
     pages = int(math.ceil(query_object.count()/config.PROBLEMSETS_PER_PAGE))
     query_object = query_object.slice(
         (page-1)*config.PROBLEMSETS_PER_PAGE, (page)*config.PROBLEMSETS_PER_PAGE)
@@ -80,6 +81,7 @@ def api_problemset_create():
 
 
 @app.route("/api/problemset/remove", methods=["POST"])
+@unpack_argument
 def api_problemset_remove(id):
     problemset: ProblemSet = db.session.query(
         ProblemSet).filter(ProblemSet.id == id).one_or_none()
@@ -92,8 +94,8 @@ def api_problemset_remove(id):
     return make_response(0, message="删除成功")
 
 
-
 @app.route("/api/problemset/get", methods=["POST"])
+@unpack_argument
 def api_problemset_get(id: int):
     """
     {
@@ -108,7 +110,8 @@ def api_problemset_get(id: int):
             "invitationCode":"邀请码",
             "showRanklist":"是否显示排行榜",
             "problems":["题目ID"  ],
-            "createTime":"qwq"
+            "createTime":"qwq",
+            "dscription":"说明"
         }
     }
     """
@@ -129,11 +132,13 @@ def api_problemset_get(id: int):
         "invitationCode": problemset.invitation_code,
         "showRanklist": problemset.show_ranklist,
         "problems": problemset.problems,
-        "createTime": str(problemset.create_time)
+        "createTime": str(problemset.create_time),
+        "description": problemset.description
     })
 
 
 @app.route("/api/problemset/update", methods=["POST"])
+@unpack_argument
 def api_problemset_update(data: dict):
     """
     { 
@@ -144,6 +149,7 @@ def api_problemset_update(data: dict):
             "invitationCode":"邀请码",
             "showRanklist":"是否显示排行榜",
             "problems":["题目ID"  ],
+            "description":"说明"
         }
     }
     """
@@ -158,6 +164,7 @@ def api_problemset_update(data: dict):
     problemset.show_ranklist = data["showRanklist"]
     problemset.invitation_code = data["invitationCode"]
     problemset.problems = data["problems"]
+    problemset.description = data["description"]
     for item in data["problems"]:
         query: BaseQuery = db.session.query(Problem.id)
         if query.limit(1).count() == 0:
@@ -166,7 +173,24 @@ def api_problemset_update(data: dict):
     return make_response(0, message="更新成功")
 
 
+@app.route("/api/problemset/join_private_problemset", methods=["POST"])
+@unpack_argument
+def api_problemset_join_private_problemset(id: int, code: str):
+    problemset: ProblemSet = db.session.query(
+        ProblemSet.invitation_code).filter(ProblemSet.id == id).one_or_none()
+    if not problemset:
+        return make_response(-1, message="ID不存在")
+    if code != problemset.invitation_code:
+        return make_response(-1, message="邀请码错误")
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    permission_manager.add_permission(
+        session.get("uid"), f"problemset.use.{id}")
+    return make_response(0, message="ok")
+
+
 @app.route("/api/problemset/get_public", methods=["POST"])
+@unpack_argument
 def api_problemset_get_public(id: int):
     """
     {
@@ -192,12 +216,14 @@ def api_problemset_get_public(id: int):
                     "problems":[
                         {
                             "score":1,
-                            "status":"qwq"
+                            "status":"qwq",
+                            "submissionID":"相关提交ID"
                         }
                     ]
                 }
             ],
-            "createTime":"qwq"
+            "createTime":"qwq",
+            "description":"说明"
         }
     }
     """
@@ -224,9 +250,10 @@ def api_problemset_get_public(id: int):
         "showRanklist": problemset.show_ranklist,
         "createTime": str(problemset.create_time),
         "ranklist": [],
-        "problems": []
+        "problems": [],
+        "description": problemset.description
     }
-    problems = []
+    problems = result["problems"]
     for item in problemset.problems:
         problem: Problem = db.session.query(
             Problem.id, Problem.title).filter(Problem.id == item).one()

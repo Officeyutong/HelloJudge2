@@ -174,3 +174,8 @@ def view_remote_judge_show_problem(id):
 @app.route("/problemset/list/<int:page>")
 def view_problemset_list(page: int = -1):
     return render_template("problemset/list.html")
+
+
+@app.route("/problemset/show/<int:id>")
+def view_problemset_show(id: int = -1):
+    return render_template("problemset/show.html")

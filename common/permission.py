@@ -2,12 +2,20 @@ import redis
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 
+from typing import Callable, Union, List, Set, NoReturn
+
 
 class PermissionManager:
-    def __init__(self, redis_conn_pool: redis.ConnectionPool, db_client: SQLAlchemy, permission_getter):
+    def __init__(self,
+                 redis_conn_pool: redis.ConnectionPool,
+                 db_client: SQLAlchemy,
+                 permission_getter: Callable[[Union[int, str]], Set[str]],
+                 permission_adder: Callable[[Union[int, str], str], None],
+                 ):
         self.pool = redis_conn_pool
         self.db = db_client
         self.permission_getter = permission_getter
+        self.permission_adder = permission_adder
 
     def _load_into_cache(self, uid: int):
         conn = redis.Redis(connection_pool=self.pool)
@@ -19,11 +27,17 @@ class PermissionManager:
         # print(self.permission_getter(uid))
         conn.sadd(set_name, *permissions)
 
+    def add_permission(self, uid: int, perm: str) -> NoReturn:
+        self.permission_adder(uid, perm)
+        # 刷新缓存
+        conn = redis.Redis(connection_pool=self.pool)
+        conn.delete(f"hj2-perm-{uid}")
+
     def has_any_permission(self, uid, *perms) -> bool:
         return any((self.has_permission(uid, x) for x in perms))
 
     def has_permission(self, uid: int, permission: str) -> bool:
-        if not uid:
+        if uid is None:
             return False
         conn = redis.Redis(connection_pool=self.pool)
         set_name = f"hj2-perm-{uid}"

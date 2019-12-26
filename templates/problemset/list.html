@@ -9,18 +9,40 @@
     $(document).ready(() => {
         let page = parseInt(window.location.href.split("/").pop());
         if (isNaN(page)) page = 1;
-        admin = new Vue({
+        page = new Vue({
             el: "#problemset-list",
             delimiters: ['{[', ']}'],
             data: {
                 data: null,
                 done: false,
                 currentPage: page,
-                pageCount: 0
-
+                pageCount: 0,
+                loading: false
             }, methods: {
                 jumpto(page) {
                     console.log(page);
+                    window.location.href = "/problemset/list/" + page;
+                },
+                itemClicked(item) {
+                    if (item.private && !item.accessible) {
+                        $("#invitation-code-modal input").val("");
+                        $("#invitation-code-modal").modal({
+                            onApprove: () => {
+                                let code = $("#invitation-code-modal input").val();
+                                axios.post("/api/problemset/join_private_problemset", { id: item.id, code: code }).then(resp => {
+                                    let data = resp.data;
+                                    if (data.code) {
+                                        showErrorModal(data.message);
+                                        return;
+                                    } else {
+                                        window.open("/problemset/show/" + item.id, "_blank");
+                                    }
+                                });
+                            }
+                        }).modal("show");
+                    } else {
+                        window.open("/problemset/show/" + item.id, "_blank");
+                    }
                 }
             }, mounted() {
                 axios.post("/api/problemset/list", { page: this.currentPage }).then(resp => {
@@ -45,33 +67,37 @@
         <h1>习题集</h1>
     </div>
     <div class="ui segment stacked">
-        <table class="ui very basic celled table">
+        <div class="ui dimmer" v-bind:class="{active:loading}">
+            <div class="ui loader"></div>
+        </div>
+        <table class="ui very basic table">
             <thead>
                 <tr>
-                    <th>
+                    <th class="center aligned">
                         名称
                     </th>
-                    <th>
+                    <th class="center aligned">
                         权限
                     </th>
 
-                    <th>
+                    <th class="center aligned">
                         题目数量
                     </th>
-                    <th>
+                    <th class="center aligned">
                         创建者
                     </th>
-                    <th>
+                    <th class="center aligned">
                         创建时间
                     </th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="item in data.items">
-                    <td>
-                        <a :href="'/problemset/show/'+item.id">{[item.id]}. {[item.name]}</a>
+                    <td class="center aligned">
+                        <a v-on:click="itemClicked(item)" style="cursor: pointer;">{[item.name]}</a>
                     </td>
-                    <td v-bind:class="{positive:item.accessible||!item.private,negative:!(item.accessible||!item.private)}">
+                    <td class="center aligned"
+                        v-bind:class="{positive:item.accessible||!item.private,negative:!(item.accessible||!item.private)}">
                         <div v-if="item.private">
                             <i class="lock icon" v-if="!item.accessible"></i>
                             <i class="lock open icon" v-else></i>
@@ -80,16 +106,16 @@
                             公开
                         </div>
                     </td>
-                    <td>
+                    <td class="center aligned">
                         <div v-if="item.problemCount!=-1">
                             {[item.problemCount]}
                         </div>
                     </td>
-                    <td>
-                        <a :href="'/profile/'+item.owner.uid">{[item.owner.username]}</a>
+                    <td class="center aligned">
+                        <a :href="'/profile/'+item.owner.uid" target="_blank">{[item.owner.username]}</a>
                     </td>
 
-                    <td>
+                    <td class="center aligned">
                         {[item.createTime]}
                     </td>
 
@@ -100,5 +126,26 @@
     </div>
     <page-menu v-bind:page-count="pageCount" v-bind:callback="jumpto" v-bind:current-page="currentPage"></page-menu>
 </div>
+<div class="ui tiny modal" id="invitation-code-modal">
+    <div class="header">
+        请输入此习题集的邀请码
+    </div>
+    <div class="center aligned content">
+        <div class="ui center aligned container">
 
+            <div class="ui input">
+                <input>
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui red button">
+            取消
+        </div>
+        <div class="ui positive right labeled icon button">
+            确认
+            <i class="checkmark icon"></i>
+        </div>
+    </div>
+</div>
 {%endblock%}

@@ -12,6 +12,7 @@ from flask_socketio import SocketIO
 # from concurrent.futures import ThreadPoolExecutor
 from common.permission import PermissionManager
 from redis import ConnectionPool
+from typing import Set, NoReturn
 import os
 import celery
 web_app = flask.Flask("HelloJudge2")
@@ -32,7 +33,7 @@ remote_judge_queue = celery.Celery(
 redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 
-def get_permissions(uid: int):
+def get_permissions(uid: int) -> Set[str]:
     from models import User, PermissionGroup
     user: User = db.session.query(
         User.permissions, User.permission_group).filter(User.id == uid).one()
@@ -47,8 +48,15 @@ def get_permissions(uid: int):
     return permissions.union(group.permissions)
 
 
+def add_permission(uid: int, perm: str) -> NoReturn:
+    from models import User
+    user: User = db.session.query(User).filter(User.id == uid).one()
+    user.permissions = [*user.permissions, perm]
+    db.session.commit()
+
+
 permission_manager: PermissionManager = PermissionManager(
-    redis_connection_pool, db, get_permissions)
+    redis_connection_pool, db, get_permissions, add_permission)
 
 
 def _import_routes():
