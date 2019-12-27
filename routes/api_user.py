@@ -197,15 +197,26 @@ def require_reset_password():
     if query.count() == 0:
         return make_response(-1, message="用户名或邮箱错误")
     user: User = query.one()
-    user.reset_token = str(uuid.uuid1())
+    from common.aes import encrypt
+    from common.datatypes import PasswordResetToken, load_from_json
+    from config import AUTH_PASSWORD, AUTH_TOKEN, RESET_PASSWORD_EXPIRE_SECONDS
+    from time import time
+    from urllib.parse import quote_plus
+    raw_json = PasswordResetToken(
+        user.id, int(time())+RESET_PASSWORD_EXPIRE_SECONDS, AUTH_TOKEN).as_json()
+    print(raw_json)
+    to_send_token = encrypt(config.AUTH_PASSWORD, raw_json)
+    print("raw token", to_send_token)
+    to_send_token = quote_plus(quote_plus(to_send_token))
+    print(to_send_token)
+    # user.reset_token = str(uuid.uuid1())
     from utils import send_mail
     try:
         send_mail(config.RESET_PASSWORD_EMAIL.format(
-            reset_token=user.reset_token), "重置密码", user.email)
+            reset_token=to_send_token), "重置密码", user.email)
     except Exception as ex:
         import traceback
         return make_response(-1, message=traceback.format_exc())
-    db.session.commit()
     return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")
 
 
@@ -216,7 +227,7 @@ def reset_password():
     参数:
         {
             "identifier":"用户识别符",
-            "reset_token":"重置密钥",
+            "reset_token":"重置密钥", //更新为新版的重置密钥
             "password":"新密码"
         }
     返回:
@@ -230,10 +241,19 @@ def reset_password():
     if query.count() == 0:
         return make_response(-1, message="用户名或邮箱错误")
     user: User = query.one()
-    if user.reset_token != request.form["reset_token"]:
-        return make_response(-1, message="Bad reset token")
+    from common.aes import decrypt
+    from common.datatypes import PasswordResetToken, load_from_json
+    from config import AUTH_PASSWORD, AUTH_TOKEN
+    import time
+    token: PasswordResetToken = load_from_json(PasswordResetToken,
+                                               decrypt(AUTH_PASSWORD, request.form["reset_token"]))
+    if token.token != AUTH_TOKEN:
+        return make_response(-1, message="非法重置密钥")
+    if token.uid != user.id:
+        return make_response(-1, message="用户ID错误")
+    if time.time() >= token.expire_after:
+        return make_response(-1, message="请求已过期，请重新申请")
     user.password = request.form["password"]
-    user.reset_token = ""
     # 之后强制所有客户端下线重新登录
     import time
     user.force_logout_before = int(time.time())

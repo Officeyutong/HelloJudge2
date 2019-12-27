@@ -39,3 +39,4 @@ from .common import *
 from .display import *
 from .judge import *
 from .remote_judge import *
+from .auth import *

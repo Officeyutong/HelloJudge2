@@ -12,3 +12,4 @@ pyyaml
 requests
 eventlet
 codeforces-rating
+pycryptodome

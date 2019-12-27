@@ -28,8 +28,10 @@
 
                     this.data = data.data;
                     $("title").text(this.data.name + " - {{APP_NAME}}");
-
                     this.done = true;
+                });
+                this.$nextTick(() => {
+                    $("#ranklist-table-head").sticky();
                 });
             }
         });
@@ -69,7 +71,7 @@
                     </div>
                     <div class="ui segment stacked">
                         <table class="ui very basic celled table">
-                            <thead>
+                            <thead id="ranklist-table-head">
                                 <tr>
                                     <th v-for="problem in data.problems">
                                         <a target="_blank" :href="'/show_problem/'+problem.id">
