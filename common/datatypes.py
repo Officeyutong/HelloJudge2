@@ -16,3 +16,12 @@ class PasswordResetToken(TokenBase):
     uid: int
     expire_after: int
     token: str
+
+
+@dataclass
+class RegisterToken(TokenBase):
+    username: str
+    expire_after: int
+    password: str
+    email: str
+    token: str

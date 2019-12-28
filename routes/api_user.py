@@ -65,8 +65,8 @@ def login():
     user: User = query.one()
     if user.banned:
         return make_response(-1, message="此账户已被封禁.")
-    if user.auth_token != "":
-        return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
+    # if user.auth_token != "":
+    #     return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
     session["uid"] = query.one().id
     import time
     session["login_time"] = str(int(time.time()))
@@ -77,17 +77,39 @@ def login():
 @app.route("/api/auth_email", methods=["POST"])
 def auth_email():
     """
-    验证用户邮箱
+    验证用户邮箱 + 创建用户
     username: 用户名
     token: 验证密钥
     """
-    user: User = db.session.query(User).filter(and_(
-        User.username == request.form["username"], User.auth_token == request.form["token"])).one_or_none()
-    if not user:
-        return make_response(-1, message="用户名或token错误")
-    user.auth_token = ""
+    from config import AUTH_PASSWORD, AUTH_TOKEN, REGISTER_EMAIL_AUTH_EXPIRE_SECONDS
+    from common.aes import encrypt, decrypt
+    from common.datatypes import load_from_json, RegisterToken
+    data: RegisterToken = load_from_json(
+        RegisterToken, decrypt(AUTH_PASSWORD, request.form["token"]))
+    import time
+    import datetime
+    if time.time() > data.expire_after:
+        return make_response(-1, message="此请求已过期")
+    if data.token != AUTH_TOKEN:
+        return make_response(-1, message="token错误")
+    if request.form["username"] != data.username:
+        return make_response(-1, message="用户名错误")
+    # 一切完成,创建用户
+    user = User(
+        username=data.username,
+        password=data.password,
+        email=data.email,
+        register_time=datetime.datetime.now()
+    )
+    db.session.add(user)
+
     db.session.commit()
-    return make_response(0, message="ok")
+    session.permanment = True
+    session["uid"] = user.id
+    session["login_time"] = str(int(time.time()))
+    return make_response(0, message="ok", data={
+        "uid": user.id
+    })
 
 
 @app.route("/api/register", methods=["POST"])
@@ -110,46 +132,65 @@ def register():
     import utils
     if re.match(config.USERNAME_REGEX, request.form["username"]) is None:
         return make_response(-1, message="用户名必须满足以下正则表达式:"+config.USERNAME_REGEX)
-    if config.REQUIRE_REGISTER_AUTH:
-        user = db.session.query(User).filter(
-            User.username == request.form["username"])
-        if user.count():
-            user: User = user.one()
-            next_query = db.session.query(User).filter(
-                User.email == request.form["email"])
-            if next_query.count() != 0 and next_query.one().username != request.form["username"]:
-                return make_response(-1, message="此邮箱已被使用")
-            if user.auth_token != "":
-                import uuid
-                user.auth_token = str(uuid.uuid1())
-                send_mail(config.REGISTER_AUTH_EMAIL.format(
-                    auth_token=user.auth_token), "验证邮件", request.form["email"])
-                user.email = request.form["email"]
-                db.session.commit()
-                return make_response(-1, message=f"验证邮件已经发送到您的新邮箱{request.form['email']}")
+    # if config.REQUIRE_REGISTER_AUTH:
+    #     user = db.session.query(User).filter(
+    #         User.username == request.form["username"])
+    #     if user.count():
+    #         user: User = user.one()
+    #         next_query = db.session.query(User).filter(
+    #             User.email == request.form["email"])
+    #         if next_query.count() != 0 and next_query.one().username != request.form["username"]:
+    #             return make_response(-1, message="此邮箱已被使用")
+    #         if user.auth_token != "":
+    #             import uuid
+    #             user.auth_token = str(uuid.uuid1())
+    #             send_mail(config.REGISTER_AUTH_EMAIL.format(
+    #                 auth_token=user.auth_token), "验证邮件", request.form["email"])
+    #             user.email = request.form["email"]
+    #             db.session.commit()
+    #             return make_response(-1, message=f"验证邮件已经发送到您的新邮箱{request.form['email']}")
 
     query = db.session.query(User).filter(or_(
         User.email == request.form["email"], User.username == request.form["username"]))
     if query.count():
         return make_response(-1, message="此用户名或邮箱已被用于注册账号")
     from datetime import datetime
-    user = User(username=request.form["username"],
-                email=request.form["email"], password=request.form["password"], register_time=datetime.now())
-    import uuid
+    # import uuid
     if config.REQUIRE_REGISTER_AUTH:
-        user.auth_token = str(uuid.uuid1())
+        # 需要邮箱验证
+        from config import AUTH_PASSWORD, AUTH_TOKEN, REGISTER_EMAIL_AUTH_EXPIRE_SECONDS
+        from common.aes import encrypt, decrypt
+        from common.datatypes import load_from_json, RegisterToken
+        from urllib.parse import quote_plus
+        import time
+        data = RegisterToken(
+            username=request.form["username"],
+            email=request.form["email"],
+            password=request.form["password"],
+            expire_after=int(time.time())+REGISTER_EMAIL_AUTH_EXPIRE_SECONDS,
+            token=AUTH_TOKEN
+        )
+        encoded_token = encrypt(
+            AUTH_PASSWORD, data.as_json())
+        # user.auth_token = str(uuid.uuid1())
+        print("token", encoded_token)
         send_mail(config.REGISTER_AUTH_EMAIL.format(
-            auth_token=user.auth_token), "验证邮件", request.form["email"])
+            auth_token=quote_plus(quote_plus(encoded_token))), "验证邮件", request.form["email"])
+        # db.session.add(user)
+        # db.session.commit()
+        return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
+    else:
+        # 不需要验证
+        user = User(username=request.form["username"],
+                    email=request.form["email"], password=request.form["password"], register_time=datetime.now())
+
         db.session.add(user)
         db.session.commit()
-        return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
-    db.session.add(user)
-    db.session.commit()
-    session.permanment = True
-    session["uid"] = user.id
-    import time
-    session["login_time"] = str(int(time.time()))
-    return make_response(0)
+        session.permanment = True
+        session["uid"] = user.id
+        import time
+        session["login_time"] = str(int(time.time()))
+        return make_response(0)
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -204,11 +245,11 @@ def require_reset_password():
     from urllib.parse import quote_plus
     raw_json = PasswordResetToken(
         user.id, int(time())+RESET_PASSWORD_EXPIRE_SECONDS, AUTH_TOKEN).as_json()
-    print(raw_json)
+    # print(raw_json)
     to_send_token = encrypt(config.AUTH_PASSWORD, raw_json)
-    print("raw token", to_send_token)
+    # print("raw token", to_send_token)
     to_send_token = quote_plus(quote_plus(to_send_token))
-    print(to_send_token)
+    # print(to_send_token)
     # user.reset_token = str(uuid.uuid1())
     from utils import send_mail
     try:
@@ -261,21 +302,21 @@ def reset_password():
     return make_response(0, message="密码重置完成，请使用新密码登录。")
 
 
-@app.route("/api/user/pass_email_auth", methods=["POST"])
-def user_pass_email_auth():
-    """
-    强行让某用户通过邮箱验证
-    uid:用户ID
-    """
-    if not session.get("uid"):
-        return make_response(-1, message="请先登录")
-    operator: User = User.by_id(session.get("uid"))
-    if not permission_manager.has_permission(operator.id, "user.manage"):
-        return make_response(-1, message="你没有权限进行此操作")
-    user: User = User.by_id(request.get_json()["uid"])
-    user.auth_token = ""
-    db.session.commit()
-    return make_response(0, message="操作完成")
+# @app.route("/api/user/pass_email_auth", methods=["POST"])
+# def user_pass_email_auth():
+#     """
+#     强行让某用户通过邮箱验证
+#     uid:用户ID
+#     """
+#     if not session.get("uid"):
+#         return make_response(-1, message="请先登录")
+#     operator: User = User.by_id(session.get("uid"))
+#     if not permission_manager.has_permission(operator.id, "user.manage"):
+#         return make_response(-1, message="你没有权限进行此操作")
+#     user: User = User.by_id(request.get_json()["uid"])
+#     user.auth_token = ""
+#     db.session.commit()
+#     return make_response(0, message="操作完成")
 
 
 @app.route("/api/get_user_profile", methods=["POST"])
@@ -315,8 +356,8 @@ def get_user_profile():
     user: User = user.one()
     ret = user.as_dict()
     del ret["password"]
-    del ret["reset_token"]
-    del ret["auth_token"]
+    # del ret["reset_token"]
+    # del ret["auth_token"]
     problems = db.session.query(Submission.problem_id).filter(and_(Submission.uid == user.id, Submission.status == "accepted")
                                                               ).distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
@@ -334,7 +375,7 @@ def get_user_profile():
             contest_name = "比赛不存在"
         # print(contest_name)
         item["contest_name"] = contest_name.name
-    ret["hasEmailAuth"] = user.auth_token == ""
+    # ret["hasEmailAuth"] = user.auth_token == ""
     group: PermissionGroup = db.session.query(PermissionGroup).filter(
         PermissionGroup.id == user.permission_group).one()
     ret["group_name"] = group.name

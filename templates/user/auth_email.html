@@ -7,10 +7,11 @@
 
     let emailAuth;
     $(document).ready(() => {
-        let token = window.location.href.split("/").pop();
+        let token = decodeURIComponent(decodeURIComponent(window.location.href.split("/").pop()));
         emailAuth = new Vue({
             el: "#email-auth",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 errorMessage: "",
                 username: "",
@@ -34,7 +35,7 @@
                         ctx = JSON.parse(ctx);
                         console.log(ctx);
                         if (ctx.code == 0) {
-                            window.location.href = "/login";
+                            window.location.href = "/";
                         } else {
                             // console.log(this);
                             emailAuth.errorMessage = ctx.message;

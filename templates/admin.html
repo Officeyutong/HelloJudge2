@@ -71,27 +71,28 @@
                         }
                         window.location.reload();
                     });
-                }, removeUnauthorizedAccounts() {
-                    $("#remove-users-modal").modal({
-                        closable: false,
-                        onApprove: () => {
-                            this.userTab.loading = true;
-                            this.userTab.successMessage = this.userTab.errorMessage = "";
-                            axios.post("/api/admin/remove_unauthorized_accounts").then(resp => {
-                                this.userTab.loading = false;
-                                let data = resp.data;
-                                if (data.code) {
-                                    this.userTab.errorMessage = data.message;
-                                    return;
-                                } else {
-                                    this.userTab.successMessage = data.message;
-                                }
-                            });
-                        }
-                    }).modal("show");
-                    // this.loading = true;
-
                 }
+                // , removeUnauthorizedAccounts() {
+                //     $("#remove-users-modal").modal({
+                //         closable: false,
+                //         onApprove: () => {
+                //             this.userTab.loading = true;
+                //             this.userTab.successMessage = this.userTab.errorMessage = "";
+                //             axios.post("/api/admin/remove_unauthorized_accounts").then(resp => {
+                //                 this.userTab.loading = false;
+                //                 let data = resp.data;
+                //                 if (data.code) {
+                //                     this.userTab.errorMessage = data.message;
+                //                     return;
+                //                 } else {
+                //                     this.userTab.successMessage = data.message;
+                //                 }
+                //             });
+                //         }
+                //     }).modal("show");
+                //     // this.loading = true;
+
+                // }
             }, mounted() {
                 axios.all([
                     axios.post("/api/admin/show"), axios.post("/api/admin/rating/rated_contests"), axios.post("/api/admin/rating/permission_groups/get")
@@ -292,7 +293,7 @@
                 {[userTab.errorMessage]}
             </div>
         </div>
-        <div class="ui header">
+        <!-- <div class="ui header">
             <h3>未邮箱认证用户</h3>
         </div>
         <div>
@@ -300,7 +301,7 @@
         </div>
         <div class="ui red button" v-on:click="removeUnauthorizedAccounts" style="margin-top: 30px;">
             删除它们
-        </div>
+        </div> -->
     </div>
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">
