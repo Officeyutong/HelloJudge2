@@ -464,14 +464,60 @@ def update_profile():
     client = Redis(connection_pool=redis_connection_pool)
     client.delete(f"hj2-perm-{user.id}")
     user.username = data["username"]
-    user.email = data["email"]
+
     user.description = data["description"]
     if data["changePassword"]:
         user.password = data["newPassword"]
         import time
         user.force_logout_before = int(time.time())
     if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
-        return make_response(-1, message="你没有权限封禁\解封此用户")
+        return make_response(-1, message="你没有权限封禁/解封此用户")
     user.banned = data["banned"]
+    if user.email != data["email"]:
+        if config.REGISTER_AUTH_EMAIL and not permission_manager.has_permission(session.get("uid"), "user.manage"):
+            db.session.commit()
+            from common.aes import encrypt
+            from config import AUTH_PASSWORD, AUTH_TOKEN, CHANGE_EMAIL_EXPIRE_SECONDS
+            from urllib.parse import quote_plus
+            from common.datatypes import EmailChangeToken
+            import time
+            data = EmailChangeToken(uid=user.id,
+                                    new_email=data["email"],
+                                    token=AUTH_TOKEN,
+                                    expire_after=int(
+                                        time.time())+CHANGE_EMAIL_EXPIRE_SECONDS
+                                    )
+            print("raw", encrypt(AUTH_PASSWORD, data.as_json()))
+            encoded_data = quote_plus(quote_plus(
+                encrypt(AUTH_PASSWORD, data.as_json())))
+            send_mail(config.CHANGE_EMAIL_AUTH_EMAIL.format(
+                change_token=encoded_data), "更改邮箱", data.new_email)
+            print("encoded", encoded_data)
+            return make_response(0, message="数据已经更改成功。请前往新邮箱中点击确认。")
+        else:
+            user.email = data["email"]
+
     db.session.commit()
+    # 检查邮箱相关
     return make_response(0, message="操作完成")
+
+
+@app.route("/api/change_email/<string:token>", methods=["POST", "GET"])
+def api_user_change_email(token: str):
+    import time
+    from common.aes import decrypt
+    from common.datatypes import EmailChangeToken, load_from_json
+    from urllib.parse import quote_plus, unquote_plus, unquote
+    token = unquote(unquote(token))
+    print("decoded", token)
+    import flask
+    data: EmailChangeToken = load_from_json(EmailChangeToken, decrypt(
+        config.AUTH_PASSWORD, token))
+    if time.time() > data.expire_after:
+        return flask.redirect("/error?message="+quote_plus("此请求已过期"))
+    if data.token != config.AUTH_TOKEN:
+        return flask.redirect("/error?message="+quote_plus("非法请求"))
+    user: User = db.session.query(User).filter(User.id == data.uid).one()
+    user.email = data.new_email
+    db.session.commit()
+    return flask.redirect("/success?message="+quote_plus("更改成功"))

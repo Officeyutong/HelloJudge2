@@ -25,3 +25,11 @@ class RegisterToken(TokenBase):
     password: str
     email: str
     token: str
+
+
+@dataclass
+class EmailChangeToken(TokenBase):
+    uid: int
+    new_email: str
+    token: str
+    expire_after: int

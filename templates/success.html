@@ -1,0 +1,23 @@
+{%extends "base.html"%}
+{%block title%}
+操作完成
+{%endblock%}
+{%block body%}
+<script>
+    $(document).ready(() => {
+        let args = getRequest();
+        console.log(args);
+        $("#message").text(args.message);
+    });
+</script>
+<div class="ui container">
+    <div class="ui segment stacked">
+        <div class="ui success message">
+            <div class="ui header">
+                成功
+            </div>
+            <div class="message" id="message"></div>
+        </div>
+    </div>
+</div>
+{%endblock%}

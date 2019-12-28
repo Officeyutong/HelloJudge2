@@ -179,3 +179,13 @@ def view_problemset_list(page: int = -1):
 @app.route("/problemset/show/<int:id>")
 def view_problemset_show(id: int = -1):
     return render_template("problemset/show.html")
+
+
+@app.route("/error")
+def view_error_page():
+    return render_template("error.html")
+
+
+@app.route("/success")
+def view_success_page():
+    return render_template("success.html")

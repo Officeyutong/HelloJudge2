@@ -13,6 +13,10 @@ RESET_PASSWORD_EMAIL = "请前往 http://[此处替换为网站地址]/reset_pas
 # 注册时需要验证邮箱
 REQUIRE_REGISTER_AUTH = False
 REGISTER_AUTH_EMAIL = "请前往 http://[此处替换为网站地址]/auth_email/{auth_token} 激活账号。此链接仅有效一次。"
+# 更改邮箱时的验证邮件
+CHANGE_EMAIL_AUTH_EMAIL = """
+请前往 http://[此处替换为网站地址]/api/change_email/{change_token} 更改邮箱。
+"""
 
 # 用以加密验证密钥的密码
 # 长度必须得16,24,或者32bytes
@@ -26,3 +30,6 @@ RESET_PASSWORD_EXPIRE_SECONDS = 30*60
 
 # 注册验证邮箱过期时间 秒
 REGISTER_EMAIL_AUTH_EXPIRE_SECONDS = 30*60
+
+# 更改邮箱的过期时间 秒
+CHANGE_EMAIL_EXPIRE_SECONDS = 30*60
