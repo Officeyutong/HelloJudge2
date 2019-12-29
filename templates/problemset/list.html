@@ -19,6 +19,17 @@
                 pageCount: 0,
                 loading: false
             }, methods: {
+                create() {
+                    axios.post("/api/problemset/create").then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        window.open("/problemset/show/" + data.data.id, "_blank");
+                        // window.location.href = "/problemset/show/" + data.id;
+                    });
+                },
                 jumpto(page) {
                     console.log(page);
                     window.location.href = "/problemset/list/" + page;
@@ -70,6 +81,10 @@
         <div class="ui dimmer" v-bind:class="{active:loading}">
             <div class="ui loader"></div>
         </div>
+        <div class="ui right aligned container">
+            <div class="ui green button" v-on:click="create">创建</div>
+        </div>
+        <div class="ui divider"></div>
         <table class="ui very basic table">
             <thead>
                 <tr>

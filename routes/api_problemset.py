@@ -71,7 +71,7 @@ def api_problemset_list(page: int):
 @app.route("/api/problemset/create", methods=["POST"])
 @require_permission(permission_manager, "problemset.create")
 def api_problemset_create():
-    problemset: ProblemSet = ProblemSet(owner_id=int(
+    problemset: ProblemSet = ProblemSet(owner_uid=int(
         session.get("uid")), create_time=datetime.now())
     db.session.add(problemset)
     db.session.commit()

@@ -17,7 +17,20 @@
                 done: false,
                 currentID: id,
             }, methods: {
-
+                remove() {
+                    $("#remove-warning-modal").modal({
+                        onApprove: () => {
+                            axios.post("/api/problemset/remove", { id: this.data.id }).then(resp => {
+                                let data = resp.data;
+                                if (data.code) {
+                                    showErrorModal(data.message);
+                                    return;
+                                }
+                                window.location.href = "/problemset/list/1"
+                            });
+                        }
+                    }).modal("show");
+                }
             }, mounted() {
                 axios.post("/api/problemset/get_public", { id: this.currentID }).then(resp => {
                     let data = resp.data;
@@ -59,8 +72,8 @@
                 </div>
                 <div class="ui segment stacked">
                     <div class="ui list">
-                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;font-size: large;" target="_blank"
-                            :href="'/show_problem/'+problem.id">
+                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;font-size: large;"
+                            target="_blank" :href="'/show_problem/'+problem.id">
                             {[problem.id]} - {[problem.title]}
                         </a>
                     </div>
@@ -111,11 +124,35 @@
                             </tr>
                         </tbody>
                     </table>
-                    <a class="ui green button" v-if="data.managable" :href="'/problemset/edit/'+data.id" target="_blank">
+                    <a class="ui green button" v-if="data.managable" :href="'/problemset/edit/'+data.id"
+                        target="_blank">
                         编辑
+                    </a>
+                    <a class="ui red button" v-if="data.managable" v-on:click="remove">
+                        删除
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+<div class="ui modal" id="remove-warning-modal">
+    <div class="ui header">
+        警告
+    </div>
+    <div class="content">
+        <div class="ui warning message">
+
+            <div class="ui content">
+                您确定要删除此习题集吗?</div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">
+            确定
+        </div>
+        <div class="ui blue cancel button">
+            取消
         </div>
     </div>
 </div>
