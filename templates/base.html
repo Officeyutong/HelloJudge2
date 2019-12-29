@@ -249,7 +249,13 @@
                 }, mounted() {
                     this.$nextTick(() => {
                         // $(".dropdown").dropdown();
-                        $("#discussion-item").popup();
+                        // $("#discussion-item").popup();
+                        // $("#user-button").popup({
+                        //     popup: $("#user-popup-content"),
+                        //     position: "right center",
+                        //     inline: true
+                        // });
+
                     });
                 }
             })
@@ -301,6 +307,12 @@
             <i class="keyboard outline icon"></i>
             讨论
         </div>
+        <!-- <div class="item" id="user-button" data-position="right center">
+            qwqqwq
+        </div>
+        <div id="user-popup-content">
+            qwqqwq
+        </div> -->
         <!-- <a class="item" target="_blank" href="/discussions/discussion/1" v-if="show_discussion_detail">全部讨论</a> -->
         <a class="item" target="_blank" href="/discussions/discussion.global/1" v-if="show_discussion_detail">全局讨论</a>
         <a class="item" target="_blank" href="/discussions/discussion.problem.global/1"
@@ -339,7 +351,8 @@
     <div class="pusher" style="background-color: rgb(236, 233, 233);">
         <div class="ui" style="margin-top:50px;margin-left:50px;top:50px;position: fixed">
             <button class="circular ui huge green floating icon button"
-                onclick="$('#main-sidebar').sidebar('toggle')"><i class="icon plus"></i></button>
+                onclick="$('#main-sidebar') .sidebar('setting', 'transition', 'overlay').sidebar('toggle')"><i
+                    class="icon plus"></i></button>
         </div>
         <div class="ui main container" style="margin-top:70px;margin-bottom:70px">
             {%block body%}{%endblock%}
