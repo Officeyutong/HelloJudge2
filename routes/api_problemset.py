@@ -133,7 +133,9 @@ def api_problemset_get(id: int):
         "showRanklist": problemset.show_ranklist,
         "problems": problemset.problems,
         "createTime": str(problemset.create_time),
-        "description": problemset.description
+        "description": problemset.description,
+        "name": problemset.name,
+        "id": problemset.id
     })
 
 
@@ -149,7 +151,8 @@ def api_problemset_update(data: dict):
             "invitationCode":"邀请码",
             "showRanklist":"是否显示排行榜",
             "problems":["题目ID"  ],
-            "description":"说明"
+            "description":"说明",
+
         }
     }
     """
@@ -166,7 +169,10 @@ def api_problemset_update(data: dict):
     problemset.problems = data["problems"]
     problemset.description = data["description"]
     for item in data["problems"]:
-        query: BaseQuery = db.session.query(Problem.id)
+        query: BaseQuery = db.session.query(
+            Problem.id).filter(Problem.id == item)
+        print("querying", item)
+        print(query.limit(1).count())
         if query.limit(1).count() == 0:
             return make_response(-1, message=f"题目 {item} 非法")
     db.session.commit()
@@ -223,7 +229,8 @@ def api_problemset_get_public(id: int):
                 }
             ],
             "createTime":"qwq",
-            "description":"说明"
+            "description":"说明",
+            "managable":"是否可管理"
         }
     }
     """
@@ -251,7 +258,8 @@ def api_problemset_get_public(id: int):
         "createTime": str(problemset.create_time),
         "ranklist": [],
         "problems": [],
-        "description": problemset.description
+        "description": problemset.description,
+        "managable": permission_manager.has_permission(session.get("uid"), "problemset.manage") or int(session.get("uid")) == problemset.owner_uid
     }
     problems = result["problems"]
     for item in problemset.problems:

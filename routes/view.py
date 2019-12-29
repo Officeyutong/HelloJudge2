@@ -180,6 +180,10 @@ def view_problemset_list(page: int = -1):
 def view_problemset_show(id: int = -1):
     return render_template("problemset/show.html")
 
+@app.route("/problemset/edit/<int:id>")
+def view_problemset_edit(id: int = -1):
+    return render_template("problemset/edit.html")
+
 
 @app.route("/error")
 def view_error_page():

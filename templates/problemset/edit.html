@@ -1,0 +1,159 @@
+{%extends "base.html"%}
+{%block title%}
+- 习题集
+{%endblock%}
+{%block body%}
+
+<script>
+    let problemset;
+    $(document).ready(() => {
+        let id = parseInt(window.location.pathname.split("/").pop());
+        problemset = new Vue({
+            el: "#problemset-list",
+            delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                successMessage: "",
+                errorMessage: "",
+                data: null,
+                done: false,
+                currentID: id,
+                loading: false
+            }, methods: {
+                submit() {
+                    this.loading = true;
+                    this.successMessage = this.errorMessage = "";
+                    axios.post("/api/problemset/update", {
+                        data: {
+                            name: this.data.name,
+                            id: this.data.id,
+                            private: this.data.private,
+                            invitationCode: this.data.invitationCode,
+                            showRanklist: this.data.showRanklist,
+                            problems: this.data.problems,
+                            description: this.data.description
+                        }
+                    }).then(resp => {
+                        this.loading = false;
+                        let data = resp.data;
+                        if (data.code) {
+                            this.errorMessage = data.message;
+                            return;
+                        }
+                        this.successMessage = data.message;
+                    });
+                }
+            }, mounted() {
+                axios.post("/api/problemset/get", { id: this.currentID }).then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+
+                    this.data = data.data;
+                    $("title").text(this.data.name + " - 编辑 - {{APP_NAME}}");
+                    this.done = true;
+                });
+            }
+        });
+
+    });
+</script>
+<div id="problemset-list" v-if="done">
+    <div class="ui header">
+        <h1>{[data.name]}</h1>
+    </div>
+    <div class="ui segment stacked">
+        <div class="ui form" v-bind:class="{success:successMessage!='',error:errorMessage!=''}">
+            <div class="ui field">
+                <label>创建者</label>
+                <a :href="'/profile/'+data.owner.uid" target="_blank">{[data.owner.username]}</a>
+            </div>
+            <div class="ui field">
+                <label>名称</label>
+                <div class="ui input">
+                    <input v-model="data.name">
+                </div>
+            </div>
+            <div class="ui field">
+                <div class="ui toggle checkbox">
+                    <input type="checkbox" v-bind:checked="data.showRanklist?true:null"
+                        v-on:click="data.showRanklist=!data.showRanklist">
+                    <label>显示排行榜</label>
+                </div>
+            </div>
+
+            <div class="ui field">
+                <div class="ui toggle checkbox">
+                    <input type="checkbox" v-bind:checked="data.private" v-on:click="data.private=!data.private">
+                    <label>私有</label>
+                </div>
+            </div>
+            <div class="ui field">
+                <label>邀请码</label>
+                <div class="ui input" v-bind:class="{disabled:!data.private}">
+                    <input type="text" v-model="data.invitationCode">
+                </div>
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui field">
+                <label>说明</label>
+                <textarea v-model="data.description"></textarea>
+            </div>
+            <div class="ui field">
+                <label>题目列表</label>
+                <table class="ui very basic table">
+                    <tbody>
+                        <tr v-for="id,i in data.problems">
+                            <td>
+                                <div class="ui input">
+                                    <input type="text" v-model.number="data.problems[i]">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="ui icon buttons">
+                                    <div class="ui blue button" v-bind:class="{disabled:i==0}"
+                                        v-on:click="data.problems.splice(i-1,0,data.problems.splice(i,1)[0])">
+                                        <i class="angle up icon"></i>
+                                    </div>
+                                    <div class="ui blue button" v-bind:class="{disabled:i==data.problems.length-1}"
+                                        v-on:click="data.problems.splice(i+1,0,data.problems.splice(i,1)[0])">
+                                        <i class="angle down icon"></i>
+                                    </div>
+                                    <div class="ui green button" v-on:click="data.problems.splice(i,1)">
+                                        <i class="times icon"></i>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="ui small green button" v-on:click="data.problems.push(1)">
+                                    添加
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui success message">
+                <div class="ui header">
+                    成功
+                </div>
+                <div>{[successMessage]}</div>
+            </div>
+            <div class="ui error message">
+                <div class="ui header">
+                    发生错误
+                </div>
+                <div>{[errorMessage]}</div>
+            </div>
+            <div class="ui green submit button" v-bind:class="{loading:loading}" v-on:click="submit">
+                提交
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

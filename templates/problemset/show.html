@@ -59,7 +59,7 @@
                 </div>
                 <div class="ui segment stacked">
                     <div class="ui list">
-                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;" target="_blank"
+                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;font-size: large;" target="_blank"
                             :href="'/show_problem/'+problem.id">
                             {[problem.id]} - {[problem.title]}
                         </a>
@@ -111,6 +111,9 @@
                             </tr>
                         </tbody>
                     </table>
+                    <a class="ui green button" v-if="data.managable" :href="'/problemset/edit/'+data.id" target="_blank">
+                        编辑
+                    </a>
                 </div>
             </div>
         </div>
