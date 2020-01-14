@@ -419,5 +419,6 @@ def remote_judge_update_accounts(accounts: List[Dict[str, str]]):
         current_account.oj = item['oj']
         current_account.password = item['password']
         current_account.username = item['username']
+        current_account.session = "{}"
     db.session.commit()
     return make_response(0, message="更新完成")
