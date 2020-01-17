@@ -36,26 +36,34 @@
     <div class="ui header ">
         <h1>{[data.name]} - 排行榜</h1>
     </div>
-    <div class="ui segment stacked">
-        <table class="ui very basic celled table">
-            <thead>
-                <tr>
+    <div class="ui segment stacked" style="overflow-x: scroll;max-height: 1000px;">
+        <table class="ui very basic  table">
+            <thead >
+                <tr class="ui sticky">
                     <th></th>
                     <th>用户名</th>
-                    <th v-for="problem in data.problems" class="center aligned">
+                    <th class="center aligned">
+                        总分
+                    </th>
+                    <th v-for="problem in data.problems" class="center aligned" style="min-width: 100px;">
                         <a :href="'/contest/'+data.contest_id+'/problem/'+problem.id">{[problem.id]}.
                             {[problem.name]}</a>
                         <div><span style="color:green">{[problem.accepted_submit]}</span>/{[problem.total_submit]}</div>
                     </th>
-                    <th class="center aligned">
-                        总分
-                    </th>
+                    
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="line,i in data.ranklist">
                     <td>#{[i+1]}</td>
                     <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
+                    <td class="center aligned">
+                        <span v-if="data.using_penalty==false">{[line.total.score]}</span>
+                        <span v-else>
+                            <div style="color:green">{[line.total.ac_count]}</div>
+                            <div style="color:red">{[line.total.penalty]}</div>
+                        </span>
+                    </td>
                     <td class="center aligned" v-for="item in line.scores"
                         v-bind:class="{positive:item.status=='accepted',negative:item.status=='unaccepted'}">
                         <div v-if="item.submit_id!=-1">
@@ -71,13 +79,7 @@
                             </a>
                         </div>
                     </td>
-                    <td class="center aligned">
-                        <span v-if="data.using_penalty==false">{[line.total.score]}</span>
-                        <span v-else>
-                            <div style="color:green">{[line.total.ac_count]}</div>
-                            <div style="color:red">{[line.total.penalty]}</div>
-                        </span>
-                    </td>
+
                 </tr>
             </tbody>
         </table>

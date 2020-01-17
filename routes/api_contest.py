@@ -277,6 +277,10 @@ def contest_update(contestID: int, data: dict):
         return make_response(-1, message="开始时间必须早于结束时间")
     # print(contest.start_time, contest.end_time)
     db.session.commit()
+    import redis
+    import main
+    redis.Redis(connection_pool=main.redis_connection_pool).delete(
+        f"hj2-contest-ranklist-{contest.id}")
     return make_response(0, message="完成")
 
 
