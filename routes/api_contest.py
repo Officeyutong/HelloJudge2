@@ -513,7 +513,7 @@ def contest_ranklist(contestID):
         ranklist_data = get_contest_rank_list(contest)
         client.set(key, JSONEncoder().encode(ranklist_data),
                    ex=config.RANKLIST_UPDATE_INTEVAL)
-        print(ranklist_data)
+        # print(ranklist_data)
     else:
         ranklist_data = JSONDecoder().decode(client.get(key).decode())
     return make_response(0, data=ranklist_data)
