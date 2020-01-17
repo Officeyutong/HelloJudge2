@@ -126,7 +126,6 @@ def get_submission_info():
             "uid":-1,//用户ID
             "language":"qwq",//语言ID
             "language_name":"语言名",
-            "problem_id":-1,//题目ID
             "submit_time":"提交时间",
             "public":"是否公开",
             "contest_id":"比赛ID",
@@ -144,7 +143,15 @@ def get_submission_info():
             "time_cost":"时间开销",
             "memory_cost":"内存开销",
             "extra_compile_parameter":"附加编译参数",
-            "isRemoteSubmission":"是否为远程提交"
+            "isRemoteSubmission":"是否为远程提交",
+            "problem":{
+                "id":"题目ID",
+                "title":"题目名",
+            },
+            "user":{
+                "uid":"提交者ID",
+                "username":"提交者用户名"
+            }
         }
     }
     """
@@ -163,6 +170,9 @@ def get_submission_info():
 
     ret["score"] = submit.get_total_score()
     ret["submit_time"] = str(ret["submit_time"])
+    problem: Problem = db.session.query(
+        Problem).filter(Problem.id == submit.problem_id).one()
+
     if submit.contest_id != -1:
         contest: Contest = Contest.by_id(submit.contest_id)
         if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not permission_manager.has_permission(user.id, "submission.manage"):
@@ -174,9 +184,20 @@ def get_submission_info():
             ret["memory_cost"] = -1
         for i, x in enumerate(contest.problems):
             if x["id"] == ret["problem_id"]:
-                ret["problem_id"] = f"contest:{contest.id},{i}"
+                # ret["problem_id"] = f"contest:{contest.id},{i}"
+                ret["problem"] = {
+                    "id": i,
+                    "title": db.session.query(
+                        Problem.title).filter(Problem.id == x["id"]).one().title
+                }
                 break
-
+    else:
+        ret["problem"] = {
+            "id": problem.id,
+            "title": problem.title
+        }
+    ret["problem"]["score"] = problem.get_total_score()
+    ret["problem"]["subtasks"] = problem.subtasks
     import importlib
     try:
         try:
@@ -191,12 +212,16 @@ def get_submission_info():
         import traceback
         traceback.print_exc()
         ret["ace_mode"] = ret["language_name"] = ""
-    problem: Problem = db.session.query(
-        Problem.can_see_results, Problem.uploader_id, Problem.problem_type).filter(Problem.id == submit.problem_id).one()
 
     ret["managable"] = permission_manager.has_permission(
         session.get("uid", None), "submission.manage")
     ret["isRemoteSubmission"] = problem.problem_type == "remote_judge"
+    ret["user"] = {
+        "uid": submit.uid,
+        "username": db.session.query(User.username).filter(User.id == submit.uid).one().username
+    }
+    del ret["problem_id"]
+    del ret["uid"]
     return make_response(0, data=ret)
 
 

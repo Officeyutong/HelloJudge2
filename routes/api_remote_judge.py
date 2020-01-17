@@ -6,7 +6,7 @@ from common.permission import require_permission
 from flask import session, request, send_file, send_from_directory
 from utils import make_response, decode_json, encode_json
 from flask_socketio import emit, join_room
-from models import RemoteAccount, User, Problem, Submission, Discussion
+from models import RemoteAccount, User, Problem, Submission, Discussion, Contest
 from typing import List, Dict
 from sqlalchemy.sql.expression import and_
 import uuid
@@ -22,7 +22,9 @@ def remote_judge_submit(data):
         "code":"用户代码",
         "language":"用户选择的语言",
         "loginCaptcha":"登录验证码",
-        "submitCaptcha":"提交验证码"
+        "submitCaptcha":"提交验证码",
+        "contestID":"提交为某场比赛,-1设置为不提交比赛",
+        "contestProblemID":"比赛题目ID"
     }
     """
     if not permission_manager.has_permission(session.get("uid"), "remote_judge.use"):
@@ -30,10 +32,32 @@ def remote_judge_submit(data):
                                  "message": "你没有权限这样做"}, room=request.sid)
         return
     problem: Problem = Problem.by_id(data["problemID"])
-    if not problem.public and int(session.get("uid")) != problem.uploader_id and not permission_manager.has_permission(session.get("uid"), "problem.manage"):
-        emit("server_response", {"ok": False,
-                                 "message": "你没有权限使用此题目"}, room=request.sid)
-        return
+    contest_id = data["contestID"]
+    if contest_id != -1:
+        contest: Contest = db.session.query(Contest).filter(
+            Contest.id == contest_id).one_or_none()
+        if not contest:
+            emit("server_response", {
+                "ok": False, "message": "非法比赛ID"
+            }, room=request.sid)
+            return
+        if len(contest.problems) <= data["contestProblemID"]:
+            emit("server_response", {
+                "ok": False, "message": "非法比赛题目ID"
+            }, room=request.sid)
+            return
+        if not contest.running():
+            emit("server_response", {
+                "ok": False, "message": "比赛未在进行"
+            }, room=request.sid)
+            return
+        problem: Problem = Problem.by_id(
+            contest.problems[data["contestProblemID"]]["id"])
+    else:
+        if not problem.public and int(session.get("uid")) != problem.uploader_id and not permission_manager.has_permission(session.get("uid"), "problem.manage"):
+            emit("server_response", {"ok": False,
+                                     "message": "你没有权限使用此题目"}, room=request.sid)
+            return
     if len(data["code"]) > config.MAX_CODE_LENGTH:
         emit("server_response", {"ok": False,
                                  "message": "代码过长"}, room=request.sid)
@@ -64,7 +88,9 @@ def remote_judge_submit(data):
         problem.id,
         int(session.get("uid")),
         problem.public,
-        list(reversed(config.TRACK_DELAY_INTERVAL))
+        list(reversed(config.TRACK_DELAY_INTERVAL)),
+        data["contestID"],
+        data["contestProblemID"]
     ])
     emit("message", {"message": "提交中..."}, room=request.sid)
 
@@ -118,23 +144,39 @@ def remote_judge_create_submission(
     uid: int,
     hj2_problem_id: str,
     public: bool,
-    message: str
+    message: str,
+    contest_id: int = -1,
+    contest_problem_id: int = -1
 ):
+    print(locals())
     """
     评测端向远程OJ提交代码成功后，创建相应的提交记录
     """
     if uuid not in config.JUDGERS:
         return make_response(-1, message="未认证评测机")
     import datetime
-    submission: Submission = Submission(
-        uid=uid,
-        language=language,
-        problem_id=hj2_problem_id,
-        submit_time=datetime.datetime.now(),
-        public=public,
-        code=code,
-        status="waiting",
-    )
+    if contest_id != -1:
+        contest: Contest = Contest.by_id(contest_id)
+        submission: Submission = Submission(
+            uid=uid,
+            language=language,
+            problem_id=contest.problems[contest_problem_id]["id"],
+            submit_time=datetime.datetime.now(),
+            public=False,
+            code=code,
+            status="waiting",
+            contest_id=contest_id
+        )
+    else:
+        submission: Submission = Submission(
+            uid=uid,
+            language=language,
+            problem_id=hj2_problem_id,
+            submit_time=datetime.datetime.now(),
+            public=public,
+            code=code,
+            status="waiting",
+        )
     db.session.add(submission)
     db.session.commit()
     print("Submit done. ", submission.id)
@@ -217,11 +259,12 @@ def remote_judge_update_fetch(ok: bool,  uuid: str, client_session_id: str, hj2_
 @app.route("/api/remote_judge/get_problem_info", methods=["POST"])
 @require_permission(permission_manager, "remote_judge.use")
 @unpack_argument
-def remote_judge_get_problem_info(problem_id: str):
+def remote_judge_get_problem_info(problem_id: str, contest_id: int = -1, contest_problem_id: int = -1):
     """
     {
         "code":0,
         "data":{
+            "isContest":"是否在比赛中",
             "problemData":{
                 "title":"题目名",
                 "content":"题目内容",
@@ -270,14 +313,26 @@ def remote_judge_get_problem_info(problem_id: str):
 
     }
     """
-    problem: Problem = db.session.query(Problem).filter(
-        Problem.id == problem_id).one_or_none()
+    # in_contest = contest_id != -1
+    contest: Contest = Contest.by_id(contest_id)
+
+    if contest:
+        # pass
+        if not contest.running() and not permission_manager.has_permission(session.get("uid"), "contest.manage"):
+            return make_response(-1, message="你没有权限查看此题目")
+        print(contest_problem_id,"contest_problem_id")
+        problem: Problem = db.session.query(Problem).filter(
+            Problem.id == contest.problems[contest_problem_id]["id"]).one_or_none()
+    else:
+        problem: Problem = db.session.query(Problem).filter(
+            Problem.id == problem_id).one_or_none()
+        if not permission_manager.has_permission(session.get("uid"), "remote_judge.use") and problem.uploader_id != int(session.get("uid")):
+            return make_response(-1, message="你没有权限查看该题目")
+
     if not problem:
         return make_response(-1, message="未知题目ID")
     if problem.problem_type != "remote_judge":
         return make_response(-1, message="此题目非远程评测题目")
-    if not permission_manager.has_permission(session.get("uid"), "remote_judge.use") and problem.uploader_id != int(session.get("uid")):
-        return make_response(-1, message="你没有权限查看该题目")
     uploader: User = db.session.query(User.id, User.username).filter(
         User.id == problem.uploader_id).one()
     last_submission: Submission = db.session.query(Submission).filter(and_(
@@ -315,6 +370,7 @@ def remote_judge_get_problem_info(problem_id: str):
             "accountID": item.account_id
         }
     return make_response(0, data={
+        "isContest": contest is not None,
         "problemData": {
             "title": problem.title,
             "content": problem.content,
@@ -326,17 +382,17 @@ def remote_judge_get_problem_info(problem_id: str):
             "uploaderProfile": {
                 "uid": uploader.id,
                 "username": uploader.username
-            },
-            "remoteProblemID": problem.remote_problem_id,
+            } if not contest else None,
+            "remoteProblemID": problem.remote_problem_id if not contest else None,
             "remoteOJ": {
                 "id": problem.remote_judge_oj,
                 **config.REMOTE_JUDGE_OJS[problem.remote_judge_oj]
             },
-            "public": problem.public,
+            "public": problem.public if not contest else None,
             "hint": problem.hint,
-            "recentDiscussions": discussions,
-            "acceptedCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).filter(Submission.status == "accepted").count(),
-            "submissionCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).count(),
+            "recentDiscussions": discussions if not contest else None,
+            "acceptedCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).filter(Submission.status == "accepted").count() if not contest else None,
+            "submissionCount": db.session.query(Submission).filter(Submission.problem_id == problem.id).count() if not contest else None,
             "id": problem.id
 
         },

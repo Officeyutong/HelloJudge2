@@ -139,11 +139,22 @@
                 requireSubmitCaptcha: false,
                 captchaData: {
                     login: "", submit: ""
-                }
-
+                },
+                isContest: false,
+                contestID: -1,
+                contestProblemID: -1
             },
             mounted() {
-                axios.post("/api/remote_judge/get_problem_info", { problem_id: window.location.href.split("/").pop() }).then(resp => {
+                let problem_id = window.location.pathname.split("/").pop();
+                // let contestID, contestProblemID;
+                if (problem_id === "contest_problem") {
+                    let args = getRequest();
+                    this.contestID = parseInt(args["contest_id"]);
+                    this.contestProblemID = parseInt(args["contest_problem_id"]);
+                    console.log(this.contestID, this.contestProblemID);
+                    problem_id = -1;
+                }
+                axios.post("/api/remote_judge/get_problem_info", { problem_id: problem_id, contest_id: this.contestID, contest_problem_id: this.contestProblemID }).then(resp => {
                     let data = resp.data;
                     if (data.code) {
                         showErrorModal(data.message);
@@ -155,6 +166,7 @@
                     this.selectedLanguage = data.userData.lastLanguage;
                     this.code = data.userData.lastCode;
                     this.selectedAccount = Object.keys(this.userData.accounts)[0];
+                    this.isContest = data.isContest;
                     $("title").text(this.problemData.title + " - " + this.problemData.id + " - {{APP_NAME}}");
                     this.done = true;
                     console.log(data);
@@ -169,7 +181,9 @@
                         code: this.code,
                         loginCaptcha: this.captcha.login,
                         submitCaptcha: this.captcha.submit,
-                        language: this.selectedLanguage
+                        language: this.selectedLanguage,
+                        contestID: this.contestID,
+                        contestProblemID: this.contestProblemID
                     };
                     this.requireLoginCaptcha = this.requireSubmitCaptcha = false;
                     this.errorMessage = "";
@@ -199,14 +213,7 @@
                             this.errorMessage = data.message;
                         }
                     });
-                    socket.emit("submit", {
-                        problemID: this.problemData.id,
-                        remoteAccountID: this.selectedAccount,
-                        code: this.code,
-                        language: this.selectedLanguage,
-                        loginCaptcha: this.captcha.login,
-                        submitCaptcha: this.captcha.submit
-                    });
+                    socket.emit("submit", submitData);
                 },
                 removeProblem() {
                     $("#warning-modal").modal({
@@ -388,22 +395,22 @@
                 <table class="ui very basic fluid collapsing celled table">
 
                     <tbody>
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>题目上传者</td>
                             <td style="word-break: break-all;"><a
                                     :href="'/profile/'+problemData.uploaderProfile.uid">{[problemData.uploaderProfile.username]}</a>
                             </td>
                         </tr>
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>上传时间</td>
                             <td style="word-break: break-all;">{[problemData.createTime]}</td>
                         </tr>
 
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>是否公开</td>
                             <td>{[problemData.public?"Yes":"No"]}</td>
                         </tr>
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>我的提交</td>
                             <td>
                                 <div v-if="userData.id==-1">尚未提交</div><a v-else :href="'/show_submission/'+userData.id"
@@ -412,7 +419,7 @@
                                 </a>
                             </td>
                         </tr>
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>通过数/提交数/通过率</td>
                             <td>{[problemData.acceptedCount]}/{[problemData.submissionCount]}/{[parseInt(100*problemData.acceptedCount/problemData.submissionCount)]}%
                             </td>
@@ -422,7 +429,7 @@
                             <td>评测方式</td>
                             <td>远程评测: {[problemData.remoteOJ.display]}</td>
                         </tr>
-                        <tr>
+                        <tr v-if="!isContest">
                             <td>远程题目ID</td>
                             <td>{[problemData.remoteProblemID]}</td>
                         </tr>
@@ -430,19 +437,20 @@
                     </tbody>
                 </table>
                 <a :href="'/problem_edit/'+problemData.id"
-                    v-if="base.uid==problemData.uploaderProfile.uid||userData.managable" target="_blank">编辑</a>
+                    v-if="!isContest&&(base.uid==problemData.uploaderProfile.uid||userData.managable)"
+                    target="_blank">编辑</a>
                 <a v-on:click="removeProblem"
-                    v-if="base.uid==problemData.uploaderProfile.uid||userData.managable">删除</a>
-                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+problemData.id"
-                    target="_blank">我的提交</a>
-                <a :href="'/submissions/1?filter=problem%3D'+problemData.id" target="_blank">全部提交</a>
-                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+problemData.id"
-                    target="_blank">通过提交</a>
+                    v-if="!isContest&&(base.uid==problemData.uploaderProfile.uid||userData.managable)">删除</a>
+                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+problemData.id" target="_blank"
+                    v-if="!isContest">我的提交</a>
+                <a :href="'/submissions/1?filter=problem%3D'+problemData.id" target="_blank" v-if="!isContest">全部提交</a>
+                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+problemData.id" target="_blank"
+                    v-if="!isContest">通过提交</a>
 
 
 
             </div>
-            <div class="ui stack segment" style="max-width: 300px">
+            <div class="ui stack segment" style="max-width: 300px" v-if="!isContest">
                 <div class="ui header">
                     <h4>讨论</h4>
                 </div>

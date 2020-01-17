@@ -172,7 +172,7 @@ def show_contest(contestID: int):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
-        "managable": permission_manager.has_permission(session.get("uid",None), "contest.manage")
+        "managable": permission_manager.has_permission(session.get("uid", None), "contest.manage")
     }
     problems = result["problems"]
     for i, problem_data in enumerate(contest.problems):
@@ -339,6 +339,8 @@ def contest_show_problem(problemID: int, contestID: int):
             return make_response(-1, message="你没有权限跟我说话")
     problem: Problem = Problem.by_id(
         contest.problems[int(problemID)]["id"])
+    if problem.problem_type == "remote_judge":
+        return make_response(-1, message="远程评测题目", is_remote=True)
     result = problem.as_dict()
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())

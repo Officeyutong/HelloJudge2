@@ -197,6 +197,9 @@
         axios.post("/api/contest/problem/show", { contestID: contestID, problemID: problemID }).then(ctx => {
             ctx = ctx.data;
             if (ctx.code != 0) {
+                if (ctx.is_remote) {
+                    window.location.href = "/remote_judge/show_problem/contest_problem?contest_id=" + contestID + "&contest_problem_id=" + problemID;
+                }
                 $("#no-perm-text").text(ctx.message);
                 $("#no-perm-modal").modal("show");
                 return;
