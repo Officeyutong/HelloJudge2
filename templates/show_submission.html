@@ -89,19 +89,16 @@
                 return;
             }
             submission.data = ctx.data;
-            if (submission.data.contest_id != -1) {
-                submission.contestSubmit = true;
-
-            }
+            submission.contestSubmit = submission.data.contest.isContest;
 
             $.post("/api/get_judge_status").done(ctx => {
                 submission.judge_status = JSON.parse(ctx).data;
                 if (submission.data.status == "judging" || submission.data.status == "waiting") {
                     socket = io(window.location.origin + "/ws/submission");
-                    console.log("WebSocket connected..");
+                    console.log("Tracker connected.");
                     socket.emit("init", { "submission_id": submission_id });
                     socket.on("update", (x) => {
-                        console.log("Websocket got ");
+                        console.log("Tracker updated:");
                         console.log(x);
                         submission.data.message = x.message;
                         submission.data.judge_result = x.judge_result;
@@ -144,6 +141,14 @@
 
                     <td v-else><a :href="'/show_problem/'+data.problem.id">{[data.problem.id]}
                             {[data.problem.title]}</a></td>
+                </tr>
+                <tr v-if="contestSubmit">
+                    <td class="first-column">
+                        比赛
+                    </td>
+                    <td>
+                        <a :href="'/contest/'+data.contest.id">{[data.contest.name]}</a>
+                    </td>
                 </tr>
                 <tr>
                     <td class="first-column">提交者</td>

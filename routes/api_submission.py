@@ -128,7 +128,11 @@ def get_submission_info():
             "language_name":"语言名",
             "submit_time":"提交时间",
             "public":"是否公开",
-            "contest_id":"比赛ID",
+            "contest":{
+                "id":"ID",
+                "name":"名称",
+                "isContest":"是否在比赛中"
+            },
             "code":"代码",
             "judge_result":{
                 "subtask":{"score":100,"status":"WA","testcases":
@@ -191,7 +195,15 @@ def get_submission_info():
                         Problem.title).filter(Problem.id == x["id"]).one().title
                 }
                 break
+        ret["contest"] = {
+            "id": contest.id,
+            "name": contest.name,
+            "isContest": True
+        }
     else:
+        ret["contest"] = {
+            "isContest": False
+        }
         ret["problem"] = {
             "id": problem.id,
             "title": problem.title
@@ -220,6 +232,7 @@ def get_submission_info():
         "uid": submit.uid,
         "username": db.session.query(User.username).filter(User.id == submit.uid).one().username
     }
+
     del ret["problem_id"]
     del ret["uid"]
     return make_response(0, data=ret)
