@@ -503,5 +503,17 @@ def contest_ranklist(contestID):
     can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
     if not can_see_ranklist:
         return make_response(-1, message="你无权进行此操作")
-
-    return make_response(0, data=get_contest_rank_list(contest))
+    import redis
+    from main import redis_connection_pool
+    from json import JSONEncoder, JSONDecoder
+    key = f"hj2-contest-ranklist-{contest.id}"
+    client = redis.Redis(connection_pool=redis_connection_pool)
+    if not client.exists(key):
+        print(f"Ranklist for {key} not found, generating..")
+        ranklist_data = get_contest_rank_list(contest)
+        client.set(key, JSONEncoder().encode(ranklist_data),
+                   ex=config.RANKLIST_UPDATE_INTEVAL)
+        print(ranklist_data)
+    else:
+        ranklist_data = JSONDecoder().decode(client.get(key).decode())
+    return make_response(0, data=ranklist_data)

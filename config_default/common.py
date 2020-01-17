@@ -27,4 +27,5 @@ JUDGERS = {
 
 # 比赛失败提交罚时(分钟)
 FAIL_SUBMIT_PENALTY = 20
-
+# 比赛排行榜更新间隔
+RANKLIST_UPDATE_INTEVAL = 60

@@ -1,3 +1,8 @@
+from .auth import *
+from .remote_judge import *
+from .judge import *
+from .display import *
+from .common import *
 from collections import OrderedDict
 # 在后台管理页面显示的配置
 VISIBLE_SETTINGS = OrderedDict({
@@ -6,7 +11,6 @@ VISIBLE_SETTINGS = OrderedDict({
     "PORT": "监听端口",
     "HOST": "监听地址",
     "APP_NAME": "应用程序名",
-    "PASSWORD_SALT": "密码Salt",
     "USERNAME_REGEX": "用户名正则",
     "PROBLEMS_PER_PAGE": "每页题目数量",
     "SUBMISSIONS_PER_PAGE": "每页提交数量",
@@ -30,13 +34,6 @@ VISIBLE_SETTINGS = OrderedDict({
     "REQUIRE_REGISTER_AUTH": "注册时需要验证邮箱",
     "FAIL_SUBMIT_PENALTY": "比赛失败提交罚时(分钟)",
     "IDE_RUN_COMPILE_PARAMETER_LENGTH_LIMIT": "在线IDE自定义参数长度限制",
-    "DISPLAY_DATA_LENGTH_LIMIT": "评测结束后显示的输入\\输出\\用户输出的长度限制,字符"
+    "DISPLAY_DATA_LENGTH_LIMIT": "评测结束后显示的输入\\输出\\用户输出的长度限制,字符",
+    "RANKLIST_UPDATE_INTEVAL": "比赛排行榜更新间隔"
 })
-
-
-
-from .common import *
-from .display import *
-from .judge import *
-from .remote_judge import *
-from .auth import *
