@@ -55,7 +55,20 @@
             </thead>
             <tbody>
                 <tr v-for="line,i in data.ranklist">
-                    <td>#{[i+1]}</td>
+                    <td class="center aligned"> 
+                        <div class="ui yellow ribbon label" v-if="i==0">
+                            1
+                        </div>
+                        <div class="ui  ribbon label" v-else-if="i==1">
+                            2
+                        </div>
+                        <div class="ui brown ribbon label" v-else-if="i==2">
+                            3
+                        </div>
+                        <div v-else>
+                            {[i+1]}
+                        </div>
+                    </td>
                     <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
                     <td class="center aligned">
                         <span v-if="data.using_penalty==false">{[line.total.score]}</span>
