@@ -5,7 +5,8 @@ from utils import *
 from models import *
 from sqlalchemy.sql.expression import *
 from common.permission import require_permission
-from common.utils import unpack_argument
+from common.utils import unpack_argument, make_json_response
+from typing import List
 @app.route("/api/test", methods=["POST"])
 @unpack_argument
 def test(qwq: int):
@@ -243,11 +244,51 @@ def admin_update_permission_groups(groups: list):
     return make_response(0, message="更新成功")
 
 
-# @app.route("/api/admin/remove_unauthorized_accounts", methods=["POST"])
-# @require_permission(permission_manager, "backend.manage")
-# def admin_remove_unauthorized_accounts():
-#     query = db.session.query(User).filter(User.auth_token != "")
-#     count: int = query.count()
-#     query.delete()
-#     db.session.commit()
-#     return make_response(0, message=f"删除了 {count} 个用户")
+@app.route("/api/admin/get_user_permissions", methods=["POST"])
+@unpack_argument
+@require_permission(manager=permission_manager, permission="permission.manage")
+def admin_get_user_permissions():
+    """
+    获取所有有个人权限的用户
+    List[datatypes.admin.UserPermission]
+    """
+    from common.datatypes.admin import UserPermission
+    result: List[UserPermission] = []
+    for user in db.session.query(User.id, User.username, User.permissions).filter(User.permissions != []).all():
+        result.append(UserPermission(
+            uid=user.id,
+            username=user.username,
+            permissions=user.permissions
+        ))
+    return make_json_response(0, data=result)
+
+
+@app.route("/api/admin/remove_user_permission", methods=["POST"])
+@unpack_argument
+@require_permission(manager=permission_manager, permission="permission.manage")
+def admin_remove_user_permission(uid: int, index: int):
+    """
+    删除某用户的某条个人权限
+    """
+    user: User = db.session.query(
+        User).filter(User.id == uid).one()
+    current_permissions = user.permissions
+    user.permissions = [x for i, x in enumerate(
+        current_permissions) if i != index]
+    db.session.commit()
+    return make_json_response(0, message="删除成功")
+
+
+@app.route("/api/admin/add_user_permission", methods=["POST"])
+@unpack_argument
+@require_permission(manager=permission_manager, permission="permission.manage")
+def admin_add_user_permission(uid: int, permission: str):
+    """
+    给用户添加个人权限
+    """
+    user: User = db.session.query(
+        User).filter(User.id == uid).one()
+    current_permissions = user.permissions
+    user.permissions = [*current_permissions, permission]
+    db.session.commit()
+    return make_json_response(0, message="保存成功")

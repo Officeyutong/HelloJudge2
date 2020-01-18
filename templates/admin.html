@@ -18,9 +18,61 @@
                 permissionGroups: [],
 
                 userTab: {
-                    loading: false, successMessage: "", errorMessage: ""
+                    loading: false, successMessage: "", errorMessage: "",
+                    userData: [],
+                    currentuid: -1
                 }
             }, methods: {
+                addUser() {
+                    let uid = this.userTab.currentuid;
+                    this.userTab.successMessage = this.userTab.errorMessage = "";
+                    axios(
+                        {
+                            url: "/api/get_user_profile",
+                            method: "post",
+                            data: "uid=" + uid
+                        }
+                    ).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            this.userTab.errorMessage = data.message;
+                            return;
+                        }
+                        this.userTab.userData.push({
+                            uid: uid,
+                            username: data.data.username,
+                            permissions: []
+                        })
+                    });
+                },
+                addUserPermission(uid, evt, index) {
+                    console.log(uid, evt);
+                    this.userTab.successMessage = this.userTab.errorMessage = "";
+                    axios.post("/api/admin/add_user_permission", {
+                        uid: uid, permission: evt.target.value
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            this.userTab.errorMessage = data.message;
+                            return;
+                        }
+                        this.userTab.userData[index].permissions.push(evt.target.value)
+                        // this.userTab.userData[userIndex].permissions.splice(index, 1);
+                    });
+                },
+                removeUserPermission(uid, index, userIndex) {
+                    this.userTab.successMessage = this.userTab.errorMessage = "";
+                    axios.post("/api/admin/remove_user_permission", {
+                        uid: uid, index: index
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            this.userTab.errorMessage = data.message;
+                            return;
+                        }
+                        this.userTab.userData[userIndex].permissions.splice(index, 1);
+                    });
+                },
                 reloadRatedContests() {
                     axios.post("/api/admin/rating/rated_contests").then(x => {
                         let rating = x.data;
@@ -72,31 +124,13 @@
                         window.location.reload();
                     });
                 }
-                // , removeUnauthorizedAccounts() {
-                //     $("#remove-users-modal").modal({
-                //         closable: false,
-                //         onApprove: () => {
-                //             this.userTab.loading = true;
-                //             this.userTab.successMessage = this.userTab.errorMessage = "";
-                //             axios.post("/api/admin/remove_unauthorized_accounts").then(resp => {
-                //                 this.userTab.loading = false;
-                //                 let data = resp.data;
-                //                 if (data.code) {
-                //                     this.userTab.errorMessage = data.message;
-                //                     return;
-                //                 } else {
-                //                     this.userTab.successMessage = data.message;
-                //                 }
-                //             });
-                //         }
-                //     }).modal("show");
-                //     // this.loading = true;
-
-                // }
             }, mounted() {
                 axios.all([
-                    axios.post("/api/admin/show"), axios.post("/api/admin/rating/rated_contests"), axios.post("/api/admin/rating/permission_groups/get")
-                ]).then(axios.spread((show, rating, groups) => {
+                    axios.post("/api/admin/show"),
+                    axios.post("/api/admin/rating/rated_contests"),
+                    axios.post("/api/admin/rating/permission_groups/get"),
+                    axios.post("/api/admin/get_user_permissions")
+                ]).then(axios.spread((show, rating, groups, permission_list) => {
                     show = show.data;
                     if (show.code) {
                         showErrorModal(show.message);
@@ -105,6 +139,7 @@
                     this.data = show.data;
                     this.ratedContests = rating.data.data;
                     this.permissionGroups = groups.data.result;
+                    this.userTab.userData = permission_list.data.data;
                     this.done = true;
                 }));
             }
@@ -264,7 +299,7 @@
                     <label>继承自</label>
                     <input v-model="item.inherit">
                 </div>
-                
+
                 <div class="ui field">
                     <label>权限列表</label>
                     <textarea v-model="item.permissions"></textarea>
@@ -293,15 +328,34 @@
                 {[userTab.errorMessage]}
             </div>
         </div>
-        <!-- <div class="ui header">
-            <h3>未邮箱认证用户</h3>
+        <div class="ui header">
+            <h2>用户权限编辑</h2>
+        </div>
+        <div v-for="user,user_index in userTab.userData">
+            <div class="ui header">
+                <h3>{[user.username]}</h3>
+            </div>
+            <div class="ui list">
+                <div class="item" v-for="perm,i in user.permissions">
+                    <span>{[perm]}
+                    </span>
+                    <div class="ui tiny red button" v-on:click="removeUserPermission(user.uid,i,user_index)">
+                        删除
+                    </div>
+                </div>
+            </div>
+            <div class="ui input">
+                <input type="text" v-on:keyup.enter="addUserPermission(user.uid,$event,user_index)"
+                    placeholder="输入权限后按回车添加">
+            </div>
+            <div class="ui divider"></div>
         </div>
         <div>
-            当前共有 {[data.unAuthorizedCount]} 用户已注册但尚未邮箱认证(不包括未开启邮箱认证时注册的用户).
+            <div class="ui input">
+                <input type="text" v-model.number="userTab.currentuid" placeholder="用户ID">
+            </div>
+            <div class="ui green button" v-on:click="addUser">添加用户</div>
         </div>
-        <div class="ui red button" v-on:click="removeUnauthorizedAccounts" style="margin-top: 30px;">
-            删除它们
-        </div> -->
     </div>
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">
