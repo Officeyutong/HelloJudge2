@@ -17,6 +17,18 @@ REMOTE_JUDGE_OJS = {
             "12": {"display": "C++ 17", "aceMode": "c_cpp"},
         }
     },
+    "poj": {
+        "display": "POJ",
+        "availableLanguages": {
+            "0": {"display": "G++", "aceMode": "c_cpp"},
+            "1": {"display": "GCC", "aceMode": "c_cpp"},
+            "2": {"display": "Java", "aceMode": "java"},
+            "3": {"display": "Pascal", "aceMode": "pascal"},
+            "4": {"display": "C++", "aceMode": "c_cpp"},
+            "5": {"display": "C", "aceMode": "c_cpp"},
+            "6": {"display": "Fortran", "aceMode": "fortran"},
+        }
+    },
     # "codeforces": {"display": "Codeforces"}
 }
 # 每次爬取后的延迟时间，单位为秒
