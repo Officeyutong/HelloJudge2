@@ -57,7 +57,7 @@ class PermissionManager:
         return False
 
 
-def require_permission(manager: PermissionManager, permission: str, details=False):
+def require_permission(manager: PermissionManager, permission: str, details=True):
     from flask import session
     from utils import make_response
 
