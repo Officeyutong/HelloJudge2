@@ -15,14 +15,18 @@ from redis import ConnectionPool
 from typing import Set, NoReturn
 import os
 import celery
+from flask_cors import CORS
 web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 web_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 web_app.secret_key = config.SESSION_KEY
-csrf = CSRFProtect(web_app)
+csrf = CSRFProtect()
+if config.ENABLE_CSRF_TOKEN:
+    csrf.init_app(web_app)
 db = SQLAlchemy(web_app)
+CORS(web_app, supports_credentials=True)
 basedir = os.path.dirname(__file__)
 logger = web_app.logger
 socket = SocketIO(web_app)

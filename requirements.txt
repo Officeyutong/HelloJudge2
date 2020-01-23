@@ -13,3 +13,4 @@ requests
 eventlet
 codeforces-rating
 pycryptodome
+flask-cors

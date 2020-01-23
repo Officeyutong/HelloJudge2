@@ -14,4 +14,4 @@ class RemoteAccount(db.Model):
     # 用户id
     uid = db.Column(db.Integer, nullable=False)
     # session对象
-    session = db.Column(db.String(256), nullable=False, default="{}")
+    session = db.Column(db.String(1024), nullable=False, default="{}")
