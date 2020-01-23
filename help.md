@@ -151,7 +151,7 @@ SPJ应该创建以下两个文件:
 
 #### 语言ID们
 
-```cpp```,```cpp11```,```cpp17```,```cpp98```,```haskell```,```java8```,```ocaml```,```python2```,```python3```,```rust```
+```cpp```,```haskell```,```java8```,```ocaml```,```python2```,```python3```,```rust```
 
 ### 从SYZOJ导入题目
 
