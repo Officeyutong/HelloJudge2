@@ -11,4 +11,4 @@ DISPLAY = "TrumpScript 3.7"
 # 版本
 VERSION = "3793b90"
 # Ace.js模式
-ACE_MODE = ""
+ACE_MODE = "python"

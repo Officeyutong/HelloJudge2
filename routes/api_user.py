@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import *
 from typing import Tuple
 
 
+@app.route("/api/this_should_be_the_first_request", methods=["POST"])
 @app.route("/api/query_login_state", methods=["POST"])
 def query_login_state():
     """
@@ -24,12 +25,20 @@ def query_login_state():
             "group_name":"用户组名",
             "backend_managable":"是否可以进行后台管理"
             "username":"用户名",
-            "email":"电子邮件"
+            "email":"电子邮件",
+            "salt":"密码盐",
+            "judgeStatus":{ 
+                "评测状态列表"
+            },
+            "appName":"应用程序名"
         }
 
     """
     result = {
-        "result": session.get("uid") is not None
+        "result": session.get("uid") is not None,
+        "judgeStatus": config.JUDGE_STATUS,
+        "salt": config.PASSWORD_SALT,
+        "appName": config.APP_NAME
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(

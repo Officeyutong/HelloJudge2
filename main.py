@@ -25,8 +25,13 @@ web_app.secret_key = config.SESSION_KEY
 csrf = CSRFProtect()
 if config.ENABLE_CSRF_TOKEN:
     csrf.init_app(web_app)
+if config.DEBUG:
+    import logging
+    logging.getLogger('flask_cors').level = logging.DEBUG
 db = SQLAlchemy(web_app)
-CORS(web_app, supports_credentials=True)
+CORS(web_app, supports_credentials=True, resources={
+    ".*": {"origins": "*", "supports_credentials": True}
+})
 basedir = os.path.dirname(__file__)
 logger = web_app.logger
 socket = SocketIO(web_app)

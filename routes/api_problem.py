@@ -5,10 +5,13 @@ from utils import *
 from models.user import *
 from models.problem import *
 from models.submission import *
+from models import Discussion
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 from common.utils import unpack_argument
 from common.permission import require_permission
+import os
+import importlib
 
 
 @app.route("/api/problem/remove", methods=["POST"])
@@ -99,7 +102,7 @@ def get_problem_info():
                          {"name": "Subtask1", "score": 40, "method": "min", "files": [], "time_limit":1000, "memory_limit":512}].
                 "last_code":"qwq",//上一次提交的代码,
                 "last_lang":"qwq",//上一次选择的语言ID
-                "submit_count":0,//提交数
+                "submission_count":0,//提交数
                 "accepted_count":0,//通过数
                 "my_submission":-1//-1表示没有提交过，否则有AC提交就表示最新一次AC提交，没有AC提交就是最新一次提交,
                 //我的提交状态
@@ -108,7 +111,20 @@ def get_problem_info():
                 "extra_parameter":[
                     {"lang":"语言ID正则","parameter":"参数","name":"名称"}
                 ],
-                "lastUsedParameters":[1,2,4]
+                "lastUsedParameters":[1,2,4],
+                "uploader":{
+                    "uid":"上传者用户ID",
+                    "username":"上传者用户名"
+                },
+                "recentDiscussions":[
+                    {
+                        "title":"讨论题目",
+                        "id":"讨论ID"
+                    }
+                ],
+                "languages":[
+                    {id:"cpp","display":"显示名","version":"G++8.3"}
+                ]
             }
         }
     """
@@ -152,6 +168,28 @@ def get_problem_info():
     result["create_time"] = str(result["create_time"])
     result["managable"] = permission_manager.has_permission(
         session.get("uid", None), "problem.manage")
+    uploader: User = db.session.query(User.id, User.username).filter(
+        User.id == problem.uploader_id).one()
+    result["uploader"] = {
+        "uid": uploader.id,
+        "username": uploader.username
+    }
+    recent_discussions: Discussion = db.session.query(
+        Discussion.id, Discussion.title).filter(Discussion.path == f"discussion.problem.{problem.id}").order_by(Discussion.id.desc()).limit(5)
+    result["recentDiscussions"] = [
+        {"id": item.id, "title": item.title} for item in recent_discussions
+    ]
+    result["languages"] = [
+
+    ]
+    for file in (x for x in os.listdir("langs") if x.endswith(".py")):
+        module = importlib.import_module("langs."+file.replace(".py", ""))
+        result["languages"].append({
+            "id": file.replace(".py", ""),
+            "display": module.DISPLAY,
+            "version": module.VERSION,
+            "ace_mode": module.ACE_MODE
+        })
     return make_response(0, data=result)
 
 

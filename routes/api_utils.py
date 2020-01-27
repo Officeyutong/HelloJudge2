@@ -86,22 +86,7 @@ def get_judge_status():
             }
         }
     """
-    ret = {
-        "waiting": {"icon": "notched circle loading icon", "text": "等待评测中", "color": "blue"},
-        "judging": {"icon": "notched circle loading icon", "text": "评测中", "color": "blue"},
-        "accepted": {"icon": "check icon", "text": "通过", "color": "green"},
-        "unaccepted": {"icon": "times icon", "text": "未通过", "color": "red"},
-        "wrong_answer": {"icon": "x icon", "text": "答案错误", "color": "red"},
-        "time_limit_exceed": {"icon": "clock outline icon", "text": "超出时限", "color": "red"},
-        "memory_limit_exceed": {"icon": "microchip icon", "text": "内存超限", "color": "purple"},
-        "runtime_error": {"icon": "exclamation circle icon", "text": "运行时错误", "color": "red"},
-        "skipped": {"icon": "cog icon", "text": "跳过", "color": "blue"},
-        "unknown": {"icon": "question circle icon", "text": "未知", "color": "black"},
-        "invisible": {"icon": "times icon", "text": "不可见", "color": "black"},
-        "unsubmitted": {"icon": "code icon", "text": "未提交", "color": "yellow"},
-        "judge_failed": {"icon": "times icon", "text": "评测失败", "color": "red"},
-        "compile_error": {"icon": "cog icon", "text": "编译错误", "color": "blue"}
-    }
+    ret = config.JUDGE_STATUS
     return make_response(0, data=ret)
 
 

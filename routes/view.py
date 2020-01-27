@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import config
+from main import config,csrf
 from flask import render_template
 
 
@@ -8,7 +8,8 @@ def consts():
     return {
         "DEBUG": config.DEBUG,
         "APP_NAME": config.APP_NAME,
-        "SALT": config.PASSWORD_SALT
+        "SALT": config.PASSWORD_SALT,
+        "USING_CSRF_TOKEN": config.ENABLE_CSRF_TOKEN,
     }
 
 

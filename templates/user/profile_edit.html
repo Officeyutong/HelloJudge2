@@ -27,17 +27,6 @@
                         window.location.reload();
                     });
                 },
-                // forcePassEmailAuth() {
-                //     axios.post("/api/user/pass_email_auth", { uid: this.data.id }).then(x => {
-                //         let data = x.data;
-                //         if (data.code) {
-                //             showErrorModal(data.message);
-                //             return;
-                //         }
-                //         this.data.hasEmailAuth = true;
-
-                //     });
-                // },
                 submit() {
                     this.errorMessage = this.successMessage = "";
                     if (this.password != "" && this.password != this.password2) {
