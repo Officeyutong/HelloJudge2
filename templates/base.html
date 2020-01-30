@@ -79,7 +79,7 @@
             $("#global-error-model").modal("show");
         };
         const showErrorModal = show_error_modal;
-        const CSRF_TOKEN="{%if USING_CSRF_TOKEN %} {{csrf_token}} {%else%}{%endif%}";
+        const CSRF_TOKEN="{%if USING_CSRF_TOKEN %} {{csrf_token() }} {%else%}{%endif%}";
         $.ajaxSetup({
             beforeSend: function (xhr, settings) {
                 xhr.setRequestHeader("X-CSRFtoken", CSRF_TOKEN);
