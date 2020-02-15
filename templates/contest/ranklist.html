@@ -72,7 +72,7 @@
                     <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
                     <td class="center aligned">
                         <span v-if="data.using_penalty==false">
-                            <div>{[line.total.score]}</div>
+                            <div style="color: green;">{[line.total.score]}</div>
                             <div style="color: red;">
                                 {[line.total.submit_time_sum]}
                             </div>
@@ -91,7 +91,7 @@
                                         {[item.score]}
                                     </div>
                                     <div style="color: red;">
-                                        {[item.ac_time]}
+                                        {[item.submit_time_time]}
                                     </div>
                                 </span>
                                 <span v-else>

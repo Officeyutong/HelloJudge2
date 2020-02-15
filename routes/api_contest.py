@@ -423,7 +423,8 @@ def get_contest_rank_list(contest: Contest) -> dict:
                     "ac_time": -1,
                     "penalty": 0,
                     "submit_id": -1,
-                    "status": "unsubmitted"
+                    "status": "unsubmitted",
+                    "submit_time": -1
                 })
                 continue
             best_submit = best_submit.first()
@@ -435,7 +436,8 @@ def get_contest_rank_list(contest: Contest) -> dict:
                     "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id < best_submit.id).count(),
                     "ac_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60),
                     "submit_id": best_submit.id,
-                    "status": best_submit.status
+                    "status": best_submit.status,
+                    "submit_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60)
                 }
                 last["penalty"] = last["ac_time"] + \
                     last["submit_count"]*config.FAIL_SUBMIT_PENALTY
@@ -447,7 +449,8 @@ def get_contest_rank_list(contest: Contest) -> dict:
                     "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id <= best_submit.id).count(),
                     "ac_time": -1,
                     "submit_id": best_submit.id,
-                    "status": best_submit.status
+                    "status": best_submit.status,
+                    "submit_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60)
                 }
                 last["penalty"] = last["submit_count"] * \
                     config.FAIL_SUBMIT_PENALTY
@@ -458,7 +461,7 @@ def get_contest_rank_list(contest: Contest) -> dict:
             "score": sum(map(lambda x: x["score"], scores)),
             "penalty": sum(map(lambda x: x["penalty"], scores)),
             "ac_count": sum(map(lambda x: 1 if x["status"] == "accepted" else 0, scores)),
-            "submit_time_sum": sum((item["ac_time"] for item in scores if item["ac_time"] != -1))
+            "submit_time_sum": sum((item["submit_time"] for item in scores if item["submit_time"] != -1))
         }
         current["total"] = total
     if contest.rank_criterion == "penalty":
