@@ -2,6 +2,7 @@ from main import db
 from typing import List, Mapping, Any
 from ormtypes.json_pickle import JsonPickle
 from models import User
+from common.permission import PermissionManager
 
 
 class Contest(db.Model):
@@ -51,14 +52,14 @@ class Contest(db.Model):
         now = datetime.datetime.now()
         return now >= self.start_time and now <= self.end_time
 
-    def can_see_judge_result(self, uid) -> bool:
+    def can_see_judge_result(self, uid, perm_manager: PermissionManager = None) -> bool:
         if not uid:
             return self.judge_result_visible
         user: User = User.by_id(uid)
-        return "contest.manage" in user.permissions or user.id == self.owner_id or self.judge_result_visible or not self.running()
+        return (perm_manager.has_permission(user.id, "contest.manage")) or (user.id == self.owner_id) or (self.judge_result_visible) or (not self.running())
 
-    def can_see_ranklist(self, uid) -> bool:
+    def can_see_ranklist(self, uid, perm_manager: PermissionManager = None) -> bool:
         if not uid:
             return self.ranklist_visible
         user: User = User.by_id(uid)
-        return "contest.manage" in user.permissions or user.id == self.owner_id or self.ranklist_visible or not self.running()
+        return (perm_manager.has_permission(user.id, "contest.manage")) or (user.id == self.owner_id) or (self.ranklist_visible) or (not self.running())

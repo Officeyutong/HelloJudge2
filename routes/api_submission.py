@@ -320,7 +320,7 @@ def submission_list():
         }
         if submit.contest_id != -1:
             contest: Contest = Contest.by_id(submit.contest_id)
-            if not contest.can_see_judge_result(session.get("uid")):
+            if not contest.can_see_judge_result(session.get("uid"), permission_manager):
                 obj["status"] = "invisible"
                 obj["score"] = 0
 

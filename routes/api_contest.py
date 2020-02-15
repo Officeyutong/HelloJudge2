@@ -150,8 +150,10 @@ def show_contest(contestID: int):
     contest: Contest = Contest.by_id(contestID)
     if not contest:
         return make_response(-1, message="比赛ID不存在！")
-    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
-    can_see_judge_result = contest.can_see_judge_result(session.get("uid"))
+    can_see_ranklist = contest.can_see_ranklist(
+        session.get("uid"), permission_manager)
+    can_see_judge_result = contest.can_see_judge_result(
+        session.get("uid"), permission_manager)
     has_login = bool(session.get("uid"))
     if has_login:
         user: User = User.by_id(session.get("uid"))
@@ -383,14 +385,36 @@ def get_contest_rank_list(contest: Contest) -> dict:
                 best_submit = db.session.query(Submission.status,
                                                Submission.score,
                                                Submission.submit_time,
-                                               Submission.id).order_by(Submission.score.desc()).order_by(Submission.id.asc()).filter(and_(Submission.uid == user.id, Submission.contest_id == contest.id, Submission.problem_id == id))
+                                               Submission.id)\
+                    .order_by(
+                    Submission.score.desc()
+                )\
+                    .order_by(
+                    Submission.id.asc()
+                )\
+                    .filter(
+                    and_(
+                        Submission.uid == user.id,
+                        Submission.contest_id == contest.id,
+                        Submission.problem_id == id
+                    )
+                )
 
             else:
                 # NOI赛制，获取最后一次提交
                 best_submit = db.session.query(Submission.status,
                                                Submission.score,
                                                Submission.submit_time,
-                                               Submission.id).order_by(Submission.id.desc()).filter(and_(Submission.uid == user.id, Submission.contest_id == contest.id, Submission.problem_id == id))
+                                               Submission.id)\
+                    .order_by(Submission.id.desc())\
+                    .filter(
+                    and_(
+                        Submission.uid == user.id,
+                        Submission.contest_id == contest.id,
+                        Submission.problem_id == id,
+                        Submission.status != "compile_error"
+                    )
+                )
 
             if best_submit.count() == 0:
                 scores.append({
@@ -433,14 +457,16 @@ def get_contest_rank_list(contest: Contest) -> dict:
         total = {
             "score": sum(map(lambda x: x["score"], scores)),
             "penalty": sum(map(lambda x: x["penalty"], scores)),
-            "ac_count": sum(map(lambda x: 1 if x["status"] == "accepted" else 0, scores))
+            "ac_count": sum(map(lambda x: 1 if x["status"] == "accepted" else 0, scores)),
+            "submit_time_sum": sum((item["ac_time"] for item in scores if item["ac_time"] != -1))
         }
         current["total"] = total
     if contest.rank_criterion == "penalty":
         ranklist.sort(
             key=lambda x: (-x["total"]["ac_count"], x["total"]["penalty"]))
     else:
-        ranklist.sort(key=lambda x: x["total"]["score"], reverse=True)
+        ranklist.sort(key=lambda x: (
+            x["total"]["score"], -x["total"]["submit_time_sum"]), reverse=True)
     problems = []
     result = {"ranklist": ranklist, "problems": problems,
               "name": contest.name, "contest_id": contest.id, "using_penalty": contest.rank_criterion == "penalty"}
@@ -504,7 +530,8 @@ def contest_ranklist(contestID):
     }
     """
     contest: Contest = Contest.by_id(contestID)
-    can_see_ranklist = contest.can_see_ranklist(session.get("uid"))
+    can_see_ranklist = contest.can_see_ranklist(
+        session.get("uid"), permission_manager)
     if not can_see_ranklist:
         return make_response(-1, message="你无权进行此操作")
     import redis

@@ -40,6 +40,9 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
     更新某个提交测评测状态
     submission_id:int 提交ID
     judge_result:dict 格式同数据模型
+    judger:str 评测机名
+    message:str 评测附加信息
+    extra_status:str 额外指定评测状态
     """
     submit: Submission = db.session.query(
         Submission).filter(Submission.id == submission_id).one()
