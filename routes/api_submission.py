@@ -179,7 +179,7 @@ def get_submission_info():
 
     if submit.contest_id != -1:
         contest: Contest = Contest.by_id(submit.contest_id)
-        if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not permission_manager.has_permission(user.id, "submission.manage"):
+        if not contest.judge_result_visible and contest.running() and user.id != contest.owner_id and not permission_manager.has_permission(user.id, "contest.manage"):
             ret["judge_result"] = {}
             ret["status"] = ret["status"] if ret["status"] in {
                 "compile_error"} else "invisible"
