@@ -38,7 +38,7 @@
     </div>
     <div class="ui segment stacked" style="overflow-x: scroll;max-height: 1000px;">
         <table class="ui very basic  table">
-            <thead >
+            <thead>
                 <tr class="ui sticky">
                     <th></th>
                     <th>用户名</th>
@@ -50,12 +50,12 @@
                             {[problem.name]}</a>
                         <div><span style="color:green">{[problem.accepted_submit]}</span>/{[problem.total_submit]}</div>
                     </th>
-                    
+
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="line,i in data.ranklist">
-                    <td class="center aligned"> 
+                    <td class="center aligned">
                         <div class="ui yellow ribbon label" v-if="i==0">
                             1
                         </div>
@@ -71,7 +71,12 @@
                     </td>
                     <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
                     <td class="center aligned">
-                        <span v-if="data.using_penalty==false">{[line.total.score]}</span>
+                        <span v-if="data.using_penalty==false">
+                            <div>{[line.total.score]}</div>
+                            <div style="color: red;">
+                                {[line.total.submit_time_sum]}
+                            </div>
+                        </span>
                         <span v-else>
                             <div style="color:green">{[line.total.ac_count]}</div>
                             <div style="color:red">{[line.total.penalty]}</div>
@@ -81,7 +86,14 @@
                         v-bind:class="{positive:item.status=='accepted',negative:item.status=='unaccepted'}">
                         <div v-if="item.submit_id!=-1">
                             <a :href="'/show_submission/'+item.submit_id">
-                                <span v-if="data.using_penalty==false">{[item.score]}</span>
+                                <span v-if="data.using_penalty==false">
+                                    <div>
+                                        {[item.score]}
+                                    </div>
+                                    <div style="color: red;">
+                                        {[item.ac_time]}
+                                    </div>
+                                </span>
                                 <span v-else>
                                     <div v-if="item.status=='accepted'">
                                         <div>-{[item.submit_count]}</div>
