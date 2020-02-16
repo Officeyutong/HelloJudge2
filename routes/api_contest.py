@@ -461,7 +461,7 @@ def get_contest_rank_list(contest: Contest) -> dict:
             "score": sum(map(lambda x: x["score"], scores)),
             "penalty": sum(map(lambda x: x["penalty"], scores)),
             "ac_count": sum(map(lambda x: 1 if x["status"] == "accepted" else 0, scores)),
-            "submit_time_sum": sum((item["submit_time"] for item in scores if item["submit_time"] != -1))
+            "submit_time_sum": sum((item["submit_time"] for item in scores if (item["submit_time"] != -1) and item["score"] > 0))
         }
         current["total"] = total
     if contest.rank_criterion == "penalty":
