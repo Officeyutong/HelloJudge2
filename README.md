@@ -4,7 +4,7 @@
 用于算法竞赛的评测系统。
 
 ## Demo
-http://cf.yt2soj.top/ 烟台二中OJ
+http://cf.yt2soj.top/ YT2SOJ
 
 ## 架构
 Web端和评测端。
