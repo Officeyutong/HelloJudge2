@@ -79,18 +79,24 @@ def upgrade():
                     type_=sa.Boolean(),
                     existing_nullable=False)
     # 默认的权限组
-    conn.execute(
-        PermissionGroup.__table__.insert(),
-        [
-            {
-                "id": "default", "name": "普通用户", "permissions": ["post.discussion.global", "post.discussion.problem.global", "post.discussion.problem.*"]
-            },
-            {
-                "id": "admin", "name": "管理员", "permissions": ["*"]
-            },
+    # conn.execute(
+    #     PermissionGroup.__table__.insert(),
+    #     [
+    #         {
+    #             "id": "default", "name": "普通用户", "permissions": ["post.discussion.global", "post.discussion.problem.global", "post.discussion.problem.*"]
+    #         },
+    #         {
+    #             "id": "admin", "name": "管理员", "permissions": ["*"]
+    #         },
 
-        ]
-    )
+    #     ]
+    # )
+    conn.execute("""
+        INSERT INTO permission_groups (id,name,permissions) values ("default","普通用户",'["post.discussion.global", "post.discussion.problem.global", "post.discussion.problem.*"]')
+    """)
+    conn.execute("""
+        INSERT INTO permission_groups (id,name,permissions) values ("admin","管理员",'["*"]')
+    """)
     conn.execute("""
         update users set permissions="[]" where 1=1
         """)
