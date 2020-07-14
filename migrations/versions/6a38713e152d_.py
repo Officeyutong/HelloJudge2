@@ -72,11 +72,7 @@ def upgrade():
                type_=sa.Text(length=20),
                existing_nullable=False)
     # ### end Alembic commands ###
-    from sqlalchemy.engine import Connection
-    conn: Connection = op.get_bind()
-    conn.execute(
-        """update permission_groups set inherit = "" where 1=1"""
-    )
+
 
 
 def downgrade():

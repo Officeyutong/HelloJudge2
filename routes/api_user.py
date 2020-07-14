@@ -483,7 +483,8 @@ def update_profile():
         return make_response(-1, message="你没有权限封禁/解封此用户")
     user.banned = data["banned"]
     if user.email != data["email"]:
-        if config.REGISTER_AUTH_EMAIL and not permission_manager.has_permission(session.get("uid"), "user.manage"):
+        # 注册不需要邮箱验证的话，改邮箱也不需要
+        if config.REQUIRE_REGISTER_AUTH and not permission_manager.has_permission(session.get("uid"), "user.manage"):
             db.session.commit()
             from common.aes import encrypt
             from config import AUTH_PASSWORD, AUTH_TOKEN, CHANGE_EMAIL_EXPIRE_SECONDS
