@@ -5,10 +5,10 @@ OUTPUT_FILE = "{filename}.py"
 # 编译命令行
 COMPILE = "cp {source} {output} {extra}"
 # 运行命令行
-RUN = 'sh -c "python3.7 {program} {redirect}"'
+RUN = 'sh -c "python3 {program} {redirect}"'
 # 显示名
-DISPLAY = "Python 3.7"
+DISPLAY = "Python 3.8"
 # 版本
-VERSION = "CPython 3.7"
+VERSION = "CPython 3.8"
 # Ace.js模式
 ACE_MODE = "python"
