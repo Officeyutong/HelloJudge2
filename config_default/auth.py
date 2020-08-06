@@ -1,3 +1,5 @@
+# SMTP 是否使用SSL
+SMTP_USING_SSL = False
 # 发信SMTP服务器
 SMTP_SERVER = "smtp.qwq.com"
 # 发信SMTP服务器端口

@@ -56,7 +56,10 @@ def send_mail(content: str, subject: str, target: str, receiver_username="") -> 
     content["Subject"] = Header(subject, "utf-8")
     content["From"] = my_format(f"HelloJudgeV2 <{config.EMAIL_SENDER}>")
     content["To"] = my_format(f"{receiver_username} <{target}>")
-    smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
+    if config.SMTP_USING_SSL:
+        smtp_client = smtplib.SMTP_SSL(config.SMTP_SERVER, config.SMTP_PORT)
+    else:
+        smtp_client = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
     smtp_client.login(config.SMTP_USER, config.SMTP_PASSWORD)
     try:
         smtp_client.sendmail(config.EMAIL_SENDER, target,
