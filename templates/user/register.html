@@ -16,7 +16,8 @@
                 username: "",
                 email: "",
                 password: "",
-                password2: ""
+                password2: "",
+                loading: false
             },
             mounted() {
                 if (this.base.isLogin) {
@@ -36,9 +37,11 @@
                         this.error_message = "两次密码不一致";
                         return;
                     }
+                    this.loading = true;
                     $.post("/api/register", {
                         username: register_frame.username, password: this.md5WithSalt(register_frame.password), email: register_frame.email
                     }).done(function (ctx) {
+                        register_frame.loading = false;
                         ctx = JSON.parse(ctx);
                         console.log(ctx);
                         if (ctx.code == 0) {
@@ -83,7 +86,7 @@
                     <div class="header">错误</div>
                     <p>{[error_message]}</p>
                 </div>
-                <div class="ui green submit button" v-on:click="register">提交</div>
+                <div class="ui green submit button" v-on:click="register" v-bind:class="{loading:loading,disabled:loading}">提交</div>
             </div>
         </div>
     </div>

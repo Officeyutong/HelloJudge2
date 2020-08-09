@@ -276,6 +276,7 @@ def admin_remove_user_permission(uid: int, index: int):
     user.permissions = [x for i, x in enumerate(
         current_permissions) if i != index]
     db.session.commit()
+    permission_manager.refresh_user(user.id)
     return make_json_response(0, message="删除成功")
 
 
@@ -291,4 +292,5 @@ def admin_add_user_permission(uid: int, permission: str):
     current_permissions = user.permissions
     user.permissions = [*current_permissions, permission]
     db.session.commit()
+    permission_manager.refresh_user(user.id)
     return make_json_response(0, message="保存成功")

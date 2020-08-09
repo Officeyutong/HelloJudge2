@@ -61,6 +61,8 @@ def submit():
         contest = Contest.by_id(request.form["contest_id"])
         if not contest.running():
             return make_response(-1, message="比赛未在进行！")
+        if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+            return make_response(-1, message="你没有权限查看该比赛")
         problem: Problem = Problem.by_id(
             contest.problems[int(request.form["problem_id"])]["id"])
 

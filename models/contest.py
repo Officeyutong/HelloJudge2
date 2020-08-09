@@ -32,12 +32,14 @@ class Contest(db.Model):
         db.String(20), nullable=False, default="max_score")
     # 比赛邀请码
     # 如果非空字符串，则必须正确输入邀请码才可进入比赛
-    invite_code = db.Column(db.String(10), nullable=False, default="")
+    invite_code = db.Column(db.String(20), nullable=False, default="")
     # 是否已应用rating
     rated = db.Column(db.Boolean, nullable=False, default=False)
     # 应用rating的时间
     rated_time = db.Column(db.DateTime, nullable=True)
-
+    # 是否为私有比赛
+    # 私有比赛需要用户拥有contest.use.比赛ID权限才可使用
+    private_contest = db.Column(db.Boolean, nullable=False, default=False)
     @staticmethod
     def by_id(id):
         return db.session.query(Contest).filter(Contest.id == id).one_or_none()

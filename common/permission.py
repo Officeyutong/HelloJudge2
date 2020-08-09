@@ -27,7 +27,12 @@ class PermissionManager:
         # print(self.permission_getter(uid))
         conn.sadd(set_name, *permissions)
 
-    def add_permission(self, uid: int, perm: str) -> NoReturn:
+    def refresh_user(self, uid: int) -> None:
+        """刷新某个用户的缓存"""
+        conn = redis.Redis(connection_pool=self.pool)
+        conn.delete(f"hj2-perm-{uid}")
+
+    def add_permission(self, uid: int, perm: str) -> None:
         self.permission_adder(uid, perm)
         # 刷新缓存
         conn = redis.Redis(connection_pool=self.pool)

@@ -132,6 +132,8 @@ def show_contest(contestID: int):
             "ranklist_visible":false,
             "judge_result_visible":false,
             "rank_criterion":"",
+            "private_contest":"是否为私有比赛",
+            "invite_code":"邀请码",
             "problems":[
                 {
                     "weight":"题目权值,
@@ -150,6 +152,8 @@ def show_contest(contestID: int):
     contest: Contest = Contest.by_id(contestID)
     if not contest:
         return make_response(-1, message="比赛ID不存在！")
+    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+        return make_response(-1, message="你没有权限查看该比赛")
     can_see_ranklist = contest.can_see_ranklist(
         session.get("uid"), permission_manager)
     can_see_judge_result = contest.can_see_judge_result(
@@ -174,6 +178,8 @@ def show_contest(contestID: int):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
+        "private_contest": contest.private_contest,
+        "invite_code": contest.invite_code,
         "managable": permission_manager.has_permission(session.get("uid", None), "contest.manage")
     }
     problems = result["problems"]
@@ -224,12 +230,17 @@ def contest_raw_data(contestID):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
+        "private_contest": contest.private,
+        "invite_code":"邀请码"
     }
     """
     if not session.get("uid"):
         return "你没有权限这样做", 403
+
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
+    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+        return "你没有权限查看该比赛", 403
     if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
         return "你没有权限这样做", 403
     import time
@@ -243,6 +254,8 @@ def contest_raw_data(contestID):
         "ranklist_visible": contest.ranklist_visible,
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
+        "private_contest": contest.private_contest,
+        "invite_code": contest.invite_code
     }
     return make_response(0, data=result)
 
@@ -295,6 +308,8 @@ def contest_download_file(contest_id, problem_id, file):
     if not session.get("uid"):
         return flask.abort(403)
     contest: Contest = Contest.by_id(contest_id)
+    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+        return "你没有权限查看该比赛", 403
     problem: Problem = Problem.by_id(contest.problems[int(problem_id)]["id"])
     if file not in problem.downloads:
         return flask.abort(404)
@@ -343,6 +358,8 @@ def contest_show_problem(problemID: int, contestID: int):
         user: User = User.by_id(session.get("uid"))
         if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
             return make_response(-1, message="你没有权限跟我说话")
+    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+        return make_response(-1, message="你没有权限查看该比赛")
     problem: Problem = Problem.by_id(
         contest.problems[int(problemID)]["id"])
     if problem.problem_type == "remote_judge":
@@ -537,6 +554,8 @@ def contest_ranklist(contestID):
         session.get("uid"), permission_manager)
     if not can_see_ranklist:
         return make_response(-1, message="你无权进行此操作")
+    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+        return make_response(-1, message="你没有权限查看该比赛")
     import redis
     from main import redis_connection_pool
     from json import JSONEncoder, JSONDecoder

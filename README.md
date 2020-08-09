@@ -120,9 +120,9 @@ SPJ的执行时间上限(ms)
 使用manage.py进行部分权限管理(用户添加\删除权限，设置管理员).
 2020.1.23更新: 已支持在Web端进行用户权限管理
 
-- setadmin 用户名 - 设置管理员 (将用户移动到admin组并添加permission.manage权限,然后刷新缓存)
-- addperm 用户名 权限字符串 - 用户添加权限(会刷新缓存)
-- removeperm 用户名 权限字符串 - 用户删除权限(会刷新缓存)
+- setadmin 用户ID - 设置管理员 (将用户移动到admin组并添加permission.manage权限,然后刷新缓存)
+- addperm 用户ID 权限字符串 - 用户添加权限(会刷新缓存)
+- removeperm 用户ID 权限字符串 - 用户删除权限(会刷新缓存)
 
 ## 代码行数统计(已忽略static文件夹)
 ```plain

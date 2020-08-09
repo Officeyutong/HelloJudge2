@@ -7,9 +7,9 @@ manager = Manager(web_app)
 migrate = Migrate(web_app, db)
 manager.add_command('db', MigrateCommand)
 @manager.command
-def setadmin(username):
+def setadmin(userid):
     """设置管理员"""
-    user: User = db.session.query(User).filter(User.username == username).one()
+    user: User = db.session.query(User).filter(User.id == userid).one()
     from redis import Redis
     Redis(connection_pool=redis_connection_pool).delete(f"hj2-perm-{user.id}")
     user.permission_group = "admin"
@@ -19,9 +19,9 @@ def setadmin(username):
 
 
 @manager.command
-def addperm(username, permstr):
+def addperm(userid, permstr):
     """用户增加权限"""
-    user: User = db.session.query(User).filter(User.username == username).one()
+    user: User = db.session.query(User).filter(User.id == userid).one()
     from redis import Redis
     Redis(connection_pool=redis_connection_pool).delete(f"hj2-perm-{user.id}")
     user.permissions = [*user.permissions, permstr]
@@ -30,9 +30,9 @@ def addperm(username, permstr):
 
 
 @manager.command
-def removeperm(username, permstr):
+def removeperm(userid, permstr):
     """用户删除权限"""
-    user: User = db.session.query(User).filter(User.username == username).one()
+    user: User = db.session.query(User).filter(User.id == userid).one()
     from redis import Redis
     Redis(connection_pool=redis_connection_pool).delete(f"hj2-perm-{user.id}")
     user.permissions = [x for x in user.permissions if x != permstr]

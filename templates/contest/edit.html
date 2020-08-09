@@ -44,7 +44,7 @@
             }
         });
         axios.post("/api/contest/raw_data", { contestID: window.location.href.split("/").pop() }).then(ctx => {
-            
+
             ctx = ctx.data;
             if (ctx.code) {
                 showErrorModal(ctx.message);
@@ -149,6 +149,20 @@
                         v-on:click="data.rank_criterion='last_submit'">题目最后一次提交</div>
                     <div class="ui button" v-bind:class="{active:data.rank_criterion=='penalty'}"
                         v-on:click="data.rank_criterion='penalty'">罚时</div>
+                </div>
+            </div>
+            <div class="ui field">
+                <label>其他</label>
+                <div class="ui toggle checkbox">
+                    <input type="checkbox" v-bind:checked="data.private_contest" v-on:click="data.private_contest=!data.private_contest;">
+                    <label>私有比赛</label>
+                </div>
+
+            </div>
+            <div class="ui field" v-if="data.private_contest">
+                <label>邀请码</label>
+                <div class="ui input">
+                    <input type="text" v-model="data.invite_code">
                 </div>
             </div>
             <div class="ui divider"></div>
