@@ -49,3 +49,6 @@ JUDGE_STATUS = {
     "judge_failed": {"icon": "times icon", "text": "评测失败", "color": "red"},
     "compile_error": {"icon": "cog icon", "text": "编译错误", "color": "blue"}
 }
+
+# 在在线IDE和评测信息页面使用轮询而不是SocketIO
+USE_POLLING = False

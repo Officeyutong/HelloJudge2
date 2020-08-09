@@ -18,6 +18,7 @@
         ide = new Vue({
             el: "#ide",
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             data: {
                 langs: null,
                 selectedLang: "",
@@ -43,17 +44,35 @@
                     this.loading = true;
                     this.saveToBrowser();
                     $.post("/api/ide/submit", { code: this.code, input: this.input, lang: this.selectedLang, parameter: this.parameter }).done(x => {
-                        this.loading = false;
                         x = JSON.parse(x);
                         if (x.code) {
                             showErrorModal(x.message);
-
                             return;
                         }
-                        console.log(x);
+                        // console.log(x);
                         ide.runID = x.data.run_id;
                         // let run_id = x.data.run_id;
+                        if (ide.base.usePolling) {
+                            let token = setInterval(() => {
+                                axios.post("/api/ide/fetch_status", {
+                                    run_id: ide.runID
+                                }).then(resp => {
+                                    let data = resp.data.data;
+                                    console.log(data);
+                                    ide.output = data.message;
+                                    if (data.status == "done") {
+                                        this.loading = false;
+                                        clearInterval(token);
+                                    }
+                                }).catch(err => {
+                                    clearInterval(token);
+                                    this.loading = false;
+                                    // ide.output = "运行中..";
+                                    ide.output = "发生错误"
+                                });
+                            }, 1000);
 
+                        }
                     });
                 }
             }, mounted() {
@@ -72,19 +91,21 @@
                     })
                     this.done = true;
                     this.loadFromBroswer();
-                    socket = io.connect("/ws/iderun");
-                    socket.emit("init");
-                    socket.on("update", x => {
-                        console.log("recv", x);
-                        if (x.run_id != ide.runID) return;
-                        let now = new Date();
+                    if (!this.base.usePolling) {
+                        socket = io.connect("/ws/iderun");
+                        socket.emit("init");
+                        socket.on("update", x => {
+                            console.log("recv", x);
+                            if (x.run_id != ide.runID) return;
+                            let now = new Date();
 
-                        this.output = now.toLocaleString() + "\n" + x.message;
-                        if (x.status == "done") {
-                            this.loading = false;
-                            ide.runID = "";
-                        }
-                    });
+                            this.output = now.toLocaleString() + "\n" + x.message;
+                            if (x.status == "done") {
+                                this.loading = false;
+                                ide.runID = "";
+                            }
+                        });
+                    }
                 });
 
             }

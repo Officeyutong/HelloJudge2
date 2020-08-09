@@ -96,7 +96,7 @@
             return config;
         });
         axios.interceptors.response.use(resp => {
-            console.log(resp);
+            // console.log(resp);
             return resp;
         }, err => {
             let response = err.response;
@@ -274,6 +274,8 @@
                     baseMixin.data.base.email = ctx.email;
                     baseMixin.data.base.uid = ctx.uid;
                     baseMixin.data.base.mangable = ctx.backend_managable;
+                    baseMixin.data.base.usePolling = ctx.usePolling;
+                    
 
                 }
             });

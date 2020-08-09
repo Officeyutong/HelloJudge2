@@ -3,8 +3,10 @@
 {%block head%}
 <script src="https://cdn.staticfile.org/socket.io/2.3.0/socket.io.js"></script>
 <!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script> -->
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
+<!-- <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css"> -->
+<!-- <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script> -->
+<script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
+<link href="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.1.2/styles/default.min.css" rel="stylesheet">
 <style>
     pre>code {
         font-family: "Sans Mono", "Consolas", "Courier", monospace;
@@ -16,6 +18,10 @@
 {%endblock%}
 {%block body%}
 <script>
+    // let simpleSleep = function (time) { //ms
+    //     var startTime = new Date().getTime() + parseInt(time, 10);
+    //     while (new Date().getTime() < startTime) { }
+    // };
     var submission, socket;
     console.log("qwq");
     $(document).ready(() => {
@@ -94,18 +100,45 @@
             $.post("/api/get_judge_status").done(ctx => {
                 submission.judge_status = JSON.parse(ctx).data;
                 if (submission.data.status == "judging" || submission.data.status == "waiting") {
-                    socket = io(window.location.origin + "/ws/submission");
-                    console.log("Tracker connected.");
-                    socket.emit("init", { "submission_id": submission_id });
-                    socket.on("update", (x) => {
-                        console.log("Tracker updated:");
-                        console.log(x);
-                        submission.data.message = x.message;
-                        submission.data.judge_result = x.judge_result;
-                        submission.data.status = x.status;
-                        submission.data.score = x.score;
-                        // if (submission.data.status != "judging" && submission.data != "waiting") socket.close();
-                    });
+                    if (submission.data.usePolling) {
+                        console.log("Polling tracker started.");
+                        let token = setInterval(() => {
+                            $.ajax({
+                                url: "/api/get_submission_info",
+                                data: {
+                                    submission_id: submission_id
+                                },
+                                async: false,
+                                method: "post",
+                                error: () => {
+                                    console.log("Tracker cancelled");
+                                    clearInterval(token);
+                                },
+                                success: (resp_) => {
+                                    let resp = JSON.parse(resp_);
+                                    if (resp.data.status !== "judging" && resp.data.status !== "waiting") {
+                                        clearInterval(token);
+                                    }
+                                    submission.data = resp.data;
+                                }
+                            })
+
+                        }, 500);
+                    } else {
+                        socket = io(window.location.origin + "/ws/submission");
+                        console.log("Tracker connected.");
+                        socket.emit("init", { "submission_id": submission_id });
+                        socket.on("update", (x) => {
+                            console.log("Tracker updated:");
+                            console.log(x);
+                            submission.data.message = x.message;
+                            submission.data.judge_result = x.judge_result;
+                            submission.data.status = x.status;
+                            submission.data.score = x.score;
+                            // if (submission.data.status != "judging" && submission.data != "waiting") socket.close();
+                        });
+                    }
+
                 }
 
                 submission.done = true;

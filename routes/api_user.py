@@ -30,7 +30,8 @@ def query_login_state():
             "judgeStatus":{ 
                 "评测状态列表"
             },
-            "appName":"应用程序名"
+            "appName":"应用程序名",
+            "usePolling":"是否使用轮询"
         }
 
     """
@@ -38,7 +39,8 @@ def query_login_state():
         "result": session.get("uid") is not None,
         "judgeStatus": config.JUDGE_STATUS,
         "salt": config.PASSWORD_SALT,
-        "appName": config.APP_NAME
+        "appName": config.APP_NAME,
+        "usePolling":config.USE_POLLING
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(

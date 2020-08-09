@@ -123,6 +123,7 @@ def get_submission_info():
         "code":0,//非0表示调用成功
         "message":"qwq",//调用失败时的信息
         "data":{
+            "usePolling":"是否使用轮询",
             "managable":"是否可管理",
             "id":-1,//提交ID
             "uid":-1,//用户ID
@@ -234,7 +235,7 @@ def get_submission_info():
         "uid": submit.uid,
         "username": db.session.query(User.username).filter(User.id == submit.uid).one().username
     }
-
+    ret["usePolling"] = config.USE_POLLING
     del ret["problem_id"]
     del ret["uid"]
     return make_response(0, data=ret)
