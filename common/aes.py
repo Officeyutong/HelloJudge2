@@ -18,8 +18,8 @@ def encrypt(key: str, plaintext: str) -> str:
 def decrypt(key: str, cipher: str) -> str:
     aes_obj = AES.new(key.encode("utf-8"), AES.MODE_ECB)
     cipher_encoded = cipher.encode("utf-8")
-    while len(cipher_encoded) % 4 != 0:
-        cipher_encoded += b"="
+    # while len(cipher_encoded) % 4 != 0:
+    #     cipher_encoded += b"="
     plain = aes_obj.decrypt(base64.decodebytes(cipher_encoded))
     data_length = int.from_bytes(plain[:8], "little")
     real_data = plain[8:8+data_length]
