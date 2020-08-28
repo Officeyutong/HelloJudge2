@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import config,csrf
+from main import config, csrf
 from flask import render_template
 
 
@@ -111,12 +111,14 @@ def view_contest_ranklist(id):
 
 
 @app.route("/reset_password/<string:token>")
-def view_reset_password(token):
+@app.route("/reset_password/")
+def view_reset_password(token=""):
     return render_template("user/reset_password.html")
 
 
 @app.route("/auth_email/<string:token>")
-def view_auth_email(token):
+@app.route("/auth_email/")
+def view_auth_email(token=""):
     return render_template("user/auth_email.html")
 
 
