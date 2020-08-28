@@ -29,7 +29,7 @@
                     this.loading = true;
 
                     $.post("/api/auth_email", {
-                        username: emailAuth.username, token: emailAuth.token
+                        username: emailAuth.username, token: emailAuth.token.trim()
                     }).done(function (ctx) {
                         this.loading = false;
                         ctx = JSON.parse(ctx);
