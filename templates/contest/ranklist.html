@@ -56,20 +56,25 @@
             <tbody>
                 <tr v-for="line,i in data.ranklist">
                     <td class="center aligned">
-                        <div class="ui yellow ribbon label" v-if="i==0">
+                        <div class="ui yellow ribbon label" v-if="line.rank==1">
                             1
                         </div>
-                        <div class="ui  ribbon label" v-else-if="i==1">
+                        <div class="ui  ribbon label" v-else-if="line.rank==2">
                             2
                         </div>
-                        <div class="ui brown ribbon label" v-else-if="i==2">
+                        <div class="ui brown ribbon label" v-else-if="line.rank==3">
                             3
                         </div>
                         <div v-else>
-                            {[i+1]}
+                            {[line.rank]}
                         </div>
                     </td>
-                    <td><a :href="'/profile/'+line.uid">{[line.username]}</a></td>
+                    <td>
+                        <a :href="'/profile/'+line.uid">{[line.username]}</a>
+                        <div class="ui tiny red label" v-if="line.virtual">
+                            虚拟提交
+                        </div>
+                    </td>
                     <td class="center aligned">
                         <span v-if="data.using_penalty==false">
                             <div style="color: green;">{[line.total.score]}</div>

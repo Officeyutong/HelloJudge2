@@ -1,3 +1,4 @@
+from models.problem_todo import ProblemTodo
 from main import web_app as app, permission_manager
 from main import db, config, basedir
 from flask import session, request, send_file, send_from_directory
@@ -6,12 +7,36 @@ from models.user import *
 from models.problem import *
 from models.submission import *
 from models import Discussion
+from models.tag import Tag, ProblemTag
 from sqlalchemy.sql.expression import *
+import sqlalchemy.sql.expression as expr
+import sqlalchemy.sql.functions as func
+from sqlalchemy.orm.query import Query
 from werkzeug.utils import secure_filename
 from common.utils import unpack_argument
 from common.permission import require_permission
 import os
 import importlib
+import typing
+
+
+@app.route("/api/problem/unlock", methods=["POST"])
+@unpack_argument
+def api_problem_unlock(problemID: int, inviteCode: str):
+    """
+    使用邀请码申请某题目的权限
+    """
+    problem: Problem = db.session.query(Problem.public, Problem.invite_code, Problem.id).filter_by(
+        id=problemID).one_or_none()
+    if not problem:
+        return make_response(-1, message="此题目不存在")
+    if inviteCode != problem.invite_code:
+        return make_response(-1, message="邀请码错误")
+    if not session.get("uid", None):
+        return make_response(-1, message="请登录")
+    permission_manager.add_permission(
+        session.get("uid"), f"problem.use.{problem.id}")
+    return make_response(0, message="操作完成")
 
 
 @app.route("/api/problem/remove", methods=["POST"])
@@ -37,6 +62,22 @@ def problem_remove():
     import shutil
     shutil.rmtree(
         f"{config.UPLOAD_DIR}/{request.form['problem_id']}", ignore_errors=True)
+    return make_response(0, message="操作完成")
+
+
+@app.route("/api/refresh_cached_count", methods=["POST"])
+@unpack_argument
+def api_refresh_cached_count(problem_id: int):
+    """
+    刷新题目AC数和提交数缓存
+    problem_id: 题目ID
+
+    """
+    user: User = User.by_id(session.get("uid"))
+    problem: Problem = Problem.by_id(problem_id)
+    if not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
+        return make_response(-1, message="你没有权限执行此操作")
+    refresh_cached_count(problem_id)
     return make_response(0, message="操作完成")
 
 
@@ -124,7 +165,17 @@ def get_problem_info():
                 ],
                 "languages":[
                     {id:"cpp","display":"显示名","version":"G++8.3"}
-                ]
+                ],
+                "tags":[
+                    {
+                        "id":"标签ID",
+                        "display":"标签显示名",
+                        "color":"标签颜色"
+                    }
+                ],
+                "hasPermission":"是否有权限访问",
+                "inTodoList":"是否在待做题目列表中",
+                "submissionVisible":"是否可以看到提交"
             }
         }
     """
@@ -132,64 +183,120 @@ def get_problem_info():
         Problem.id == int(request.form["id"]))
     if problem.count() == 0:
         return make_response(-1, message="题目ID不存在")
+    edit = int(request.form.get("edit", 0))
     problem = problem.one()
-    if not problem.public and not session.get("uid"):
-        return make_response(-1, message="你没有权限查看此题目")
-    if not problem.public and not permission_manager.has_permission(session.get("uid", None), "problem.manage") and int(session.get("uid")) != problem.uploader_id:
-        return make_response(-1, message="你没有权限查看此题目")
-    result = problem.as_dict()
-    last_submission: Submission = db.session.query(Submission).filter(and_(
-        Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
-    result["lastUsedParameters"] = []
-    if last_submission.count():
-        submit = last_submission.first()
-        result["last_code"] = submit.code
-        result["last_lang"] = submit.language
-        result["lastUsedParameters"] = submit.selected_compile_parameters
+    if edit:
+        if session.get("uid", -1) != problem.uploader_id and not permission_manager.has_permission(session.get("uid"), "problem.manage"):
+            return make_response(-1, message="你没有权限编辑此题目")
+
+    has_permission = problem.public or permission_manager.has_permission(session.get(
+        "uid", None), f"problem.use.{problem.id}") or int(session.get("uid", -1)) == problem.uploader_id
+    # result = problem.as_dict()
+    # print(result.keys())
+    result = {}
+    if has_permission:
+        USING_KEYS = [
+            'background',
+            'problem_type',
+            'subtasks',
+            'content',
+            'extra_parameter',
+            'public',
+            'id',
+            'input_format',
+            'can_see_results',
+            'output_format',
+            'create_time',
+            'spj_filename',
+            'hint',
+            'remote_judge_oj',
+            'using_file_io',
+            'example',
+            'remote_problem_id',
+            'uploader_id',
+            'input_file_name',
+            'files',
+            'cached_submit_count',
+            'title',
+            'output_file_name',
+            'downloads',
+            'cached_accepted_count',
+            'team_id',
+            'provides']
     else:
-        result["last_lang"] = result["last_code"] = ""
-    result["submission_count"] = db.session.query(Submission).filter(
-        Submission.problem_id == problem.id).count()
-    result["accepted_count"] = db.session.query(
-        Submission).filter(Submission.status == "accepted").filter(Submission.problem_id == problem.id).count()
-    result["my_submission"] = -1
-
-    if session.get("uid"):
-        ac_submit = db.session.query(Submission.id, Submission.status).filter(
-            Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
-        if ac_submit.count():
-            result["my_submission"], result["my_submission_status"] = ac_submit.first()
+        USING_KEYS = [
+            "title", "id"
+        ]
+    if edit:
+        USING_KEYS.append("invite_code")
+    for item in USING_KEYS:
+        result[item] = getattr(problem, item)
+    result["hasPermission"] = has_permission
+    if has_permission:
+        last_submission: Submission = db.session.query(Submission).filter(and_(
+            Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
+        result["lastUsedParameters"] = []
+        if last_submission.count():
+            submit = last_submission.first()
+            if problem.problem_type == "submit_answer":
+                result["last_code"] = "提交答案题不提供源代码"
+            else:
+                result["last_code"] = submit.code
+            result["last_lang"] = submit.language
+            result["lastUsedParameters"] = submit.selected_compile_parameters
         else:
-            any_submit = db.session.query(Submission.id, Submission.status).filter(
-                Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
-            if any_submit.count():
-                result["my_submission"], result["my_submission_status"] = any_submit.first()
-    result["score"] = problem.get_total_score()
-    result["create_time"] = str(result["create_time"])
-    result["managable"] = permission_manager.has_permission(
-        session.get("uid", None), "problem.manage")
-    uploader: User = db.session.query(User.id, User.username).filter(
-        User.id == problem.uploader_id).one()
-    result["uploader"] = {
-        "uid": uploader.id,
-        "username": uploader.username
-    }
-    recent_discussions: Discussion = db.session.query(
-        Discussion.id, Discussion.title).filter(Discussion.path == f"discussion.problem.{problem.id}").order_by(Discussion.id.desc()).limit(5)
-    result["recentDiscussions"] = [
-        {"id": item.id, "title": item.title} for item in recent_discussions
-    ]
-    result["languages"] = [
+            result["last_lang"] = result["last_code"] = ""
+        result["submission_count"] = problem.cached_submit_count
+        result["accepted_count"] = problem.cached_accepted_count
+        result["my_submission"] = -1
 
-    ]
-    for file in (x for x in os.listdir("langs") if x.endswith(".py")):
-        module = importlib.import_module("langs."+file.replace(".py", ""))
-        result["languages"].append({
-            "id": file.replace(".py", ""),
-            "display": module.DISPLAY,
-            "version": module.VERSION,
-            "ace_mode": module.ACE_MODE
-        })
+        if session.get("uid"):
+            ac_submit = db.session.query(Submission.id, Submission.status).filter(
+                Submission.status == "accepted").filter(Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
+            if ac_submit.count():
+                result["my_submission"], result["my_submission_status"] = ac_submit.first()
+            else:
+                any_submit = db.session.query(Submission.id, Submission.status).filter(
+                    Submission.uid == session.get("uid")).filter(Submission.problem_id == problem.id).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
+                if any_submit.count():
+                    result["my_submission"], result["my_submission_status"] = any_submit.first(
+                    )
+        result["score"] = problem.get_total_score()
+        result["create_time"] = str(result["create_time"])
+        result["managable"] = permission_manager.has_permission(
+            session.get("uid", None), "problem.manage")
+        uploader: User = db.session.query(User.id, User.username).filter(
+            User.id == problem.uploader_id).one()
+        result["uploader"] = {
+            "uid": uploader.id,
+            "username": uploader.username
+        }
+        recent_discussions: Discussion = db.session.query(
+            Discussion.id, Discussion.title).filter(Discussion.path == f"discussion.problem.{problem.id}").order_by(Discussion.id.desc()).limit(5)
+        result["recentDiscussions"] = [
+            {"id": item.id, "title": item.title} for item in recent_discussions
+        ]
+        result["languages"] = [
+
+        ]
+        for file in (x for x in os.listdir("langs") if x.endswith(".py")):
+            module = importlib.import_module("langs."+file.replace(".py", ""))
+            result["languages"].append({
+                "id": file.replace(".py", ""),
+                "display": module.DISPLAY,
+                "version": module.VERSION,
+                "ace_mode": module.ACE_MODE
+            })
+        result["tags"] = []
+        for item in db.session.query(Tag.color, Tag.display, Tag.id, ProblemTag.tag_id).join(Tag, Tag.id == ProblemTag.tag_id).filter(ProblemTag.problem_id == problem.id).all():
+            result["tags"].append({
+                "id": item.id,
+                "display": item.display,
+                "color": item.color
+            })
+        result["inTodoList"] = bool(db.session.query(ProblemTodo).filter_by(
+            uid=session.get("uid", -1), problem_id=problem.id).limit(1).count())
+        result["submissionVisible"] = problem.submission_visible
     return make_response(0, data=result)
 
 
@@ -273,16 +380,37 @@ def download_file(id: int, filename: str):
         flask.abort(403)
     if not any((x["name"] == filename for x in problem.files)):
         flask.abort(404)
-    if session.get("uid"):
-        user: User = db.session.query(User).filter(
-            User.id == session.get("uid")).one()
-        if not problem.public and not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id:
-            flask.abort(403)
-        if problem.public and not permission_manager.has_permission(user.id, "problem.manage") and user.id != problem.uploader_id and filename not in problem.downloads:
+    public_file = filename in problem.downloads
+    # if not problem.public and not permission_manager.has_any_permission(session.get("uid", None), f"problem.use.{problem.id}"):
+    # 用户未登录
+    ok = False
+    if not session.get("uid", None):
+        # 只能下载公开题目的公开文件
+        if not problem.public or not public_file:
             flask.abort(403)
     else:
-        if not problem.public or filename not in problem.downloads:
-            flask.abort(403)
+        # 用户已登录
+        # 区分是否有题目管理权限
+        # 题目创建者或者有管理权限，那么任何时候都行
+        if session.get("uid", -1) == problem.uploader_id or permission_manager.has_any_permission(session.get("uid", None), f"problem.manage"):
+            ok = True
+        # 其他情况，如果是公开题或者有权限的私有题，则任何时候都允许下公开文件
+        else:
+            if problem.public or permission_manager.has_any_permission(session.get("uid", -1), f"problem.use.{problem.id}"):
+                if public_file:
+                    ok = True
+    # if not problem.public and not permission_manager.has_any_permission(session.get("uid", None), f"problem.manage") and not public_file:
+    #     flask.abort(403)
+    # if session.get("uid"):
+    #     user: User = db.session.query(User).filter(
+    #         User.id == session.get("uid")).one()
+    #     if not permission_manager.has_permission(user.id, f"problem.manage") and user.id != problem.uploader_id and not public_file:
+    #         flask.abort(403)
+    # else:
+    #     if not problem.public or not public_file:
+    #         flask.abort(403)
+    if not ok:
+        flask.abort(403)
     import os
     file = os.path.join(
         basedir, f"{config.UPLOAD_DIR}/{id}/{filename}")
@@ -412,115 +540,189 @@ def update_problem():
             Submission.problem_id == old_id).update({Submission.problem_id: new_id})
         # 至于比赛...不管了
         problem.id = new_id
-    for k, v in data.items():
-        if k in {"create_time", "id", "newProblemID"}:
-            continue
-        setattr(problem, k, v)
-
+    AVAILABLE_KEYS = [
+        "background",
+        "extra_parameter",
+        "subtasks",
+        "content",
+        "can_see_results",
+        "public",
+        "input_format",
+        "spj_filename",
+        "output_format",
+        "using_file_io",
+        "hint",
+        "input_file_name",
+        "example",
+        "output_file_name",
+        "title",
+        "downloads",
+        "provides",
+        "invite_code"
+    ]
+    submit_answer = (request.form["submitAnswer"] == "true")
+    if problem.problem_type == "remote_judge":
+        return make_response(-1, message="远程评测题目不得更改题目类型")
+    problem.problem_type = "submit_answer" if submit_answer else "traditional"
+    for key in AVAILABLE_KEYS:
+        setattr(problem, key, data[key])
+    problem.submission_visible = data["submissionVisible"]
     db.session.commit()
     return make_response(0)
 
 
 @app.route("/api/problem_list", methods=["POST"])
-def problem_list():
+@unpack_argument
+def problem_list(page: int = 1, filter: typing.Dict[str, typing.Any] = {}):
     """
     获取题目列表
     参数:
-    page:int 页数
-    search_keyword:str 题目名关键字
+    page 页码
+    filter 使用的过滤器
+    {
+        "过滤器ID1":{
+            "过滤器定义"
+        }
+    }
+    支持的过滤器
+    searchKeyword: 搜索题目名关键字
+        searchKeyword:"要搜索的内容"
+    tag: 按标签搜索题目
+        "tag":["tag1","tag2"...]
     返回:
         {
             "code":0,//非0表示调用成功
             "message":"qwq",//调用失败时的信息
             "data":[
-                {"id":-1,"title":"qwqqwq","submission":233,"status":"accepted","public":false,"total_submit":123,"accepted_submit":123}
+                {
+                    "id":-1,//题目ID
+                    "title":"题目名",
+                    mySubmission:{
+                        "id":"我的提交ID,-1表示不存在",
+                        "status":"提交状态",
+                    },
+                    "public":"是否公开",
+                    "totalSubmit":"总提交数",
+                    "acceptedSubmit":"通过提交数",
+                    "tags":["id1","id2"..]
+                }
             ],
-            "total_pages":总页数,
-            "current_page":当前页(根据URL分析)
+            "pageCount":"总页数"
         }
     """
-    page = int(request.form.get("page", 1))
-    result = None
+    result: Query = db.session.query(Problem.id, Problem.title, Problem.public,
+                                     Problem.cached_accepted_count, Problem.cached_submit_count)
     if not session.get("uid"):
-        result = db.session.query(Problem).filter(Problem.public == True)
+        result = result.filter_by(public=True)
     else:
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
         # 有查看私有题的权限
         if permission_manager.has_permission(user.id, "problem.manage"):
-            result = db.session.query(Problem)
+            pass
         else:
-            result = db.session.query(Problem).filter(
-                or_(Problem.public == True, Problem.uploader_id == user.id))
-    keyword = request.form.get("search_keyword", "")
-    result = result.filter(Problem.title.like(f"%{keyword}%"))
+            result = result.filter(
+                expr.or_(Problem.public == True, Problem.uploader_id == user.id))
+
+    def apply_filter_search_keyword(keyword: str):
+        nonlocal result
+        result = result.filter(Problem.title.like(f"%{keyword}%"))
+
+    def apply_filter_tag(tags: typing.List[str]):
+        nonlocal result
+        if not tags:
+            return
+        available_problems: Query = db.session.query(ProblemTag.problem_id).filter(expr.or_(
+            *(ProblemTag.tag_id == item for item in tags)
+        )).group_by(ProblemTag.problem_id).having(func.count() == len(tags)).subquery()
+        result = result.filter(Problem.id == available_problems.c.problem_id)
+    FILTER_REGISTRY = {
+        "searchKeyword": apply_filter_search_keyword,
+        "tag": apply_filter_tag
+    }
+    for key, value in filter.items():
+        if key not in FILTER_REGISTRY:
+            return make_response(-1, message=f"未知过滤器: {key}")
+        FILTER_REGISTRY[key](value)
     count = result.count()
     import math
-    pages = int(math.ceil(count/config.PROBLEMS_PER_PAGE))
+    pageCount = int(math.ceil(count/config.PROBLEMS_PER_PAGE))
 
     result = result.slice(
         (page-1)*config.PROBLEMS_PER_PAGE, (page)*config.PROBLEMS_PER_PAGE).all()
-    ret = []
+    data = []
+    # print("mapping results.")
     for item in result:
         obj = {
             "id": item.id,
             "title": item.title,
-            "submission": -1,
-            "status": None,
-            "public": True,
-            "total_submit": db.session.query(Submission).filter(Submission.problem_id == item.id).count(),
-            "accepted_submit": db.session.query(Submission).filter(Submission.problem_id == item.id).filter(Submission.status == "accepted").count()
+            "mySubmission": {
+                "id": -1,
+                "status": "unsubmitted"
+            },
+            "public": item.public,
+            "totalSubmit": item.cached_submit_count,
+            "acceptedSubmit": item.cached_accepted_count,
+            "tags": []
         }
+        # 翻出来这个题目的标签...
+        obj["tags"] = [tag.tag_id for tag in db.session.query(
+            ProblemTag.tag_id).filter_by(problem_id=item.id).all()]
         # accepted的字典序比其他三个状态都少，所以按照status升序排能优先排到ac
-        submit = db.session.query(Submission).filter(Submission.uid == session.get(
-            "uid")).filter(Submission.problem_id == item.id).order_by(Submission.status.asc()).filter(Submission.contest_id == -1).order_by(Submission.submit_time.desc())
+        submit = db.session.query(Submission.id, Submission.status).filter_by(
+            uid=session.get("uid", -1),
+            problem_id=item.id,
+            contest_id=-1
+        ).order_by(
+            Submission.status.asc()
+        ).order_by(Submission.submit_time.desc()).limit(1)
+        my_submission = obj["mySubmission"]
         if submit.count():
             submit = submit.first()
-            obj["submission"] = submit.id
-            obj["status"] = submit.status
-        obj["public"] = item.public
-        ret.append(obj)
-    return make_response(0, data=ret, page_count=pages, current_page=page)
+            my_submission["id"] = submit.id
+            my_submission["status"] = submit.status
+        data.append(obj)
+    return make_response(0, data=data, pageCount=pageCount)
 
 
-@app.route("/api/ui_search_problem/", methods=["POST", "GET"])
-@app.route("/api/ui_search_problem/<string:search_keyword>", methods=["POST", "GET"])
-def search_problem(search_keyword=""):
-    """
-    搜索题目
-    参数:
-    search_keyword:str 题目名关键字
-    以Semantic UI的格式通讯
-    返回:
-        {
-            "success":true,
-            "results":[
-                {"name":"qwq","value":"1234","text":"1234.题目名"}
-            ]
-        }
-    """
-    result = None
-    if not session.get("uid"):
-        result = db.session.query(Problem).filter(Problem.public == True)
-    else:
-        user: User = db.session.query(User).filter(
-            User.id == session.get("uid")).one()
-        if permission_manager.has_permission(user.id, "problem.manage"):
-            result = db.session.query(Problem)
-        else:
-            result = db.session.query(Problem).filter(
-                or_(Problem.public == True, Problem.uploader_id == user.id))
-    result = result.filter(Problem.title.like(
-        f"%{search_keyword}%")).slice(0, 10)
-    ret = {
-        "success": True,
-        "results": [{"value": search_keyword, "name": f"搜索 {search_keyword}", "text": f"{search_keyword}"}]
-    }
-    for x in result:
-        ret["results"].append(
-            {"value": x.id, "name": f"{x.id}. {x.title}", "text": f"{x.id}"})
-    # print(f"search {search_keyword} = {ret}")
-    return encode_json(ret)
+# @app.route("/api/ui_search_problem/", methods=["POST", "GET"])
+# @app.route("/api/ui_search_problem/<string:search_keyword>", methods=["POST", "GET"])
+# def search_problem(search_keyword=""):
+#     """
+#     搜索题目
+#     参数:
+#     search_keyword:str 题目名关键字
+#     以Semantic UI的格式通讯
+#     返回:
+#         {
+#             "success":true,
+#             "results":[
+#                 {"name":"qwq","value":"1234","text":"1234.题目名"}
+#             ]
+#         }
+#     """
+#     result = None
+#     if not session.get("uid"):
+#         result = db.session.query(Problem).filter(Problem.public == True)
+#     else:
+#         user: User = db.session.query(User).filter(
+#             User.id == session.get("uid")).one()
+#         if permission_manager.has_permission(user.id, "problem.manage"):
+#             result = db.session.query(Problem)
+#         else:
+#             result = db.session.query(Problem).filter(
+#                 or_(Problem.public == True, Problem.uploader_id == user.id))
+#     result = result.filter(Problem.title.like(
+#         f"%{search_keyword}%")).slice(0, 10)
+#     ret = {
+#         "success": True,
+#         "results": [{"value": search_keyword, "name": f"搜索 {search_keyword}", "text": f"{search_keyword}"}]
+#     }
+#     for x in result:
+#         ret["results"].append(
+#             {"value": x.id, "name": f"{x.id}. {x.title}", "text": f"{x.id}"})
+#     # print(f"search {search_keyword} = {ret}")
+#     return encode_json(ret)
 
 
 @app.route("/api/create_problem", methods=["POST"])
@@ -548,3 +750,38 @@ def create_problem():
     db.session.add(problem)
     db.session.commit()
     return make_response(0, problem_id=problem.id)
+
+
+def refresh_cached_count(problem_id: int):
+    """
+    刷新题目AC和提交数缓存
+    """
+    print(f"Refreshing cached count: {problem_id=}")
+    accepted_count: int = db.session.query(Submission).filter(and_(
+        Submission.problem_id == problem_id, Submission.status == "accepted")).count()
+    submit_count: int = db.session.query(Submission).filter(
+        Submission.problem_id == problem_id).count()
+    problem: Problem = db.session.query(
+        Problem).filter(Problem.id == problem_id).one()
+    problem.cached_accepted_count = accepted_count
+    problem.cached_submit_count = submit_count
+    print(f"Refreshed: {accepted_count=} {submit_count=}")
+    db.session.commit()
+
+@app.route("/api/problem/rejudge_all", methods=["POST"])
+@unpack_argument
+@require_permission(permission_manager, "problem.manage")
+def api_rejudge_all_submission(problem_id: int):
+    """
+    重测某道题的所有提交
+    """
+    from api.judge import push_to_queue
+    ids = []
+    for item in db.session.query(Submission).filter(Submission.problem_id == problem_id).all():
+        item: Submission
+        item.status = "waiting"
+        ids.append(item.id)
+    db.session.commit()
+    for x in ids:
+        push_to_queue(x)
+    return make_response(0, message="操作完成")

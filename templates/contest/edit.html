@@ -14,7 +14,17 @@
                 data: null,
                 done: false,
                 successMessage: "", errorMessage: ""
-            }, methods: {
+            },
+            computed: {
+                maxID() {
+                    let id = 0;
+                    for (let item of this.data.problems) {
+                        id = Math.max(id, item.id);
+                    }
+                    return id;
+                }
+            },
+            methods: {
                 submit() {
                     $("html,body").animate({
                         scrollTop: 0
@@ -123,7 +133,7 @@
                         </tr>
                     </tbody>
                 </table>
-                <div class="ui tiny green button" v-on:click="data.problems.push({id:1,weight:1})">添加题目</div>
+                <div class="ui tiny green button" v-on:click="data.problems.push({id:maxID+1,weight:1})">添加题目</div>
             </div>
             <div class="ui divider"></div>
             <div class="ui field">
@@ -154,7 +164,8 @@
             <div class="ui field">
                 <label>其他</label>
                 <div class="ui toggle checkbox">
-                    <input type="checkbox" v-bind:checked="data.private_contest" v-on:click="data.private_contest=!data.private_contest;">
+                    <input type="checkbox" v-bind:checked="data.private_contest"
+                        v-on:click="data.private_contest=!data.private_contest;">
                     <label>私有比赛</label>
                 </div>
 

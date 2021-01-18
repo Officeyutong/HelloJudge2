@@ -1,9 +1,10 @@
 import sqlalchemy.types as types
+from sqlalchemy.dialects import mysql
 from jsonpickle import encode, decode
 
 
 class JsonPickle(types.TypeDecorator):
-    impl = types.Text
+    impl = mysql.LONGTEXT
 
     def process_bind_param(self, value, dialect):
         # print("encoding {}".format(value))

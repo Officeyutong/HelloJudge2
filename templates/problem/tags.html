@@ -1,0 +1,95 @@
+{%extends "base.html"%}
+{%block title%}
+题目标签编辑
+{%endblock%}
+{%block body%}
+
+<script>
+    let tagsEdit;
+    let problemID = parseInt(window.location.pathname.split("/").pop());
+    $(document).ready(() => {
+        challengeList = new Vue({
+            el: "#tags-edit",
+            mixins: [baseMixin],
+            data: {
+                successMessage: "",
+                allTags: {},
+                currentTags: [],
+                done: false
+            }, methods: {
+                addTag(id) {
+                    if (this.currentTags.findIndex(x => x == id) == -1) {
+                        this.currentTags.push(id);
+                    }
+                },
+                removeTag(id) {
+                    this.currentTags = this.currentTags.filter(x => x != id);
+                },
+                save() {
+                    this.successMessage = "";
+                    axios.post("/api/problemtag/update_problem", {
+                        problemID: problemID,
+                        tags: this.currentTags
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.successMessage = data.message;
+                    });
+                }
+            }, mounted() {
+                let formData = new FormData();
+                formData.append("id", problemID);
+                axios.all([axios.post("/api/problemtag/all"), axios.post("/api/get_problem_info", formData)]).then(
+                    axios.spread((allTags, problemInfo) => {
+                        for (let item of allTags.data.data) {
+                            Vue.set(this.allTags, item.id, item);
+                        }
+                        this.currentTags = problemInfo.data.data.tags.map(item => item.id);
+                        this.done = true;
+                    })
+                );
+            }
+        });
+
+    });
+</script>
+<div id="tags-edit" v-if='done'>
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>题目标签编辑</h1>
+        </div>
+        <div class="ui segment stacked">
+            <div class="ui header">
+                <h3>所有标签</h3>
+            </div>
+            <div>
+                <a class="ui label" v-on:click="addTag(key)" v-for="value,key in allTags" v-bind:class="[value.color]">
+                    {[value.display]}
+                </a>
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui header">
+                <h3>已选中标签</h3>
+            </div>
+            <div>
+                <a class="ui label" v-on:click="removeTag(key)" v-for="key in currentTags"
+                    v-bind:class="allTags[key].color">
+                    {[allTags[key].display]}
+                </a>
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui success message" v-if="successMessage!=''">
+                <div class="header">
+                    操作完成
+                </div>
+                <p> {[successMessage]}</p>
+            </div>
+            <div class="ui green button" v-on:click="save">提交</div>
+        </div>
+    </div>
+</div>
+
+{%endblock%}

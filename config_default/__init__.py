@@ -3,6 +3,9 @@ from .remote_judge import *
 from .judge import *
 from .display import *
 from .common import *
+from .phoneauth import *
+from .wiki import *
+from .log import *
 from collections import OrderedDict
 # 在后台管理页面显示的配置
 VISIBLE_SETTINGS = OrderedDict({

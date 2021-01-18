@@ -1,8 +1,10 @@
 from main import web_app as app
-from main import db
-from models import User
-from flask import session
+from main import db, socket
+from models.user import User
+from models.permission_group import PermissionGroup
+from flask import session, Response
 import time
+import const_var
 
 
 @app.before_request
@@ -29,3 +31,8 @@ def banned_check():
             User.id == session.get("uid")).one()
         if user.banned:
             session.pop("uid")
+
+
+# @app.after_request
+# def request_process(resp: Response):
+#     resp.

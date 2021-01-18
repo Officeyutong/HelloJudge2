@@ -1,0 +1,146 @@
+{%extends "base.html"%}
+{%block title%}
+提交答案
+{%endblock%}
+{%block body%}
+
+<script>
+    let id = window.location.pathname.split("/").pop();
+    let { virtualID, contest } = getRequest();
+    let submitAnswer;
+    const MnFe = {
+        love: (target) => console.log(`MnFe Loves ${target}`)
+    };
+    const Pb = "Pb";
+    MnFe.love(Pb);
+    $(document).ready(() => {
+        submitAnswer = new Vue({
+            el: "#submit-answer",
+            mixins: [baseMixin],
+            data: {
+                successMessage: "",
+                loading: false,
+                data: {},
+                done: false,
+                uploadingFile: null,
+                progressString: ""
+            }, methods: {
+                submit() {
+                    if (this.loading) return;
+                    if (!this.uploadingFile) {
+                        showErrorModal("请选择文件");
+                        return;
+                    }
+                    this.loading = true;
+                    let data = new FormData();
+                    data.append("problem_id", this.data.id);
+                    data.append("code", "");
+                    data.append("language", "cpp");
+                    data.append("contest_id", contest || -1);
+                    data.append("usedParameters", "[]");
+                    if (virtualID)
+                        data.append("virtualID", virtualID);
+                    data.append("answerData", this.uploadingFile[0]);
+                    axios.post("/api/submit", data, {
+                        "headers": { "Content-Type": "multipart/form-data" },
+                        onUploadProgress: evt => {
+                            this.progressString = ((evt.loaded / evt.total * 100) | 0) + "%";
+                        }
+                    }).then(resp => {
+                        this.loading = false;
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        window.location.href = "/show_submission/" + data.submission_id;
+                    });
+
+                }
+            },
+            computed: {
+                allCases() {
+                    let result = [];
+                    for (let subtask of this.data.subtasks) {
+                        result = result.concat(subtask.testcases.map(item => item.output));
+                    }
+                    result.sort();
+                    return result;
+                }
+            },
+            mounted() {
+                if (contest) {
+                    axios.post("/api/contest/problem/show", {
+                        contestID: contest,
+                        problemID: id,
+                        virtualID: virtualID
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.data = data.data;
+                        this.done = true;
+                    });
+                } else {
+                    let data = new FormData();
+                    data.append("id", id);
+                    axios.post(
+                        "/api/get_problem_info",
+                        data,
+                        {
+                            headers: { "Content-Type": "multipart/form-data" },
+
+                        }
+                    ).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.data = data.data;
+                        this.done = true;
+                    });
+                }
+
+            }
+        });
+
+    });
+</script>
+<div id="submit-answer" v-if='done' style="max-width: 50%;">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>提交答案 - #{[data.id]}. {[data.title]}</h1>
+        </div>
+        <div class="ui segment stacked">
+            <div class="ui message">
+                <div class="ui header">
+                    请保证您的zip压缩包内具有以下文件:
+                </div>
+                <div class="ui list">
+                    <div class="ui item" v-for="item in allCases">
+                        {[item]}
+                    </div>
+                </div>
+            </div>
+            <div class="ui form">
+                <div class="ui field">
+                    <label>上传包含答案的zip压缩包..</label>
+                    <input type="file" v-on:change="uploadingFile=$event.target.files">
+                </div>
+                <div class="ui field" v-if="loading">
+                    <label>上传进度</label>
+                    <div class="ui label">
+                        {[progressString]}
+                    </div>
+                </div>
+                <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="submit">
+                    提交
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

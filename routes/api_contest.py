@@ -1,6 +1,7 @@
+from config_default.display import CLARIFICATION_PER_PAGE
 from main import web_app as app, permission_manager
 from main import db, config, basedir
-from flask import session, request, send_file, send_from_directory
+from flask import session, request, send_file, send_from_directory, Blueprint
 from utils import *
 from models import *
 from sqlalchemy.sql.expression import *
@@ -12,8 +13,271 @@ from typing import Iterable
 from main import permission_manager
 from common.utils import unpack_argument
 from common.permission import require_permission
-@app.route("/api/contest/remove", methods=["POST"])
+import sqlalchemy.sql.expression as expr
+from sqlalchemy import distinct, alias
+import datetime
+
+
+router = Blueprint("contest", __name__)
+
+
+# TODO: 虚拟比赛的提交信息，虚拟比赛时的提交返回遵从于比赛的实际设定。
+@router.route("/clarification/detail", methods=["POST"])
 @unpack_argument
+def contest_clarification_detail(clarification_id: int):
+    """
+    查询Clarification详情
+    {
+            "sender":{
+                "uid":"发送者ID",
+                "username":"发送者用户名"
+            },
+            "send_time":"发送时间",
+            "content":"内容",
+            "replied":"是否已回复",
+            "replier":{
+                "uid":"回复者ID",
+                "username":"回复者用户名"
+            },
+            reply_time:"回复时间",
+            "reply_content":"回复内容"
+    }
+    """
+    clar: Clarification = db.session.query(
+        Clarification.sender,
+        Clarification.send_time,
+        Clarification.content,
+        Clarification.contest,
+        Clarification.replied,
+        Clarification.replier,
+        Clarification.reply_content,
+        Clarification.reply_time,
+        User.username,
+        User.email).join(User, User.id == Clarification.sender).filter(Clarification.id == clarification_id).one_or_none()
+    if not clar:
+        return make_response(-1, message="提问不存在")
+    contest_inst: Contest = db.session.query(
+        Contest.id, Contest.owner_id
+    ).filter_by(id=clar.contest).one_or_none()
+    has_permission = (
+        session.get("uid", -1) == contest_inst.owner_id or permission_manager.has_permission(session.get("uid"), "contest.manage"))
+    if not has_permission:
+        return make_response(-1, message="你没有权限进行此操作")
+    current = {
+        "sender": {
+            "uid": clar.sender,
+            "username": clar.username,
+            "email": clar.email
+        },
+        "send_time": str(clar.send_time),
+        "content": clar.content,
+        "replied": bool(clar.replied),
+        "replier": {
+            "uid": clar.replier,
+            "username": None,
+            "email": None
+        },
+        "reply_time": str(clar.reply_time),
+        "reply_content": clar.reply_content
+    }
+    if clar.replied:
+        replier = db.session.query(
+            User.username, User.email).filter_by(id=clar.replier).one()
+        current["replier"] = {
+            "uid": clar.replier,
+            "username": replier.username,
+            "email": replier.email
+        }
+    return make_response(0, data=current)
+
+
+@router.route("/clarification/reply", methods=["POST"])
+@unpack_argument
+def contest_clarification_reply(clarification_id: int, content: str):
+    """
+    回复Clarification
+    """
+    clar: Clarification = db.session.query(
+        Clarification).filter_by(id=clarification_id).one_or_none()
+    if not clar:
+        return make_response(-1, message="提问不存在")
+    contest_inst: Contest = db.session.query(
+        Contest
+    ).filter_by(id=clar.contest).one_or_none()
+    has_permission = (
+        session.get("uid", -1) == contest_inst.owner_id or permission_manager.has_permission(session.get("uid"), "contest.manage"))
+    if not has_permission:
+        return make_response(-1, message="你没有权限进行此操作")
+
+    clar.replied = True
+    clar.replier = session.get("uid")
+    clar.reply_content = content
+    clar.reply_time = datetime.datetime.now()
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
+@router.route("/clarification/send", methods=["POST"])
+@unpack_argument
+def contest_clarification_send(contest: int, content: str):
+    """
+    发送Clarification
+    {
+
+    }
+    """
+    contest_inst: Contest = db.session.query(
+        Contest
+    ).filter_by(id=contest).one_or_none()
+    has_permission = (
+        permission_manager.has_permission(session.get(
+            "uid", None), f"contest.use.{contest_inst.id}")
+        or session.get("uid", -1) == contest_inst.owner_id
+        or (not contest_inst.private_contest))
+    if not has_permission:
+        return make_response(-1, message="你没有权限执行此操作")
+    if not contest_inst.running():
+        return make_response(-1, message="比赛未在运行")
+    if not session.get("uid", None):
+        return make_response(-1, message="请登录")
+    db.session.add(Clarification(
+        contest=contest_inst.id,
+        sender=session.get("uid"),
+        content=content
+    ))
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
+@router.route("/clarification/all", methods=["POST"])
+@unpack_argument
+def contest_clarification_all(contest: int, page: int = 1):
+    """
+    获取clarification列表
+    {
+        "pageCount":页数,
+        "data":[
+            {
+                "id":"ID",
+                "sender":{
+                    "uid":"发送者ID",
+                    "username":"发送者用户名"
+                },
+                "send_time":"发送时间",
+                "content":"内容",
+                "replied":"是否已回复",
+                "replier":{
+                    "uid":"回复者ID",
+                    "username":"回复者用户名"
+                },
+                reply_time:"回复时间",
+                "reply_content":"回复内容"
+            }
+        ]
+    }
+    """
+    contest_inst: Contest = db.session.query(
+        Contest.id,
+        Contest.owner_id,
+        Contest.private_contest
+    ).filter_by(id=contest).one_or_none()
+    has_permission = (
+        permission_manager.has_permission(session.get(
+            "uid", None), f"contest.use.{contest_inst.id}")
+        or session.get("uid", -1) == contest_inst.owner_id
+        or (not contest_inst.private_contest))
+    if not has_permission:
+        return make_response(-1, message="你没有权限执行此操作")
+    query = db.session.query(
+        Clarification.sender,
+        Clarification.send_time,
+        Clarification.content,
+        Clarification.replied,
+        Clarification.replier,
+        Clarification.reply_content,
+        Clarification.reply_time,
+        Clarification.id,
+        User.username,
+        User.email
+    ).filter(Clarification.contest == contest).join(User, User.id == Clarification.sender).order_by(Clarification.send_time.desc())
+    total_count = int(math.ceil(query.count()/config.CLARIFICATION_PER_PAGE))
+    items = query.slice((page-1)*config.CLARIFICATION_PER_PAGE,
+                        page*config.CLARIFICATION_PER_PAGE).all()
+    result = []
+    for item in items:
+        item: Clarification
+        current = {
+            "id": item.id,
+            "sender": {
+                "uid": item.sender,
+                "username": item.username,
+                "email": item.email
+            },
+            "send_time": str(item.send_time),
+            "content": item.content,
+            "replied": bool(item.replied),
+            "replier": {
+                "uid": item.replier,
+                "username": None,
+                "email": None
+            },
+            "reply_time": str(item.reply_time),
+            "reply_content": item.reply_content
+        }
+        result.append(current)
+        if item.replied:
+            replier = db.session.query(
+                User.username, User.email).filter_by(id=item.replier).one()
+            current["replier"] = {
+                "uid": item.replier,
+                "username": replier.username,
+                "email": replier.email
+            }
+    return make_response(0, data=result, pageCount=total_count)
+
+
+@ app.route("/api/contest/close", methods=["POST"])
+@ unpack_argument
+def api_contest_close(contestID: int):
+    """
+    关闭比赛
+    比赛关闭后即不可再更改设置或者提交等
+    比赛关闭后可以被其他用户用以VirtualParticipate
+    """
+    contest: Contest = db.session.query(
+        Contest).filter_by(id=contestID).one_or_none()
+    if not contest:
+        return make_response(-1, message="比赛不存在")
+    if not session.get("uid", -1) == contest.owner_id and not permission_manager.has_permission(session.get("uid", None), "contest.manage"):
+        return make_response(-1, message="你没有权限执行此操作")
+    if contest.running():
+        return make_response(-1, message="此比赛正在进行")
+    contest.closed = True
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
+@ app.route("/api/contest/unlock", methods=["POST"])
+@ unpack_argument
+def api_contest_unlock(contestID: int, inviteCode: str):
+    """
+    使用邀请码申请某比赛的权限
+    """
+    contest: Contest = db.session.query(Contest.private_contest, Contest.invite_code, Contest.id).filter_by(
+        id=contestID).one_or_none()
+    if not contest:
+        return make_response(-1, message="此比赛不存在")
+    if inviteCode != contest.invite_code:
+        return make_response(-1, message="邀请码错误")
+    if not session.get("uid", None):
+        return make_response(-1, message="请登录")
+    permission_manager.add_permission(
+        session.get("uid"), f"contest.use.{contest.id}")
+    return make_response(0, message="操作完成")
+
+
+@ app.route("/api/contest/remove", methods=["POST"])
+@ unpack_argument
 def remove_contest(contestID: int):
     """
     参数:
@@ -38,8 +302,8 @@ def remove_contest(contestID: int):
     return make_response(0, message="成功")
 
 
-@app.route("/api/contest/create", methods=["POST"])
-@require_permission(manager=permission_manager, permission="contest.create")
+@ app.route("/api/contest/create", methods=["POST"])
+@ require_permission(manager=permission_manager, permission="contest.create")
 def create_contest():
     """
     参数:
@@ -59,11 +323,13 @@ def create_contest():
                       )
     db.session.add(contest)
     db.session.commit()
+    permission_manager.add_permission(
+        session.get("uid"), f"contest.use.{contest.id}")
     return make_response(0, contest_id=contest.id)
 
 
-@app.route("/api/contest/list", methods=["POST"])
-@unpack_argument
+@ app.route("/api/contest/list", methods=["POST"])
+@ unpack_argument
 def contest_list(page: int = 1):
     """
     {
@@ -80,13 +346,20 @@ def contest_list(page: int = 1):
                     "owner_id":"所有者用户ID",
                     "owner_username":"所有者用户名",
                     "begin_time":"开始毫秒数",
-                    "end_time":"结束毫秒数"
+                    "end_time":"结束毫秒数",
+                    "privateContest":"该比赛是否私有",
+                    "hasPermission":"是否有权限访问该比赛"
                 }
             ]
         }
     }
     """
     result = db.session.query(Contest).order_by(Contest.id.desc())
+    if not permission_manager.has_permission(session.get("uid", None), "contest.manage"):
+        result = result.filter(expr.or_(
+            Contest.owner_id == session.get("uid", -1),
+            Contest.private_contest == False
+        ))
     count = result.count()
     import math
     result: Iterable[Contest] = result.slice(
@@ -104,18 +377,21 @@ def contest_list(page: int = 1):
             "owner_username": user.username,
             "start_time": int(time.mktime(contest.start_time.timetuple())),
             "end_time": int(time.mktime(contest.end_time.timetuple())),
+            "privateContest": contest.private_contest,
+            "hasPermission": permission_manager.has_permission(session.get("uid", None), f"contest.use.{contest.id}")
 
         })
     return make_response(0, data=ret)
 
 
-@app.route("/api/contest/show", methods=["POST"])
-@unpack_argument
-def show_contest(contestID: int):
+@ app.route("/api/contest/show", methods=["POST"])
+@ unpack_argument
+def show_contest(contestID: int, virtualID: int = -1):
     """
     参数:
     {
-        "contestID"
+        "contestID",
+        virtualID:虚拟比赛ID，如果不存在则为-1
     }
     {
         "code":0,
@@ -144,7 +420,10 @@ def show_contest(contestID: int):
                     "my_submit":"我的提交最高分提交",
                     "status":"我的状态"
                 }
-            ]
+            ],
+            "accessible":"是否有权访问",
+            "closed":"是否关闭",
+            "virtual":"是否虚拟"
         }
     }
     """
@@ -152,66 +431,103 @@ def show_contest(contestID: int):
     contest: Contest = Contest.by_id(contestID)
     if not contest:
         return make_response(-1, message="比赛ID不存在！")
-    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
-        return make_response(-1, message="你没有权限查看该比赛")
+    virtual_contest: VirtualContest = db.session.query(
+        VirtualContest
+    ).filter_by(id=virtualID).one_or_none()
+    virtualID = int(virtualID)
+    using_virtual = (virtualID != -1)
+
     can_see_ranklist = contest.can_see_ranklist(
         session.get("uid"), permission_manager)
-    can_see_judge_result = contest.can_see_judge_result(
-        session.get("uid"), permission_manager)
+    if using_virtual:
+        can_see_judge_result = (contest.judge_result_visible) or (
+            not virtual_contest.running())
+        if not contest.ranklist_visible and virtual_contest.running() and not permission_manager.has_permission(session.get("uid"), "contest.manage"):
+            can_see_ranklist = False
+    else:
+        can_see_judge_result = contest.can_see_judge_result(
+            session.get("uid"), permission_manager)
     has_login = bool(session.get("uid"))
     if has_login:
         user: User = User.by_id(session.get("uid"))
     if not contest:
-        return make_response(-1, message="未知题目ID")
-
+        return make_response(-1, message="未知比赛ID")
+    has_permission = permission_manager.has_permission(
+        session.get("uid", None), f"contest.use.{contest.id}") or session.get("uid", -1) == contest.owner_id or (not contest.private_contest)
     owner: User = User.by_id(contest.owner_id)
-
-    result = {
-        "id": contest.id,
-        "name": contest.name,
-        "description": contest.description,
-        "owner_id": owner.id,
-        "owner_username": owner.username,
-        "start_time": int(time.mktime(contest.start_time.timetuple())),
-        "end_time": int(time.mktime(contest.end_time.timetuple())),
-        "problems": [],
-        "ranklist_visible": contest.ranklist_visible,
-        "judge_result_visible": contest.judge_result_visible,
-        "rank_criterion": contest.rank_criterion,
-        "private_contest": contest.private_contest,
-        "invite_code": contest.invite_code,
-        "managable": permission_manager.has_permission(session.get("uid", None), "contest.manage")
-    }
-    problems = result["problems"]
-    for i, problem_data in enumerate(contest.problems):
-        problem: Problem = Problem.by_id(problem_data["id"])
-        current = {
-            "title": problem.title,
-            "id": i,
-            "total_submit": -1,
-            "accepted_submit": -1,
-            "my_submit": -1,
-            "status": "unsubmitted", "weight": problem_data["weight"]
+    if using_virtual:
+        if not virtual_contest:
+            return make_response(-1, message="虚拟比赛不存在")
+        if virtual_contest.contest_id != contest.id:
+            return make_response(-1, message="该虚拟比赛不对应于此比赛")
+        if virtual_contest.owner_id != session.get('uid', -1):
+            return make_response(-1, message="这场虚拟比赛不是由你主办的")
+    if has_permission:
+        result = {
+            "id": contest.id,
+            "name": contest.name,
+            "description": contest.description,
+            "owner_id": owner.id,
+            "owner_username": owner.username,
+            "start_time": virtual_contest.start_time.timestamp() if using_virtual else int(time.mktime(contest.start_time.timetuple())),
+            "end_time": virtual_contest.end_time.timestamp() if using_virtual else int(time.mktime(contest.end_time.timetuple())),
+            "problems": [],
+            "ranklist_visible": contest.ranklist_visible,
+            "judge_result_visible": contest.judge_result_visible,
+            "rank_criterion": contest.rank_criterion,
+            "private_contest": contest.private_contest,
+            "invite_code": contest.invite_code,
+            "managable": permission_manager.has_permission(session.get("uid", None), "contest.manage") or contest.owner_id == session.get("uid", -1),
+            "hasPermission": has_permission,
+            "closed": contest.closed,
+            "virtual": using_virtual
         }
-        if can_see_ranklist:
-            submit_query = db.session.query(Submission).filter(
-                Submission.contest_id == contest.id).filter(Submission.problem_id == problem.id)
-            current["total_submit"] = submit_query.count()
-            current["accepted_submit"] = submit_query.filter(
-                Submission.status == "accepted").count()
-        if has_login:
-            if contest.rank_criterion != "last_submit":
+        problems = result["problems"]
+        for i, problem_data in enumerate(contest.problems):
+            problem: Problem = Problem.by_id(problem_data["id"])
+            current = {
+                "title": problem.title,
+                "id": i,
+                "total_submit": -1,
+                "accepted_submit": -1,
+                "my_submit": -1,
+                "status": "unsubmitted",
+                "weight": problem_data["weight"]
+            }
+            if can_see_ranklist:
+                submit_query = db.session.query(Submission).filter(
+                    Submission.contest_id == contest.id).filter(Submission.problem_id == problem.id)
+                if using_virtual:
+                    submit_query = submit_query.filter(
+                        Submission.virtual_contest_id == virtual_contest.id)
+                current["total_submit"] = submit_query.count()
+                current["accepted_submit"] = submit_query.filter(
+                    Submission.status == "accepted").count()
+            if has_login:
                 my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
-                    Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.status.asc()).first()
-            else:
-                my_best_submit: Submission = db.session.query(Submission.id, Submission.status).filter(
-                    Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id)).order_by(Submission.id.desc()).first()
-            if my_best_submit:
-                current["my_submit"] = my_best_submit.id
-                current["status"] = my_best_submit.status
-                if not can_see_judge_result:
-                    current["status"] = "invisible"
-        problems.append(current)
+                    Submission.contest_id == contest.id).filter(and_(Submission.uid == user.id, Submission.problem_id == problem.id))
+                if using_virtual:
+                    my_best_submit = my_best_submit.filter(
+                        Submission.virtual_contest_id == virtual_contest.id)
+                if contest.rank_criterion != "last_submit":
+                    my_best_submit = my_best_submit.order_by(
+                        Submission.status.asc()).first()
+                else:
+                    my_best_submit = my_best_submit.order_by(
+                        Submission.id.desc()).first()
+                if my_best_submit:
+                    current["my_submit"] = my_best_submit.id
+                    current["status"] = my_best_submit.status
+                    if not can_see_judge_result:
+                        current["status"] = "invisible"
+            problems.append(current)
+    else:
+        result = {
+            "id": contest.id,
+            "name": contest.name,
+            "hasPermission": has_permission
+        }
+
     return make_response(0, data=result)
 
 
@@ -239,6 +555,8 @@ def contest_raw_data(contestID):
 
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
+    if contest.closed:
+        return "此比赛已关闭", 403
     if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
         return "你没有权限查看该比赛", 403
     if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
@@ -274,10 +592,35 @@ def contest_update(contestID: int, data: dict):
         return make_response(-1, message="请先登录")
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
+    if contest.closed:
+        return make_response(-1, message="比赛已关闭")
     if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
         return make_response(-1, message="你没有权限这么做")
-    for k, v in data.items():
-        setattr(contest, k, v)
+    # 修改比赛的人必须能够访问其所设定的题目
+    for problem_obj in data["problems"]:
+        problem_id = problem_obj["id"]
+        problem = db.session.query(
+            Problem.id, Problem.public, Problem.uploader_id).filter_by(id=problem_id).one_or_none()
+        if not problem:
+            return make_response(-1, message=f"比赛题目{problem_id}不存在")
+        if user.id != problem.uploader_id:
+            if not problem.public and not permission_manager.has_permission(user.id, f"problem.use.{problem.id}"):
+                return make_response(-1, message=f"你没有权限访问题目{problem_id}")
+
+    contest.name = data["name"]
+    contest.description = data["description"]
+    contest.start_time = data["start_time"]
+    contest.end_time = data["end_time"]
+    contest.problems = data["problems"]
+    contest.ranklist_visible = data["ranklist_visible"]
+    contest.judge_result_visible = data["judge_result_visible"]
+    contest.rank_criterion = data["rank_criterion"]
+    if contest.private_contest and not data["private_contest"]:
+        # 没有权限的人只能搞私有比萨
+        if not permission_manager.has_permission(session.get("uid"), "contest.manage"):
+            return make_response(-1, message="你没有权限公开比赛")
+    contest.private_contest = data["private_contest"]
+    contest.invite_code = data["invite_code"]
 
     def from_second_to_datetime(seconds):
         import time
@@ -323,12 +666,13 @@ def contest_download_file(contest_id, problem_id, file):
 
 @app.route("/api/contest/problem/show", methods=["POST"])
 @unpack_argument
-def contest_show_problem(problemID: int, contestID: int):
+def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
     """
     获取比赛题目信息
     参数:
         problemID:int 题目ID(比赛中的)
         contestID:int 比赛ID
+        virtualID:int 虚拟比赛ID
     返回:
         {
             "code":0,//非0表示调用成功
@@ -347,49 +691,107 @@ def contest_show_problem(problemID: int, contestID: int):
                 "last_code":"qwq",//上一次提交的代码,
                 "last_lang":"qwq",//上一次选择的语言ID
                 "score":题目总分,
-                "extra_compile_parameter":[]
+                "extra_parameter":[],
+                "id":"ID",
+                "virtual":"是否为虚拟比赛",
+                "downloads":"可供下载文件",
+                "using_file_io":"是否使用文件IO",
+                "input_file_name":"输入文件名",
+                "output_file_name":"输出文件名"
             }
         }
     """
+    virtualID = int(virtualID)
+    using_virtual = (virtualID != -1)
     contest: Contest = Contest.by_id(contestID)
-    if not contest.running():
-        if not session.get("uid"):
-            return make_response(-1, message="你没有权限跟我说话")
-        user: User = User.by_id(session.get("uid"))
-        if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
-            return make_response(-1, message="你没有权限跟我说话")
+    virtual_contest: VirtualContest = db.session.query(
+        VirtualContest).filter_by(id=virtualID).one_or_none()
+    if using_virtual:
+        if not virtual_contest:
+            return make_response(-1, message="虚拟比赛不存在")
+        if virtual_contest.contest_id != contest.id:
+            return make_response(-1, message="此虚拟比赛不对应于此实际比赛")
+        if not virtual_contest.running():
+            return make_response(-1, message="虚拟比赛未在进行")
+        if virtual_contest.owner_id != session.get("uid", -1):
+            return make_response(-1, message="这场虚拟比赛不是由你创建的")
+    else:
+
+        if not contest.running():
+            if not session.get("uid"):
+                return make_response(-1, message="你没有权限查看此题目")
+            user: User = User.by_id(session.get("uid"))
+            if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
+                return make_response(-1, message="你没有权限查看此题目")
     if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
         return make_response(-1, message="你没有权限查看该比赛")
     problem: Problem = Problem.by_id(
         contest.problems[int(problemID)]["id"])
     if problem.problem_type == "remote_judge":
         return make_response(-1, message="远程评测题目", is_remote=True)
-    result = problem.as_dict()
+    result = {
+        "id": problemID,
+        "title": problem.title,
+        "background": problem.background,
+        "content": problem.content,
+        "input_format": problem.input_format,
+        "output_format": problem.output_format,
+        "hint": problem.hint,
+        "example": problem.example,
+        "files": problem.files,
+        "subtasks": problem.subtasks,
+        "score": problem.get_total_score(),
+        "extra_parameter": problem.extra_parameter,
+        "virtual": using_virtual,
+        "downloads": problem.downloads,
+        "using_file_io": problem.using_file_io,
+        "input_file_name": problem.input_file_name,
+        "output_file_name": problem.output_file_name,
+        "problem_type": problem.problem_type
+    }
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())
     if last_submission.count():
         submit = last_submission.first()
-        result["last_code"] = submit.code
+        if problem.problem_type != "submit_answer":
+            result["last_code"] = submit.code
+        else:
+            result["last_code"] = "提交答案题不提供源代码"
         result["last_lang"] = submit.language
     else:
         result["last_lang"] = result["last_code"] = ""
-    result["id"] = problemID
-    del result["uploader_id"]
-    result["score"] = problem.get_total_score()
+    # result["id"] = problemID
+    # del result["uploader_id"]
+    # del result["invite_code"]
+    # result["score"] = problem.get_total_score()
     return make_response(0, data=result)
 
 
 def get_contest_rank_list(contest: Contest) -> dict:
-    users = db.session.query(Submission.uid).filter(
-        Submission.contest_id == contest.id).distinct().all()
+    users = db.session.query(
+        Submission.uid,
+        Submission.virtual_contest_id
+    ).filter(
+        Submission.contest_id == contest.id).distinct().all()  # 同时选出来虚拟比赛和非虚拟比赛
     ranklist = []
-    for submission in users:
-        user: User = User.by_id(submission.uid)
+    for item in users:
+        user: User = db.session.query(
+            User.id,
+            User.username
+        ).filter_by(id=item.uid).one()
+        using_virtual = (item.virtual_contest_id is not None)
+        virtual_contest_id = item.virtual_contest_id
+        if using_virtual:
+            virtual_contest: VirtualContest = db.session.query(
+                VirtualContest.start_time).filter_by(id=virtual_contest_id).one()
         current = {
             "uid": user.id,
             "username": user.username,
             "scores": [],
-            "total": {}
+            "total": {},
+            "virtualContestID": virtual_contest_id,
+            "virtual": using_virtual,
+            "rank": -1  # 用户排名
         }
         ranklist.append(current)
         scores = current["scores"]
@@ -410,10 +812,12 @@ def get_contest_rank_list(contest: Contest) -> dict:
                     Submission.id.asc()
                 )\
                     .filter(
-                    and_(
+                    expr.and_(
                         Submission.uid == user.id,
                         Submission.contest_id == contest.id,
-                        Submission.problem_id == id
+                        Submission.problem_id == id,
+                        (Submission.virtual_contest_id ==
+                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None)
                     )
                 )
 
@@ -425,11 +829,13 @@ def get_contest_rank_list(contest: Contest) -> dict:
                                                Submission.id)\
                     .order_by(Submission.id.desc())\
                     .filter(
-                    and_(
+                    expr.and_(
                         Submission.uid == user.id,
                         Submission.contest_id == contest.id,
                         Submission.problem_id == id,
-                        Submission.status != "compile_error"
+                        Submission.status != "compile_error",
+                        (Submission.virtual_contest_id ==
+                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None)
                     )
                 )
 
@@ -448,13 +854,14 @@ def get_contest_rank_list(contest: Contest) -> dict:
 
             import time
             if best_submit.status == "accepted":
+                # print(f"ac time cal,{using_virtual=}, {int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60)}")
                 last = {
                     "score": best_submit.score*weight,
                     "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id < best_submit.id).count(),
-                    "ac_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60),
+                    "ac_time": int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60),
                     "submit_id": best_submit.id,
                     "status": best_submit.status,
-                    "submit_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60)
+                    "submit_time": int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60)
                 }
                 last["penalty"] = last["ac_time"] + \
                     last["submit_count"]*config.FAIL_SUBMIT_PENALTY
@@ -467,7 +874,7 @@ def get_contest_rank_list(contest: Contest) -> dict:
                     "ac_time": -1,
                     "submit_id": best_submit.id,
                     "status": best_submit.status,
-                    "submit_time": int((best_submit.submit_time-contest.start_time).total_seconds()/60)
+                    "submit_time": int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60)
                 }
                 last["penalty"] = last["submit_count"] * \
                     config.FAIL_SUBMIT_PENALTY
@@ -475,9 +882,9 @@ def get_contest_rank_list(contest: Contest) -> dict:
             scores.append(last)
         # 处理用户的total
         total = {
-            "score": sum(map(lambda x: x["score"], scores)),
-            "penalty": sum(map(lambda x: x["penalty"], scores)),
-            "ac_count": sum(map(lambda x: 1 if x["status"] == "accepted" else 0, scores)),
+            "score": sum((item["score"] for item in scores)),
+            "penalty": sum((item["penalty"] for item in scores)),
+            "ac_count": sum((1 for item in scores if (item["status"] == "accepted"))),
             "submit_time_sum": sum((item["submit_time"] for item in scores if (item["submit_time"] != -1) and item["score"] > 0))
         }
         current["total"] = total
@@ -486,28 +893,44 @@ def get_contest_rank_list(contest: Contest) -> dict:
             key=lambda x: (-x["total"]["ac_count"], x["total"]["penalty"]))
     else:
         ranklist.sort(key=lambda x: (
-            x["total"]["score"], -x["total"]["submit_time_sum"]), reverse=True)
+            -x["total"]["score"], x["total"]["submit_time_sum"]))
+    for i, item in enumerate(ranklist):
+        item["rank"] = i+1
     problems = []
     result = {"ranklist": ranklist, "problems": problems,
               "name": contest.name, "contest_id": contest.id, "using_penalty": contest.rank_criterion == "penalty"}
     for i, x in enumerate(contest.problems):
         problem: Problem = Problem.by_id(x["id"])
-        problems.append({
+        problems.append({  # 计数只统计非虚拟提交
             "name": problem.title,
             "id": i,
-            "accepted_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.status == "accepted", Submission.problem_id == problem.id)).count(),
-            "total_submit": db.session.query(Submission.id).filter(and_(Submission.contest_id == contest.id, Submission.problem_id == problem.id)).count()
+            "accepted_submit": db.session.query(Submission.id).filter(
+                expr.and_(
+                    Submission.contest_id == contest.id,
+                    Submission.status == "accepted",
+                    Submission.problem_id == problem.id,
+                    Submission.virtual_contest_id.is_(None)
+                )
+            ).count(),
+            "total_submit": db.session.query(Submission.id).filter(
+                expr.and_(
+                    Submission.contest_id == contest.id,
+                    Submission.problem_id == problem.id,
+                    Submission.virtual_contest_id.is_(None)
+                )
+            ).count()
         })
     return result
 
 
 @app.route("/api/contest/ranklist", methods=["POST"])
 @unpack_argument
-def contest_ranklist(contestID):
+def contest_ranklist(contestID: int, virtualID: int = -1):
     """
     获取比赛的排行榜
     {
         contestID:比赛ID
+        virtualID:虚拟比赛ID
     }
     返回值:
     {
@@ -515,11 +938,13 @@ def contest_ranklist(contestID):
         "data":{
             "name":'比赛名',
             "contest_id":"比赛ID",
-            "using_penalty":"使用罚时",
+            "using_penalty":"使用罚时(True或False)",
             "ranklist":[
                 {
                     "uid":"用户ID",
                     "username":"用户名",
+                    "virtual":"是否为虚拟参赛",
+                    "virtualContestID":"虚拟比赛ID"
                     "scores":[
                         {
                             "score":"题目得分",
@@ -550,12 +975,28 @@ def contest_ranklist(contestID):
     }
     """
     contest: Contest = Contest.by_id(contestID)
-    can_see_ranklist = contest.can_see_ranklist(
-        session.get("uid"), permission_manager)
+
+    virtualID = int(virtualID)
+    using_virtual = (virtualID != -1)
+    virtual_contest: VirtualContest = db.session.query(
+        VirtualContest
+    ).filter_by(id=virtualID).one_or_none()
+    if using_virtual:
+        if not virtual_contest:
+            return make_response(-1, message="虚拟比赛不存在")
+        if virtual_contest.contest_id != contest.id:
+            return make_response(-1, message="此虚拟比赛不对应于此实际比赛")
+        # if virtual_contest.owner_id!=session.get("uid",-1):
+            # return make_response(-)
+        can_see_ranklist = (not virtual_contest.running()
+                            ) or (contest.ranklist_visible)
+    else:
+        can_see_ranklist = contest.can_see_ranklist(
+            session.get("uid"), permission_manager)
+        if contest.owner_id != session.get("uid", -1) and contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
+            return make_response(-1, message="你没有权限查看该比赛")
     if not can_see_ranklist:
         return make_response(-1, message="你无权进行此操作")
-    if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
-        return make_response(-1, message="你没有权限查看该比赛")
     import redis
     from main import redis_connection_pool
     from json import JSONEncoder, JSONDecoder

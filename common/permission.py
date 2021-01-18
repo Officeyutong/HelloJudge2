@@ -34,6 +34,7 @@ class PermissionManager:
 
     def add_permission(self, uid: int, perm: str) -> None:
         self.permission_adder(uid, perm)
+        print(f"adding {perm=} to {uid=}")
         # 刷新缓存
         conn = redis.Redis(connection_pool=self.pool)
         conn.delete(f"hj2-perm-{uid}")

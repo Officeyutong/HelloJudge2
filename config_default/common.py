@@ -11,15 +11,19 @@ PORT = 8080
 # 监听地址
 HOST = "0.0.0.0"
 # 应用程序名称
-APP_NAME = "HelloJudgeV2"
+APP_NAME = "QBXTOJ"
 # 用于密码的盐
 PASSWORD_SALT = "qeiduew9odpjh8q9uohr8"
 # 用户名正则
 USERNAME_REGEX = r"^[a-zA-Z0-9_-]+$"
 # Redis地址
-REDIS_URI = "redis://localhost:6379"
+REDIS_URI = "redis://localhost:6379/1"
 # 用于缓存的Redis数据库
-CACHE_URL = "redis://localhost:6379/hj2-cache"
+CACHE_URL = "redis://localhost:6379/2"
+# 用于执行后台任务的队列
+BACKGROUNDTASK_URI = "redis://localhost/3"
+# 用于存储短信验证码的数据库
+REDIS_PHONEAUTH_URI = "redis://localhost/4"
 # 评测机列表
 JUDGERS = {
     "UUID": "评测机名"
@@ -52,3 +56,14 @@ JUDGE_STATUS = {
 
 # 在在线IDE和评测信息页面使用轮询而不是SocketIO
 USE_POLLING = False
+
+# 每个用户关注的用户数上限
+FOLLOWING_COUNT_LIMIT = 30
+
+# 多长时间刷新一下用户的feed流
+# 单位为秒
+FEED_STREAM_REFRESH_INTERVAL = 30
+
+# 用户待做题目最大数量
+MAX_PROBLEMTODO_COUNT = 50
+

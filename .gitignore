@@ -7,6 +7,7 @@ test.py
 uwsgi.ini
 log/
 hj2-debug.*
+migrate_config.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

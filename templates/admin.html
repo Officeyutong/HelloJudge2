@@ -21,8 +21,61 @@
                     loading: false, successMessage: "", errorMessage: "",
                     userData: [],
                     currentuid: -1
+                },
+                globalFeed: {
+                    top: false,
+                    content: "",
+                    page: 1,
+                    pageCount: 0,
+                    data: [],
+                    toRemove: -1
                 }
             }, methods: {
+                removeFeed(id, index, evt) {
+                    showConfirmModal("您确定要删除这条推送吗？此操作不可撤销。", async () => {
+                        if (evt) {
+                            evt.target.classList.add("loading");
+                        }
+                        let resp = (await axios.post("/api/admin/remove_feed", { feed_id: id })).data;
+                        if (evt) {
+                            evt.target.classList.remove("loading");
+                        }
+
+                        if (resp.code) {
+                            showErrorModal(resp.message);
+                            return;
+                        }
+                        showSuccessModal("删除成功");
+                        if (index >= 0)
+                            this.globalFeed.data.splice(index, 1);
+                    });
+                },
+                async loadGlobalFeedPage(page) {
+                    let resp = (await axios.post("/api/admin/list_global_feed", { page: page })).data;
+                    if (resp.code) {
+                        showErrorModal(resp.message);
+                        return;
+                    }
+                    this.globalFeed.page = page;
+                    this.globalFeed.pageCount = resp.pageCount;
+                    this.globalFeed.data = resp.data;
+
+                },
+                sendGlobalFeed() {
+                    showConfirmModal("您确定要发送这条全局推送吗?", () => {
+                        (async () => {
+                            let data = (await axios.post("/api/admin/send_global_feed", {
+                                top: this.globalFeed.top,
+                                content: this.globalFeed.content
+                            })).data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            showSuccessModal(data.message);
+                        })();
+                    });
+                },
                 addUser() {
                     let uid = this.userTab.currentuid;
                     this.userTab.successMessage = this.userTab.errorMessage = "";
@@ -129,8 +182,8 @@
                     axios.post("/api/admin/show"),
                     axios.post("/api/admin/rating/rated_contests"),
                     axios.post("/api/admin/rating/permission_groups/get"),
-                    axios.post("/api/admin/get_user_permissions")
-                ]).then(axios.spread((show, rating, groups, permission_list) => {
+                    // axios.post("/api/admin/get_user_permissions")
+                ]).then(axios.spread((show, rating, groups/*, permission_list*/) => {
                     show = show.data;
                     if (show.code) {
                         showErrorModal(show.message);
@@ -139,7 +192,8 @@
                     this.data = show.data;
                     this.ratedContests = rating.data.data;
                     this.permissionGroups = groups.data.result;
-                    this.userTab.userData = permission_list.data.data;
+                    // this.userTab.userData = permission_list.data.data;
+                    this.loadGlobalFeedPage(1);
                     this.done = true;
                 }));
             }
@@ -159,8 +213,14 @@
         <div class="item" v-bind:class="{active:currentTab=='permissionGroup'}"
             v-on:click="currentTab='permissionGroup'">
             权限组设定</div>
-        <div class="item" v-bind:class="{active:currentTab=='user'}" v-on:click="currentTab='user'">
-            用户管理</div>
+        <!-- <div class="item" v-bind:class="{active:currentTab=='user'}" v-on:click="currentTab='user'">
+            用户管理</div> -->
+        <div class="item" v-bind:class="{active:currentTab=='permissionPack'}" v-on:click="currentTab='permissionPack'">
+            权限包管理</div>
+        <div class="item" v-bind:class="{active:currentTab=='wikiManage'}" v-on:click="currentTab='wikiManage'">
+            Wiki管理</div>
+        <div class="item" v-bind:class="{active:currentTab=='globalFeed'}" v-on:click="currentTab='globalFeed'">
+            全局推送</div>
 
 
 
@@ -311,7 +371,7 @@
         <div class="ui green button" v-on:click="permissionGroups.push({id:'qwq',name:'qwq',permission:''})">添加</div>
         <div class="ui green button" v-on:click="updatePermissionGroups">提交</div>
     </div>
-    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='user'}">
+    <!-- <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='user'}">
         <div class="ui success message" v-if="userTab.successMessage!=''">
             <div class="ui header">
                 操作成功
@@ -356,7 +416,89 @@
             </div>
             <div class="ui green button" v-on:click="addUser">添加用户</div>
         </div>
+    </div> -->
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='permissionPack'}">
+        <a class="ui right labeled icon green button" href="/permissionpack/list" target="_blank">
+            <i class="paper plane outline icon"></i>
+            前往
+        </a>
     </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='wikiManage'}">
+        <a class="ui right labeled icon green button" href="/wiki/config" target="_blank">
+            <i class="paper plane outline icon"></i>
+            前往
+        </a>
+    </div>
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='globalFeed'}">
+        <div class="ui header">
+            <h3>删除推送</h3>
+        </div>
+        <div class="ui form">
+            <div class="ui field">
+                <label>Feed ID</label>
+                <input class="ui input" v-model.number="globalFeed.toRemove">
+            </div>
+            <div class="ui green button" v-on:click="removeFeed(globalFeed.toRemove)">删除此条Feed</div>
+        </div>
+        <div class="ui divider"></div>
+
+        <div class="ui header">
+            <h3>发送全局推送</h3>
+        </div>
+        <div class="ui form">
+            <div class="ui field">
+                <textarea v-model="globalFeed.content"></textarea>
+            </div>
+            <div class="ui field">
+                <div class="ui toggle checkbox">
+                    <input type="checkbox" v-model="globalFeed.top">
+                    <label>置顶</label>
+                </div>
+            </div>
+            <div class="ui right labeled icon green button" v-on:click="sendGlobalFeed">
+                <i class="paper plane outline icon"></i>
+                发送
+            </div>
+        </div>
+        <div class="ui divider">
+
+        </div>
+        <div class="ui header">
+            <h3>全局推送列表</h3>
+        </div>
+        <table class="ui celled table">
+            <thead>
+                <tr>
+                    <th>推送ID</th>
+                    <th>发送时间</th>
+                    <th>是否置顶</th>
+                    <th>内容</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item,i in globalFeed.data">
+                    <td>{[item.id]}</td>
+                    <td>{[item.time]}</td>
+                    <td>
+                        <i v-if="item.top" class="green check icon"></i>
+                        <i v-else class="red times icon"></i>
+                    </td>
+                    <td>{[item.content]}</td>
+                    <td>
+                        <div class="ui tiny red button" v-on:click="removeFeed(item.id,i,$event)">
+                            删除
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="ui center aligned container">
+            <page-menu :page-count="globalFeed.pageCount" :callback="loadGlobalFeedPage" :curr-page="globalFeed.page">
+            </page-menu>
+        </div>
+    </div>
+
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">
     <div class="ui header">

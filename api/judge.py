@@ -1,3 +1,4 @@
+from routes.api_problem import refresh_cached_count
 from main import db, config, queue
 from models import *
 from utils import *
@@ -22,13 +23,20 @@ def push_to_queue(submission_id):
 
     submit.status = "waiting"
     print(f"Push {submission_id} into queue..")
+    if problem.problem_type == "submit_answer":
+        answer_data = submit.code
+        submit.code = "[已删除]"
+    else:
+        answer_data = ""
     queue.send_task("judgers.local.run", [submit.to_dict(), {
                     "compile_time_limit": config.COMPILE_TIME_LIMIT,
                     "compile_result_length_limit": config.COMPILE_RESULT_LENGTH_LIMIT,
                     "spj_execute_time_limit": config.SPJ_EXECUTE_TIME_LIMIT,
                     "extra_compile_parameter": submit.extra_compile_parameter,
                     "auto_sync_files": config.AUTO_SYNC_FILES,
-                    "output_file_size_limit": config.OUTPUT_FILE_SIZE_LIMIT
+                    "output_file_size_limit": config.OUTPUT_FILE_SIZE_LIMIT,
+                    "submit_answer": problem.problem_type == "submit_answer",
+                    "answer_data": answer_data if problem.problem_type == "submit_answer" else None
                     }])
     # print(f"Push {submission_id} to queue done.")
     db.session.commit()
@@ -61,6 +69,10 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
         submit.status = "unaccepted"
     if extra_status:
         submit.status = extra_status
+    if submit.status in {"accepted", "unaccepted", "compile_error"}:
+        refresh_cached_count(submit.problem_id)
+        if problem.problem_type == "submit_answer":
+            submit.code = "[用户程序已删除]"
     # if extra_status == "compile_error":
     #     submit.status = "compile_error"
     # elif extra_status == "waiting" or extra_status == "judging":

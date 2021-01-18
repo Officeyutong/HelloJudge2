@@ -7,6 +7,9 @@ from sqlalchemy.sql.expression import *
 from common.permission import require_permission
 from common.utils import unpack_argument, make_json_response
 from typing import List
+import math
+
+
 @app.route("/api/test", methods=["POST"])
 @unpack_argument
 def test(qwq: int):
@@ -124,7 +127,9 @@ def admin_rating_append(contestID):
         return make_response(-1, message="此比赛已rated！")
     if contest.running():
         return make_response(-1, message="比赛还在进行!")
-    from routes import get_contest_rank_list
+    if not contest.closed:
+        return make_response(-1, message="此比赛尚未关闭")
+    from routes.api_contest import get_contest_rank_list
     from cf_rating import Contestant, calculate_rating
     from typing import List
     ranklist = get_contest_rank_list(contest)
@@ -132,6 +137,8 @@ def admin_rating_append(contestID):
         return make_response(-1, message="至少有2人参加的比赛才可以应用rating")
     contestants = []
     for i, item in enumerate(ranklist["ranklist"]):
+        if item["virtual"]:  # 统计rating不考虑虚拟比赛用户
+            continue
         contestants.append(Contestant(
             identifier=item["uid"],
             before_rating=db.session.query(User.rating).filter(
@@ -294,3 +301,70 @@ def admin_add_user_permission(uid: int, permission: str):
     db.session.commit()
     permission_manager.refresh_user(user.id)
     return make_json_response(0, message="保存成功")
+
+
+@app.route("/api/admin/send_global_feed", methods=["POST"])
+@require_permission(permission_manager, permission="backend.manage")
+@unpack_argument
+def api_admin_send_global_feed(top: bool, content: str):
+    """
+    发送全局推送
+    """
+    from const_var import SYSTEM_NOTIFICATION_USERID
+    from api.feed import send_feed
+    send_feed(SYSTEM_NOTIFICATION_USERID, top, content)
+    return make_response(0, message="操作完成")
+
+
+@app.route("/api/admin/remove_feed", methods=["POST"])
+@require_permission(permission_manager, permission="backend.manage")
+@unpack_argument
+def api_admin_remove_global_feed(feed_id: int):
+    """
+    移除任意推送
+    """
+    feed = db.session.query(Feed).filter_by(id=feed_id).one_or_none()
+    if not feed:
+        return make_response(-1, message="feed不存在")
+    db.session.delete(feed)
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
+
+@app.route("/api/admin/list_global_feed", methods=["POST"])
+@require_permission(permission_manager, permission="backend.manage")
+@unpack_argument
+def api_admin_global_feed_list(page: int = 1):
+    """
+    列出全局推送
+    [
+        {
+            "id":"推送ID",
+            "time":"发送时间",
+            "content":"内容",
+            "top":"是否置顶"
+        }
+    ]
+    """
+    from const_var import SYSTEM_NOTIFICATION_USERID
+    feed = db.session.query(
+        Feed.id,
+        Feed.time,
+        Feed.content,
+        Feed.top
+    ).order_by(Feed.id.desc()).filter(Feed.uid == SYSTEM_NOTIFICATION_USERID)
+    page_count = int(math.ceil(
+        feed.count()/config.ADMIN_GLOBAL_NOTIFICATION_PER_PAGE
+    ))
+    result = feed.slice(
+        (page-1)*config.ADMIN_GLOBAL_NOTIFICATION_PER_PAGE,
+        page*config.ADMIN_GLOBAL_NOTIFICATION_PER_PAGE
+    ).all()
+    return make_response(0, data=[
+        {
+            "id": item.id,
+            "time": str(item.time),
+            "content": item.content,
+            "top": bool(item.top)
+        } for item in result
+    ], pageCount=page_count)

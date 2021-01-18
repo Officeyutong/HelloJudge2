@@ -65,6 +65,19 @@
                 <label>团队简介</label>
                 <textarea v-model="data.description"></textarea>
             </div>
+            <div class="ui field">
+                <label>其他</label>
+                <div class="ui toggle checkbox">
+                    <input type="checkbox" v-bind:checked="data.private" v-on:click="data.private=!data.private">
+                    <label>私有团队</label>
+                </div>
+            </div>
+            <div class="ui field" v-if="data.private">
+                <label>邀请码</label>
+                <div class="ui input">
+                    <input type="text" v-model="data.invite_code">
+                </div>
+            </div>
             <div class="ui divider"></div>
             <div v-for="task,ix in data.tasks">
                 <div class="ui header">

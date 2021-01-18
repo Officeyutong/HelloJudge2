@@ -10,7 +10,10 @@ mysql-connector-python
 jsonpickle
 pyyaml
 requests
-eventlet
 codeforces-rating
 pycryptodome
 flask-cors
+aliyun-python-sdk-core-v3
+eventlet
+openpyxl
+pymysql

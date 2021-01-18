@@ -1,0 +1,172 @@
+{%extends "base.html"%}
+{%block title%}
+题目标签编辑
+{%endblock%}
+{%block body%}
+
+<script>
+    let tagsEdit;
+    $(document).ready(() => {
+        challengeList = new Vue({
+            el: "#tags-edit",
+            mixins: [baseMixin],
+            data: {
+                successMessage: "",
+                loading: false,
+                data: [],
+                done: false
+            }, methods: {
+                save() {
+                    this.successMessage = "";
+                    let toSave = this.data.filter(item => item.modified);
+                    console.log(toSave);
+                    axios.all(
+                        toSave.map(item => axios.post("/api/problemtag/update", {
+                            id: item.id,
+                            display: item.display,
+                            color: item.color
+                        }))
+                    ).then(resp => {
+                        for (let item of resp) {
+                            let data = item.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                        }
+                        this.successMessage = "操作完成";
+                    });
+                },
+                createTag() {
+                    $("#create-tag-input").val("");
+                    $("#add-tag-model").modal({
+                        onApprove: () => {
+                            let newID = $("#create-tag-input").val();
+                            console.log(newID);
+                            axios.post("/api/problemtag/create", { id: newID }).then(resp => {
+                                // console.log(this);
+                                let data = resp.data;
+                                if (data.code) {
+                                    showErrorModal(data.message);
+                                    return;
+                                }
+                                this.data.push({
+                                    id: newID,
+                                    display: data.display,
+                                    color: data.color,
+                                    modified: false
+                                });
+                            });
+                        }
+                    }).modal("show");
+                },
+                removeTag(id) {
+                    $("#remove-tag-model").modal({
+                        onApprove: () => {
+                            axios.post("/api/problemtag/remove", { id: id }).then(resp => {
+                                // console.log(this);
+                                let data = resp.data;
+                                if (data.code) {
+                                    showErrorModal(data.message);
+                                    return;
+                                }
+                                this.data = this.data.filter(item => item.id != id);
+                            });
+                        }
+                    }).modal("show");
+                }
+            }, mounted() {
+                axios.post("/api/problemtag/all").then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.data = data.data.map(item => ({
+                        id: item.id,
+                        display: item.display,
+                        color: item.color,
+                        modified: false
+                    }));
+                    this.done = true;
+                });
+            }
+        });
+
+    });
+</script>
+<div id="tags-edit" v-if='done'>
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>题目标签编辑</h1>
+        </div>
+        <div class="ui segment stacked">
+            <div class="ui left aligned container">
+                <div class="ui green button" v-on:click="createTag">添加标签</div>
+                <div class="ui blue button" v-on:click="save">保存更改</div>
+            </div>
+            <div class="ui success message" v-if="successMessage!=''">
+                <div class="header">
+                    操作完成
+                </div>
+                <p> {[successMessage]}</p>
+            </div>
+            <table class="ui  center aligned celled table">
+                <thead>
+                    <tr>
+                        <th>标签ID</th>
+                        <th>显示名</th>
+                        <th>SemanticUI颜色</th>
+                        <th>预览</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in data">
+                        <th>{[item.id]}</th>
+                        <th>
+                            <div class="ui fluid input">
+                                <input v-model="item.display" v-on:input="item.modified=true">
+                            </div>
+                        </th>
+                        <th>
+                            <div class="ui fluid input">
+                                <input v-model="item.color" v-on:input="item.modified=true">
+                            </div>
+                        </th>
+                        <th>
+                            <a class="ui label" v-bind:class="[item.color]">{[item.display]}</a>
+                        </th>
+                        <th>
+                            <div class="ui tiny red button" v-on:click="removeTag(item.id)">删除</div>
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div class="ui mini modal" id="add-tag-model">
+    <div class="header">
+        请输入新标签ID
+    </div>
+    <div class="content">
+        <div class="ui fluid input">
+            <input id="create-tag-input">
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">确定</div>
+        <div class="ui red cancel button">取消</div>
+    </div>
+</div>
+<div class="ui mini modal" id="remove-tag-model">
+    <div class="header">
+        您确认要删除该标签吗？
+    </div>
+    <div class="actions">
+        <div class="ui green approve button">确定</div>
+        <div class="ui red cancel button">取消</div>
+    </div>
+</div>
+{%endblock%}

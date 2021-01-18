@@ -1,3 +1,4 @@
+import typing
 from main import db, permission_manager, config
 from main import web_app as app
 from common.permission import require_permission
@@ -8,10 +9,36 @@ from flask import session
 from utils import make_response
 from datetime import datetime
 import math
+import sqlalchemy.sql.expression as expr
+
+
+@app.route("/api/problemset/unlock_permissions", methods=["POST"])
+@unpack_argument
+@require_permission(permission_manager, "problemset.use.public")
+def api_problemset_unlock_permissions(problemset: int):
+    """
+    用户解锁权限包
+    """
+    problemset_inst: ProblemSet = db.session.query(
+        ProblemSet.problems,
+        ProblemSet.private,
+        ProblemSet.owner_uid
+    ).filter_by(id=problemset).one_or_none()
+    if not problemset_inst:
+        return make_response(-1, message="权限包不存在")
+    if problemset_inst.private and int(session.get("uid", -1)) != problemset_inst.owner_uid and not permission_manager.has_permission(int(session.get("uid")), f"problemset.use.{problemset}"):
+        return make_response(-1, message="你没有权限使用该权限包")
+    user: User = db.session.query(User).filter_by(id=session.get("uid")).one()
+    to_add = {f"problem.use.{x}" for x in problemset_inst.problems}
+    user.permissions = [
+        x for x in user.permissions if x not in to_add] + list(to_add)
+    db.session.commit()
+    permission_manager.refresh_user(session.get("uid"))
+    return make_response(0, message="操作完成")
 
 
 @app.route("/api/problemset/list", methods=["POST"])
-@require_permission(permission_manager, "problemset.use.public")
+# @require_permission(permission_manager, "problemset.use.public")
 @unpack_argument
 def api_problemset_list(page: int):
     """
@@ -166,7 +193,17 @@ def api_problemset_update(data: dict):
     problemset.private = data["private"]
     problemset.show_ranklist = data["showRanklist"]
     problemset.invitation_code = data["invitationCode"]
+    # 用户所创建的习题集中的题目，则用户要么是该题目的创建者，要么有problem.manage权限，要么该题目是公开题目
+    for prob in data["problems"]:
+        curr: Problem = db.session.query(Problem.public, Problem.uploader_id).filter_by(
+            id=prob).one_or_none()
+        if not curr:
+            return make_response(-1, message=f"题号{prob}不存在")
+        if not curr.public:
+            if int(session.get("uid", -1)) != curr.uploader_id and not permission_manager.has_permission(session.get("uid", -1), "problem.manage"):
+                return make_response(-1, message=f"要使用非公开题目{prob}，那么要么您是该题目的创建者，要么您具有problem.manage权限")
     problemset.problems = data["problems"]
+
     problemset.description = data["description"]
     for item in data["problems"]:
         query: BaseQuery = db.session.query(
@@ -212,20 +249,12 @@ def api_problemset_get_public(id: int):
             "problems":[
                 {
                     "title":"题目名",
-                    "id":"题目ID"
-                }
-            ],
-            "ranklist":[
-                {
-                    "uid":"qwq",
-                    "username":"qwq",
-                    "problems":[
-                        {
-                            "score":1,
-                            "status":"qwq",
-                            "submissionID":"相关提交ID"
-                        }
-                    ]
+                    "id":"题目ID",
+                    "userResult":{
+                        "score":"分数",
+                        "status":"状态",
+                        "submissionID":"评测ID" -1表示没有提交过
+                    }
                 }
             ],
             "createTime":"qwq",
@@ -256,32 +285,46 @@ def api_problemset_get_public(id: int):
         "private": problemset.private,
         "showRanklist": problemset.show_ranklist,
         "createTime": str(problemset.create_time),
-        "ranklist": [],
+        # "ranklist": [],
         "problems": [],
         "description": problemset.description,
         "managable": permission_manager.has_permission(session.get("uid"), "problemset.manage") or int(session.get("uid")) == problemset.owner_uid
     }
-    problems = result["problems"]
-    for item in problemset.problems:
-        problem: Problem = db.session.query(
-            Problem.id, Problem.title).filter(Problem.id == item).one()
-        submitted_users = db.session.query(Submission.uid).filter(
-            Submission.problemset_id == problemset.id).distinct().all()
-        current = {
-            "title": problem.title,
-            "id": problem.id,
-            "userResults": {
-
-            }
+    # problems: typing.List[typing.Dict[str, typing.Any]] = result["problems"]
+    # new_problems:  = []
+    for problem_id in problemset.problems:
+        problem_data: Problem = db.session.query(Problem.title).filter(
+            Problem.id == problem_id).one_or_none()
+        if not problem_data:
+            continue
+        problem = {
+            "title": problem_data.title,
+            "id": problem_id,
+            # "user"
         }
-        for user in submitted_users:
-            current_submission: Submission = db.session.query(Submission.id, Submission.score, Submission.status).filter(Submission.uid == user).filter(
-                Submission.problemset_id == problemset.id).order_by(Submission.score.desc()).first()
-            current["userResults"][int(user)] = {
-                "submissionID": current_submission.id,
-                "score": current_submission.score,
-                "status": current_submission.status
+        if not session.get("uid", None):
+            problem["userResult"] = {
+                "score": 0,
+                "status": "unsubmitted",
+                "submissionID": -1
             }
-        problems.append(current)
-    # TODO:整理成排行榜
+        else:
+            current_submit = db.session.query(Submission.id, Submission.score, Submission.status).filter(
+                expr.and_(
+                    Submission.uid == session.get("uid"),
+                    Submission.problem_id == problem_id
+                )).order_by(Submission.score.desc()).limit(1).one_or_none()
+            if not current_submit:
+                problem["userResult"] = {
+                    "score": 0,
+                    "status": "unsubmitted",
+                    "submissionID": -1
+                }
+            else:
+                problem["userResult"] = {
+                    "score": current_submit.score,
+                    "status": current_submit.status,
+                    "submissionID": current_submit.id
+                }
+        result["problems"].append(problem)
     return make_response(0, data=result)

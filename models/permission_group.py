@@ -1,13 +1,15 @@
 from main import db
 from ormtypes import json_pickle
 
+from sqlalchemy import Column, String
+
 
 class PermissionGroup(db.Model):
-    __tablename__ = "permission_groups"
-    id = db.Column(db.String(20), primary_key=True)
+    __tablename__ = "permission_group"
+    id = Column(String(20), primary_key=True)
     # 权限组名
-    name = db.Column(db.String(50), nullable=False, default="新建权限组")
+    name = Column(String(50), nullable=False, default="新建权限组")
     # 权限列表
-    permissions = db.Column(json_pickle.JsonPickle, nullable=False, default=[])
+    permissions = Column(json_pickle.JsonPickle, nullable=False, default=[])
     # 继承自
-    inherit = db.Column(db.String(20), nullable=False, default="")
+    inherit = Column(String(20), nullable=False, default="")

@@ -14,7 +14,8 @@
                     showErrorModal(ctx.message);
                     return;
                 }
-                window.location.href = "/team/" + ctx.team_id;
+                
+                window.open("/team/" + ctx.team_id);
             });
         })
         team = new Vue({
@@ -65,7 +66,7 @@
             <tbody>
                 <tr v-for="item in data">
                     <td class="center aligned" style="max-width: 80px;width:80px;">{[item.id]}</td>
-                    <td style="min-width: 400px;"><a :href="'/team/'+item.id">{[item.name]}</a> </td>
+                    <td style="min-width: 400px;"><a target="_blank" :href="'/team/'+item.id">{[item.name]}</a> </td>
                     <td><a :href="'/profile/'+item.owner_id">{[item.owner_username]}</a> </td>
                     <td>{[item.member_count]}</td>
                 </tr>

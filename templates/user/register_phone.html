@@ -1,0 +1,143 @@
+{%extends "base.html"%}
+{%block title%}
+注册
+{%endblock%}
+{%block body%}
+<script>
+    $(document).ready(() => {
+
+        new Vue({
+            el: "#register-frame",
+            // delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
+            data: {
+                errorMessage: "",
+                username: "",
+                email: "",
+                password: "",
+                password2: "",
+                phone: "",
+                loading: false,
+                authcode: "",
+                codeSended: false
+            },
+
+            mounted() {
+
+            },
+            methods: {
+                openSendCode() {
+                    this.errorMessage = "";
+                    if (!/[0-9]{11}/.test(this.phone)) {
+                        this.errorMessage = "请输入11位国内手机号";
+                        return;
+                    }
+                    window.closeModal = (sended) => {
+                        $("#smscode-modal").modal("hide");
+                        
+                    };
+                    $("#smscode-frame").attr("src", "/card/sendsms?must_not_used=1&phone=" + this.phone);
+                    $("#smscode-modal").modal("show", {
+                        onClose: () => {
+                            this.codeSended = true;
+                        }
+                    });
+                    this.codeSended = true;
+                },
+                register() {
+                    // console.log("Logining..");
+                    this.errorMessage = "";
+                    if (this.username == "" || this.email == "" || this.password == "") {
+                        this.errorMessage = "请输入用户名或密码或邮箱";
+                        return;
+                    }
+                    if (this.authcode == "") {
+                        this.errorMessage = "请输入短信验证码";
+                        return;
+                    }
+
+                    if (this.password != this.password2) {
+                        this.errorMessage = "两次密码不一致";
+                        return;
+                    }
+                    this.loading = true;
+                    axios.post("/api/phoneuser/register", {
+                        username: this.username,
+                        password: this.md5WithSalt(this.password),
+                        email: this.email,
+                        phone: this.phone,
+                        authcode: this.authcode
+                    }).then(resp => {
+                        let data = resp.data;
+                        this.loading = false;
+                        if (data.code) {
+                            this.errorMessage = data.message;
+                            return;
+                        }
+                        window.location.href = "/";
+                    });
+                }
+            }
+        });
+    });
+
+</script>
+<div style="top:10%;max-width: 500px;">
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>手机号注册</h1>
+        </div>
+        <div class="ui stack segment" id="register-frame">
+            <div class="ui form" v-bind:class="{error:errorMessage!=''}">
+                <div class="ui field">
+                    <label>用户名:</label>
+                    <input type="text" placeholder="用户名.." v-model="username">
+                </div>
+                <div class="field">
+                    <label>邮箱</label>
+                    <input type="text" v-model="email" placeholder="邮箱..">
+                </div>
+                <div class="ui fields">
+                    <div class="field">
+                        <label>手机号</label>
+                        <input type="text" v-model="phone" placeholder="手机号..">
+                    </div>
+                    <div class="field">
+                        <label>验证码</label>
+                        <input type="text" v-model="authcode" placeholder="短信验证码..">
+                    </div>
+                </div>
+                <div class="fields">
+                    <div class="field">
+                        <label>密码</label>
+                        <input type="password" v-model="password" placeholder="密码..">
+                    </div>
+                    <div class="field">
+                        <label>重复密码</label>
+                        <input type="password" v-model="password2">
+                    </div>
+                </div>
+                <div class="ui message">
+                    <div class="ui header">警告</div>
+                    <p>1. 手机号为区分不同用户的唯一依据。后期分配题目权限的认定依据也为用户的手机号</p>
+                    <p>2. 用户名、手机号、电子邮箱在注册后均无法更改</p>
+                    <p>3. 注册后可以在个人信息页面更改密码，或者在登录页面找回密码</p>
+                    <p>4. 本页所有项目均为必填</p>
+                </div>
+                <div class="ui error message">
+                    <div class="header">错误</div>
+                    <p>{[errorMessage]}</p>
+                </div>
+                <div class="ui green button" v-on:click="openSendCode">
+                    发送验证码
+                </div>
+                <div class="ui green submit button" v-on:click="register"
+                    v-bind:class="{loading:loading,disabled:loading}" v-if="codeSended">提交</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="ui center aligned modal" id="smscode-modal">
+    <iframe id="smscode-frame" style="width: 100%;height: 300px;"></iframe>
+</div>
+{%endblock%}

@@ -1,0 +1,144 @@
+{%extends "card/base.html"%}
+{%block head%}
+<script type="text/javascript" charset="utf-8" src="//g.alicdn.com/sd/ncpc/nc.js?t=2015052012"></script>
+{%endblock%}
+{%block body%}
+<script>
+    const request = getRequest();
+    let phone = request.phone;
+    let mustNotUse = request.must_not_used || false;
+    console.log("phone=", phone);
+    let nc;
+    $(document).ready(() => {
+        new Vue({
+            delimiters: ['{[', ']}'],
+            el: "#sms-card",
+            data: {
+                phone: phone,
+                done: false,
+                blockAuthed: false,
+                errorMessage: "",
+                successMessage: "",
+                nc_token: "",
+                csessionid: "",
+                sig: "",
+                loading: false,
+                sended: false
+            },
+            mounted() {
+                axios.post("/api/phoneutil/preparation").then(resp => {
+                    let data = resp.data.data;
+                    this.nc_token = [data.appKey, (new Date()).getTime(), Math.random()].join(':');
+                    this.done = true;
+                    let NC_Opt = {
+                        renderTo: "#aliyun-captcha",
+                        appkey: data.appKey,
+                        scene: "nc_message",
+                        token: this.nc_token,
+                        customWidth: 300,
+                        trans: { "key1": "code0" },
+                        elementID: ["usernameID"],
+                        is_Opt: 0,
+                        language: "cn",
+                        isEnabled: true,
+                        timeout: 3000,
+                        times: 5,
+                        apimap: {
+                        },
+                        callback: (data) => {
+                            this.blockAuthed = true;
+                            this.csessionid = data.csessionid;
+                            this.sig = data.sig;
+                            console.log(this.nc_token)
+                            console.log(data.csessionid)
+                            console.log(data.sig)
+                        }
+                    };
+
+                    this.$nextTick(() => {
+                        console.log("Loading noCaptcha");
+                        nc = new noCaptcha(NC_Opt);
+                        console.log(nc);
+                        nc.upLang('cn', {
+                            _startTEXT: "请按住滑块，拖动到最右边",
+                            _yesTEXT: "验证通过",
+                            _error300: "哎呀，出错了，点击<a href=\"javascript:__nc.reset()\">刷新</a>再来一次",
+                            _errorNetwork: "网络不给力，请<a href=\"javascript:__nc.reset()\">点击刷新</a>",
+                        });
+                    });
+
+
+                });
+            },
+            methods: {
+                close() {
+                    try {
+                        // window.parent.closeModal();
+                        parent.window.closeModal(this.sended);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                    window.close();
+                },
+                sendCode() {
+                    this.loading = true;
+                    this.sended = true;
+                    this.errorMessage = this.successMessage = "";
+                    axios.post("/api/phoneutil/sendcode", {
+                        phone: this.phone,
+                        noCaptcha: {
+                            nc_token: this.nc_token,
+                            csessionid: this.csessionid,
+                            sig: this.sig
+                        },
+                        must_not_use: mustNotUse
+                    }).then(resp => {
+                        this.loading = false;
+                        nc.reload();
+                        let data = resp.data;
+                        if (data.code) {
+                            this.errorMessage = data.message;
+                            return;
+                        } else {
+                            this.sended = true;
+                            this.successMessage = data.message;
+                            // this.close();
+                        }
+                    });
+                },
+            }
+        });
+    });
+</script>
+<div id="sms-card" v-if="done">
+    <div class="ui center aligned container">
+
+        <div class="ui stacked segment" style="top:50%">
+            <div class="ui active dimmer" v-if="!done">
+                <div class="ui loader"></div>
+            </div>
+            <div class="ui form" v-bind:class="{error:errorMessage!='',success:successMessage!=''}">
+
+                <div v-once style="margin-bottom: 30px;" class="center aligned">
+                    <div id="aliyun-captcha" class="nc-container"></div>
+                </div>
+
+                <div class="ui error message">
+                    <div class="header">错误</div>
+                    <p>{[errorMessage]}</p>
+                </div>
+                <div class="ui success message">
+                    <div class="header">成功</div>
+                    <p>{[successMessage]}</p>
+                </div>
+                <div class="ui green button" v-on:click="close">
+                    关闭
+                </div>
+                <div class="ui green button" v-bind:class="{loading:loading}" v-on:click="sendCode" v-if="blockAuthed">
+                    {[sended?"重发验证码":"发送验证码"]}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

@@ -1,14 +1,16 @@
+# 如果您在使用2021年前的版本，更新后务必参考migrate.md进行数据迁移。
+
 # HelloJudge2
 
 ## 简介
 用于算法竞赛的评测系统。
 
 ## Demo
-http://cf.yt2soj.top/ YT2SOJ
+http://yt2soj.top/ YT2SOJ
 
 ## 架构
 Web端和评测端。
-Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
+Web端采取前后端分离，客户端渲染，后端只提供API接口。
 
 评测采用Celery+Redis作为消息队列，评测端通过消息队列获取评测任务，并通过HTTP上报评测结果。
 ## 更新方式
@@ -17,7 +19,7 @@ Web端采取前后端分离，前端与后端之间通过AJAX获取数据。
 ## 关于数据库
 从2019.11.2开始，所有更新不再需要手动修改数据库。
 
-每次更新后执行```python3.7 manage.py db upgrade```即可。
+每次更新后执行```python3 manage.py db upgrade```即可。
 
 ## 架设
 ### Web端

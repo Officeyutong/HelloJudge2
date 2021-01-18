@@ -15,6 +15,7 @@
                 md5: hex_md5
             },
             delimiters: ['{[', ']}'],
+            mixins: [baseMixin],
             props: ["data"],
             computed: {
                 content() {
@@ -24,7 +25,7 @@
             template: `<div class="ui two column grid">
             <div class="row">
                 <div class="column" style="width:65px;">
-                    <img :src="'https://www.gravatar.com/avatar/'+md5(data.email)" class="ui small circular image"></img>
+                    <img :src="makeProfileImageURL(data.email)" class="ui small circular image"></img>
                 </div>
                 <div class="column" style="max-width: 1000px;width:90%;">
                     <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.uid" target="_blank">{[data.username]}</a></div>
@@ -45,6 +46,7 @@
         discussion = new Vue({
             el: "#discussion",
             delimiters: ['{[', ']}'],
+            mixins:[baseMixin],
             data: {
                 data: null, done: false, current_page: 1, page_count: -1, comments: [], text: "", title: ""
             }, methods: {
@@ -88,13 +90,29 @@
         });
         post = new Vue({
             data: {
-                text: "", error_message: "", success_message: "", sending: false
+                text: "",
+                error_message: "",
+                success_message: "",
+                sending: false,
+                lastRenderedAt: 0,
+                lastRenderResult: ""
             },
             el: "#post",
             delimiters: ['{[', ']}'],
+            watch: {
+                text: function (newOne, oldOne) {
+                    let currentStamp = parseInt(this.lastRendered = (new Date()).valueOf() / 1000);
+                    console.log("Current: ", currentStamp, " Last at: ", this.lastRenderedAt);
+                    if (currentStamp - this.lastRenderedAt > 1) {
+                        console.log("ReRendering...");
+                        this.lastRenderResult = converter.makeHtml(this.text);
+                        this.lastRenderedAt = currentStamp;
+                    }
+                }
+            },
             computed: {
                 preview_content() {
-                    return converter.makeHtml(this.text);
+                    return this.lastRenderResult;
                 }
             }, methods: {
                 send() {
@@ -132,6 +150,7 @@
 <div id="discussion" v-if="done" style="max-width: 1000px;">
     <div class="ui header" style="margin-bottom: 50px;">
         <h2>{[data.title]}</h2>
+        <div v-if="data.private" class="ui red label">私有</div>
     </div>
     <div class="ui segment stacked">
         <discussion-item :data="data"></discussion-item>
@@ -145,7 +164,7 @@
             <div class="comment" v-for="item in comments">
                 <!-- {[item]} -->
                 <a class="avatar" :href="'/profile/'+item.uid"><img class="circular"
-                        :src="'https://www.gravatar.com/avatar/'+md5(item.email)"></a>
+                        :src="makeProfileImageURL(item.email)"></a>
                 <div class="content">
                     <a class="author" :href="'/profile/'+item.uid">{[item.username]}</a>
                     <div class="metadata">

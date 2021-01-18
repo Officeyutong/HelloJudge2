@@ -7,8 +7,6 @@
         word-wrap: break-all;
     }
 </style>
-<script src="/static/ace/ace.js" type="text/javascript" charset="utf-8"></script>
-<script src="/static/ace/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
 
 {%endblock%}
 {%block body%}
@@ -17,106 +15,7 @@
 <script>
 
     var show_problem;
-    Vue.component("editor", {
-        delimiters: ['{[', ']}'],
-        render: function (h) {
-            var height = this.height ? this.px(this.height) : '100%'
-            var width = this.width ? this.px(this.width) : '100%'
-            return h('div', {
-                attrs: {
-                    style: "height: " + height + '; width: ' + width,
-                }
-            })
-        },
-        props: {
-            value: {
-                type: String,
-                required: true
-            },
-            lang: String,
-            theme: String,
-            height: true,
-            width: true,
-            options: Object
-        },
-        data: function () {
-            return {
-                editor: null,
-                contentBackup: ""
-            }
-        },
-        methods: {
-            px: function (n) {
-                if (/^\d*$/.test(n)) {
-                    return n + "px";
-                }
-                return n;
-            }
-        },
-        watch: {
-            value: function (val) {
-                if (this.contentBackup !== val) {
-                    this.editor.session.setValue(val, 1);
-                    this.contentBackup = val;
-                }
-            },
-            theme: function (newTheme) {
-                this.editor.setTheme('ace/theme/' + newTheme);
-            },
-            lang: function (newLang) {
-                this.editor.getSession().setMode('ace/mode/' + newLang);
-            },
-            options: function (newOption) {
-                this.editor.setOptions(newOption);
-            },
-            height: function () {
-                this.$nextTick(function () {
-                    this.editor.resize()
-                })
-            },
-            width: function () {
-                this.$nextTick(function () {
-                    this.editor.resize()
-                })
-            }
-        },
-        beforeDestroy: function () {
-            this.editor.destroy();
-            this.editor.container.remove();
-        },
-        mounted: function () {
-            var vm = this;
-            var lang = this.lang || 'text';
-            var theme = this.theme || 'chrome';
 
-            // require('brace/ext/emmet');
-
-            var editor = vm.editor = ace.edit(this.$el);
-            this.$emit('init', editor);
-
-            editor.$blockScrolling = Infinity;
-            //editor.setOption("enableEmmet", true);
-            editor.getSession().setMode('ace/mode/' + lang);
-            editor.setTheme('ace/theme/' + theme);
-            editor.setValue(this.value, 1);
-            this.contentBackup = this.value;
-            editor.setFontSize(18);
-            editor.setOption("wrap", "free");
-            ace.require("ace/ext/language_tools");
-            editor.setOptions({
-                enableBasicAutocompletion: true,
-                enableSnippets: true,
-                enableLiveAutocompletion: true
-            });
-            editor.on('change', function () {
-                var content = editor.getValue();
-                vm.$emit('input', content);
-                vm.contentBackup = content;
-            });
-            if (vm.options)
-                editor.setOptions(vm.options);
-        }
-    });
     $(document).ready(() => {
         // ace.require("ace/ext/language_tools");
         show_problem = new Vue({
@@ -129,8 +28,38 @@
                 selected_id: "",
                 code: "",
                 uploader_profile: {},
-                done: false, recent_discussion: [], usedParameters: []
+                done: false,
+                recent_discussion: [],
+                usedParameters: []
             }, methods: {
+                toggleTodoState(evt) {
+                    evt.target.classList.add("loading");
+                    if (this.data.inTodoList) {
+                        axios.post("/api/problemtodo/remove", {
+                            problemID: this.data.id
+                        }).then(resp => {
+                            evt.target.classList.remove("loading");
+                            let data = resp.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            this.data.inTodoList = false;
+                        });
+                    } else {
+                        axios.post("/api/problemtodo/add", {
+                            problemID: this.data.id
+                        }).then(resp => {
+                            evt.target.classList.remove("loading");
+                            let data = resp.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            this.data.inTodoList = true;
+                        });
+                    }
+                },
                 submit: function () {
                     $.post("/api/submit", {
                         problem_id: show_problem.data.id,
@@ -205,6 +134,7 @@
                 else {
                     this.html_content = this.value;
                 }
+                $(".ui.sticky").sticky({ context: "#target" })
             }
         });
 
@@ -219,55 +149,176 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
 
             show_problem.data = ctx.data;
-            show_problem.code = show_problem.data.last_code;
-            show_problem.usedParameters = ctx.data.lastUsedParameters;
-            if (show_problem.data.problem_type === "remote_judge") {
-                window.location.href = "/remote_judge/show_problem/" + show_problem.data.id;
-            }
-            // console.log(show_problem.usedParameters);
-            // console.log(ctx)
-            $.post("/api/get_user_profile", { uid: ctx.data.uploader_id }).done(ctx => {
-                ctx = JSON.parse(ctx);
-                show_problem.uploader_profile = ctx.data;
-                $.post("/api/get_supported_langs").done((ctx) => {
-                    ctx = JSON.parse(ctx);
-                    var obj = {}
-                    ctx.list.forEach((x) => {
-                        obj[x.id] = x;
-                    })
-                    show_problem.langs = obj;
-                    if (show_problem.data.last_lang != "") {
-                        show_problem.selected_id = show_problem.data.last_lang;
-                    } else {
-                        show_problem.selected_id = ctx.list[0].id;
+
+            if (!show_problem.data.hasPermission) {
+                $("#invite-code-input").val("");
+                $("#invite-code-modal").modal({
+                    onApprove: () => {
+                        let code = $("#invite-code-input").val();
+                        console.log(code);
+                        axios.post("/api/problem/unlock", {
+                            problemID: show_problem.data.id,
+                            inviteCode: code
+                        }).then(resp => {
+                            let data = resp.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            window.location.reload();
+                        });
                     }
-                    axios.post("/api/get_discussion_list", { path: "discussion.problem." + show_problem.data.id, page: 1, countLimit: 10 }).then(ctx => {
-                        ctx = ctx.data;
-                        // ctx = JSON.parse(ctx);
-                        if (ctx.code) {
-                            show_error_modal(ctx.message);
-                            return;
+                }).modal("show");
+            } else {
+                show_problem.code = show_problem.data.last_code;
+                show_problem.usedParameters = ctx.data.lastUsedParameters;
+                if (show_problem.data.problem_type === "remote_judge") {
+                    window.location.href = "/remote_judge/show_problem/" + show_problem.data.id;
+                }
+                $.post("/api/get_user_profile", { uid: ctx.data.uploader_id }).done(ctx => {
+                    ctx = JSON.parse(ctx);
+                    show_problem.uploader_profile = ctx.data;
+                    $.post("/api/get_supported_langs").done((ctx) => {
+                        ctx = JSON.parse(ctx);
+                        var obj = {}
+                        ctx.list.forEach((x) => {
+                            obj[x.id] = x;
+                        })
+                        show_problem.langs = obj;
+                        if (show_problem.data.last_lang != "") {
+                            show_problem.selected_id = show_problem.data.last_lang;
+                        } else {
+                            show_problem.selected_id = ctx.list[0].id;
                         }
-                        show_problem.recent_discussion = ctx.data;
-                        console.log(ctx);
-                        show_problem.done = true;
+                        axios.post("/api/get_discussion_list", { path: "discussion.problem." + show_problem.data.id, page: 1, countLimit: 10 }).then(ctx => {
+                            ctx = ctx.data;
+                            // ctx = JSON.parse(ctx);
+                            if (ctx.code) {
+                                show_error_modal(ctx.message);
+                                return;
+                            }
+                            show_problem.recent_discussion = ctx.data;
+                            console.log(ctx);
+                            show_problem.done = true;
 
-                    });
+                        });
 
-                })
-            });
+                    })
+                });
+            }
         });
 
     });
 
 </script>
-<div style="top:10%;max-width: 700px;">
+<div style="top:10%;" id="show-problem" v-if="done">
+    <div class="ui header">
+        <h1> {[data.id]}: {[data.title]} </h1>
+    </div>
+    <div class="ui segment" id="target" style="max-width: 70%;">
+        <div class="ui right rail">
+            <div class="ui sticky">
+                <div class="ui segment stacked" style="max-width: 300px">
+                    <table class="ui very basic fluid collapsing celled table">
 
-    <div id="show-problem" v-if="done">
+                        <tbody>
+                            <tr>
+                                <td>题目上传者</td>
+                                <td style="word-break: break-all;"><a
+                                        :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
+                            </tr>
+                            <tr>
+                                <td>上传时间</td>
+                                <td style="word-break: break-all;">{[data.create_time]}</td>
+                            </tr>
 
-        <div class="ui header">
-            <h1> {[data.id]}: {[data.title]} </h1>
+                            <tr>
+                                <td>是否公开</td>
+                                <td>{[data.public?"Yes":"No"]}</td>
+                            </tr>
+                            <tr>
+                                <td>题目分数</td>
+                                <td>{[total_score]}</td>
+                            </tr>
+                            <tr>
+                                <td>我的提交</td>
+                                <td>
+                                    <div v-if="data.my_submission==-1">尚未提交</div><a v-else
+                                        :href="'/show_submission/'+data.my_submission" target="_blank">
+                                        <judge-status :status="data.my_submission_status"></judge-status>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>通过数/提交数/通过率</td>
+                                <td>{[data.accepted_count]}/{[data.submission_count]}/{[parseInt(100*data.accepted_count/data.submission_count)]}%
+                                </td>
+                            </tr>
+                            <tr v-if="data.using_file_io" style="word-break: break-all;">
+                                <td>输入/输出文件</td>
+                                <td>{[data.input_file_name]}<br />{[data.output_file_name]}</td>
+                            </tr>
+                            <tr>
+                                <td>评测方式</td>
+                                <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
+                            </tr>
+                            <tr>
+                                <td>题目标签</td>
+                                <td>
+                                    <div class="ui tiny label" v-for="tag in data.tags" :class="[tag.color]">
+                                        {[tag.display]}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||data.managable"
+                        target="_blank">编辑</a>
+                    <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||data.managable">删除</a>
+                    <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
+                    <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
+                    <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>
+                    <div style="margin-top: 20px;" class="ui tiny button" v-on:click="toggleTodoState"
+                        v-bind:class="[data.inTodoList?'red':'green']">
+                        {[data.inTodoList?'从待做题目列表删除':'加入待做题目列表']}
+                    </div>
+                    <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
+                        <div class="ui header">
+                            <h4>文件下载</h4>
+                        </div>
+                        <a v-for="file,i in data.downloads" v-if="i<=5"
+                            :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]} </span></a>
+                        <div class="ui right aligned container">
+                            <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
+                        </div>
+                    </div>
+
+
+                </div>
+                <div class="ui stack segment" style="max-width: 300px">
+                    <div class="ui header">
+                        <h4>讨论</h4>
+                    </div>
+                    <table class="ui very basic fluid collapsing celled table" v-if="recent_discussion.length!=0">
+                        <tbody>
+                            <tr v-for="item in recent_discussion">
+                                <td>
+                                    <a :href="'/show_discussion/'+item.id" target="_blank">{[item.title]}</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div v-else>无</div>
+                    <a :href="'/discussions/discussion.problem.'+data.id+'/1'" target="_blank">查看更多..</a>
+                </div>
+            </div>
         </div>
+
 
         <problem-meta name="题目背景" v-bind:value="data.background"></problem-meta>
         <problem-meta name="题目内容" v-bind:value="data.content"></problem-meta>
@@ -314,7 +365,7 @@
             <!-- <div class="ui " -->
         </div>
         <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
-        <div class="ui container problem-meta">
+        <div class="ui container problem-meta" v-if="data.problem_type!='submit_answer'">
             <div class="ui header">
                 <h3>提交代码</h3>
             </div>
@@ -338,7 +389,7 @@
                         <div class="twelve wide stretched column" style="padding-left: 0;">
                             <div class="ui container">
                                 <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                                    style="left:30px;min-height: 500px;">
+                                    style="min-height: 500px;" width="100%">
                                 </editor>
                             </div>
                         </div>
@@ -379,90 +430,15 @@
                 </div>
             </div>
         </div>
-        <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
-            <div class="ui segment stacked" style="max-width: 300px">
-                <table class="ui very basic fluid collapsing celled table">
-
-                    <tbody>
-                        <tr>
-                            <td>题目上传者</td>
-                            <td style="word-break: break-all;"><a
-                                    :href="'/profile/'+uploader_profile.id">{[uploader_profile.username]}</a></td>
-                        </tr>
-                        <tr>
-                            <td>上传时间</td>
-                            <td style="word-break: break-all;">{[data.create_time]}</td>
-                        </tr>
-
-                        <tr>
-                            <td>是否公开</td>
-                            <td>{[data.public?"Yes":"No"]}</td>
-                        </tr>
-                        <tr>
-                            <td>题目分数</td>
-                            <td>{[total_score]}</td>
-                        </tr>
-                        <tr>
-                            <td>我的提交</td>
-                            <td>
-                                <div v-if="data.my_submission==-1">尚未提交</div><a v-else
-                                    :href="'/show_submission/'+data.my_submission" target="_blank">
-                                    <judge-status :status="data.my_submission_status"></judge-status>
-                                </a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>通过数/提交数/通过率</td>
-                            <td>{[data.accepted_count]}/{[data.submission_count]}/{[parseInt(100*data.accepted_count/data.submission_count)]}%
-                            </td>
-                        </tr>
-                        <tr v-if="data.using_file_io" style="word-break: break-all;">
-                            <td>输入/输出文件</td>
-                            <td>{[data.input_file_name]}<br />{[data.output_file_name]}</td>
-                        </tr>
-                        <tr>
-                            <td>评测方式</td>
-                            <td>{[data.spj_filename==""?"文本比较":"Special Judge"]}</td>
-                        </tr>
-
-                    </tbody>
-                </table>
-                <a :href="'/problem_edit/'+data.id" v-if="base.uid==data.uploader_id||data.managable"
-                    target="_blank">编辑</a>
-                <a v-on:click="removeProblem" v-if="base.uid==data.uploader_id||data.managable">删除</a>
-                <a :href="'/submissions/1?filter=uid%3D'+base.uid+'%2Cproblem%3D'+data.id" target="_blank">我的提交</a>
-                <a :href="'/submissions/1?filter=problem%3D'+data.id" target="_blank">全部提交</a>
-                <a :href="'/submissions/1?filter=status%3Daccepted%2Cproblem%3D'+data.id" target="_blank">通过提交</a>
-                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
-                    <div class="ui header">
-                        <h4>文件下载</h4>
-                    </div>
-                    <a v-for="file,i in data.downloads" v-if="i<=5"
-                        :href="'/api/download_file/'+data.id+'/'+file"><span>{[file]} </span></a>
-                    <div class="ui right aligned container">
-                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
-                    </div>
-                </div>
-
-
-            </div>
-            <div class="ui stack segment" style="max-width: 300px">
-                <div class="ui header">
-                    <h4>讨论</h4>
-                </div>
-                <table class="ui very basic fluid collapsing celled table" v-if="recent_discussion.length!=0">
-                    <tbody>
-                        <tr v-for="item in recent_discussion">
-                            <td>
-                                <a :href="'/show_discussion/'+item.id" target="_blank">{[item.title]}</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div v-else>无</div>
-                <a :href="'/discussions/discussion.problem.'+data.id+'/1'" target="_blank">查看更多..</a>
+        <div v-else>
+            <div class="ui center aligned container" style="margin-top: 30px;">
+                <a class="ui icon green button" target="_blank" :href="'/submit_answer/'+data.id">
+                    <i class="paper plane outline icon"></i>
+                    提交答案
+                </a>
             </div>
         </div>
+
     </div>
     <div class="ui basic modal" id="no-perm-modal">
         <div class="ui icon header">
@@ -497,6 +473,27 @@
         </div>
         <div class="ui blue cancel button">
             取消
+        </div>
+    </div>
+</div>
+<div class="ui tiny modal" id="invite-code-modal">
+    <div class="header">
+        请输入此题目的邀请码
+    </div>
+    <div class="center aligned content">
+        <div class="ui center aligned container">
+            <div class="ui fluid input">
+                <input id="invite-code-input">
+            </div>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui red cancel button">
+            取消
+        </div>
+        <div class="ui positive right labeled icon button">
+            确认
+            <i class="checkmark icon"></i>
         </div>
     </div>
 </div>

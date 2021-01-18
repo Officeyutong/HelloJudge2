@@ -8,68 +8,103 @@ from werkzeug.utils import secure_filename
 
 
 @app.route("/api/home_page", methods=["POST"])
-def home_page():
+def api_home_page():
     """
     返回主页数据
     {
         "data":{
-            "broadcasts":[
+            "appName":config.APP_NAME,
+            "friendLinks":[
                 {
-                    "title":"xxx",
-                    "id":"xxx",
-                    "time":'xxx'
+                    "name":"qwq",
+                    "url":"qwq"
                 }
-            ],
-            "ranklist":[
-                "username":"xxx",
-                "uid":-1,
-                "description":"xxx"
-            ],
-            "recent_problems":[
-                "title":"xxx",
-                "id":"xxx",
-                "create_time":"xxx"
-            ],
-            "discussions":[
-                "title":"xxx",
-                "id":-1,
-                "time":""
-            ],
-            "friend_links":[
-                {
-                    "name":"qwq","url":"qwq"
-                }
-            ]
+            ], //信息流单独加载
+            "swipers":[{
+                "image":"图片URL",
+                "url":"链接URL"
+            }],
+            "toolbox":[{
+                "color":"semantic ui颜色",
+                "name":"显示名",
+                "url":"跳转链接"
+            }],
+            "swiperInterval":"轮播切换间隔(ms)"
         }
     }
     """
-    result = {"broadcasts": [], "ranklist": [],
-              "recent_problems": [], "app_name": config.APP_NAME, "discussions": [], "friend_links": config.FRIEND_LINKS}
-    broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
-        Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
-    for item in broadcasts:
-        result["broadcasts"].append({
-            "title": item.title, "id": item.id, "time": str(item.time)
-        })
-    ranklist = db.session.query(User.id, User.description, User.username, User.rating).order_by(
-        User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
-    for item in ranklist:
-        result["ranklist"].append({
-            "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
-        })
-    problems = db.session.query(Problem.title, Problem.id, Problem.create_time).filter(Problem.public == True).order_by(
-        Problem.create_time.desc()).limit(config.HOMEPAGE_PROBLEMS).all()
-    for item in problems:
-        result["recent_problems"].append({
-            "title": item.title, "id": item.id, "create_time": str(item.create_time)
-        })
-    discussions = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(Discussion.path.like("discussion.%")).order_by(Discussion.top.desc()).order_by(
-        Discussion.time.desc()).limit(config.HOMEPAGE_DISCUSSIONS).all()
-    for item in discussions:
-        result["discussions"].append({
-            "title": item.title, "id": item.id, "time": str(item.time)
-        })
+    result = {
+        "appName": config.APP_NAME,
+        "friendLinks": config.FRIEND_LINKS,
+        "swipers": config.HOMEPAGE_SWIPER,
+        "toolbox": config.HOMEPAGE_TOOLBOX,
+        "swiperInterval": config.SWIPER_SWITCH_INTERVAL
+    }
+
     return make_response(0, data=result)
+# @app.route("/api/home_page", methods=["POST"])
+# def home_page():
+#     """
+#     返回主页数据
+#     {
+#         "data":{
+#             "broadcasts":[
+#                 {
+#                     "title":"xxx",
+#                     "id":"xxx",
+#                     "time":'xxx'
+#                 }
+#             ],
+#             "ranklist":[
+#                 "username":"xxx",
+#                 "uid":-1,
+#                 "description":"xxx"
+#             ],
+#             "recent_problems":[
+#                 "title":"xxx",
+#                 "id":"xxx",
+#                 "create_time":"xxx"
+#             ],
+#             "discussions":[
+#                 "title":"xxx",
+#                 "id":-1,
+#                 "time":""
+#             ],
+#             "friend_links":[
+#                 {
+#                     "name":"qwq","url":"qwq"
+#                 }
+#             ]
+#         }
+#     }
+#     """
+#     result = {"broadcasts": [], "ranklist": [],
+#               "recent_problems": [], "app_name": config.APP_NAME, "discussions": [], "friend_links": config.FRIEND_LINKS}
+#     broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
+#         Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
+#     for item in broadcasts:
+#         result["broadcasts"].append({
+#             "title": item.title, "id": item.id, "time": str(item.time)
+#         })
+#     ranklist = db.session.query(User.id, User.description, User.username, User.rating).order_by(
+#         User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
+#     for item in ranklist:
+#         result["ranklist"].append({
+#             "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
+#         })
+#     problems = db.session.query(Problem.title, Problem.id, Problem.create_time).filter(Problem.public == True).order_by(
+#         Problem.create_time.desc()).limit(config.HOMEPAGE_PROBLEMS).all()
+#     for item in problems:
+#         result["recent_problems"].append({
+#             "title": item.title, "id": item.id, "create_time": str(item.create_time)
+#         })
+#     discussions = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(Discussion.path.like("discussion.%")).order_by(Discussion.top.desc()).order_by(
+#         Discussion.time.desc()).limit(config.HOMEPAGE_DISCUSSIONS).all()
+#     for item in discussions:
+#         result["discussions"].append({
+#             "title": item.title, "id": item.id, "time": str(item.time)
+#         })
+#     return make_response(0, data=result)
 
 
 @app.route("/api/get_judge_status", methods=["POST", "GET"])

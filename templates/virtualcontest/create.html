@@ -1,0 +1,114 @@
+{%extends "base.html"%}
+{%block title%}
+创建虚拟比赛
+{%endblock%}
+{%block body%}
+
+<script>
+    let contestID = parseInt(window.location.pathname.split("/").pop());
+    $(document).ready(() => {
+        new Vue({
+            mixins: [baseMixin],
+            el: "#create",
+            data: {
+                done: false,
+                contestData: {},
+                startTime: (new Date()).toISOString(),
+                timeError: false
+            },
+            computed: {
+                endTime() {
+                    let timestamp = new Date(this.startTime).getTime() + (this.contestData.end_time - this.contestData.start_time) * 1000;
+                    console.log(timestamp);
+                    return new Date(timestamp).toLocaleString();
+                },
+                startTimeStr() {
+                    return new Date(this.startTime).toLocaleString();
+                },
+
+                lengthString() {
+                    let seconds = this.contestData.end_time - this.contestData.start_time;
+                    console.log(seconds);
+                    let second = parseInt(seconds % 60); seconds = parseInt(seconds / 60);
+                    let minute = parseInt(seconds % 60); seconds = parseInt(seconds / 60)
+                    let hour = parseInt(seconds % 60);
+                    return `${hour}小时 ${minute}分 ${second}秒`;
+                }
+            },
+            methods: {
+                submit() {
+                    axios.post("/api/virtualcontest/create", {
+                        contestID: this.contestData.id,
+                        startAt: parseInt(new Date(this.startTime).getTime() / 1000)
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        window.location.href = "/contest/" + this.contestData.id + "?virtual_contest=" + data.data.id;
+                    });
+                }
+            },
+            mounted() {
+                axios.post("/api/contest/show", { contestID: contestID }).then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.contestData = data.data;
+                    this.done = true;
+                });
+            }
+        });
+    });
+</script>
+
+
+<div v-if="done" id="create">
+    <div class="ui header">
+        <h1>{[contestData.name]} 的虚拟比赛</h1>
+    </div>
+    <div class="ui segment stacked">
+        <div class="ui form">
+            <div class="ui field">
+                <label>比赛名</label>
+                <span>{[contestData.name]}</span>
+            </div>
+            <div class="ui field">
+                <label>持续时间</label>
+                <span>{[lengthString]}</span>
+            </div>
+
+            <div class="ui two fields">
+                <div class="ui field">
+                    <label>开始时间</label>
+                    <div class="ui input" v-bind:class="{error:timeError}">
+                        <input type="text" v-model="startTime">
+                    </div>
+                </div>
+                <div class="ui field">
+                    <label>时间文本</label>
+                    <span>{[startTimeStr]}</span>
+                </div>
+            </div>
+            <div class="ui field">
+                <label>结束时间</label>
+                <span>{[endTime]}</span>
+            </div>
+            <div class="ui info message">
+                <div class="header">
+                    关于时间格式
+                </div>
+                <p>时间遵循ISO标准.</p>
+                <p>即1926-08-17T12:34:56.000Z表示1926年8月17日12:34:56，0毫秒，UTC+0时区。</p>
+                <p> 1926-08-17T12:34:56.123+0800表示1926年8月17日,12:34:56，123毫秒,UTC+8时区（中国标准时间）</p>
+            </div>
+            <div class="ui green button" v-on:click="submit">
+                提交
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

@@ -7,7 +7,7 @@
 
     let emailAuth;
     $(document).ready(() => {
-        // let token = decodeURIComponent(decodeURIComponent(window.location.href.split("/").pop()));
+        let token = decodeURIComponent(decodeURIComponent(window.location.href.split("/").pop()));
         emailAuth = new Vue({
             el: "#email-auth",
             delimiters: ['{[', ']}'],
@@ -15,21 +15,21 @@
             data: {
                 errorMessage: "",
                 username: "",
-                token: "",
+                token: token,
                 successMessage: "",
                 loading: false
             }, methods: {
                 submit: function () {
 
                     this.errorMessage = this.successMessage = "";
-                    if (!this.username || ! this.token) {
-                        this.errorMessage = "请输入完整的信息";
+                    if (!this.username) {
+                        this.errorMessage = "请输入用户名";
                         return;
                     }
                     this.loading = true;
 
                     $.post("/api/auth_email", {
-                        username: emailAuth.username, token: emailAuth.token.trim()
+                        username: this.username, token: this.token
                     }).done(function (ctx) {
                         this.loading = false;
                         ctx = JSON.parse(ctx);
@@ -57,10 +57,6 @@
         <div class="ui stack segment" id="email-auth">
 
             <div class="ui form" v-bind:class="{error:errorMessage!='',success:successMessage!=''}">
-                <div class="ui field">
-                    <label>认证密钥:</label>
-                    <input type="text" placeholder="请输入邮件中地认证密钥.." v-model="token" v-on:keyup.enter="submit">
-                </div>
                 <div class="ui field">
                     <label>用户名:</label>
                     <input type="text" placeholder="请输入用户名(非邮箱).." v-model="username" v-on:keyup.enter="submit">

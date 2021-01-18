@@ -1,0 +1,164 @@
+{%extends "base.html"%}
+{%block title%}
+短信验证
+{%endblock%}
+{%block head%}
+<script type="text/javascript" charset="utf-8" src="//g.alicdn.com/sd/ncpc/nc.js?t=2015052012"></script>
+{%endblock%}
+{%block body%}
+
+<script>
+    let smsAuth;
+    let nc;
+    $(document).ready(() => {
+        smsAuth = new Vue({
+            el: "#sms-auth",
+            mixins: [baseMixin],
+            data: {
+                phoneNumber: "",
+                code: "",
+                errorMessage: "",
+                successMessage: "",
+                loading: false,
+                sended: false,
+                blockAuthed: false,
+                nc_token: "",
+                csessionid: "",
+                sig: "",
+                done: false
+            }, methods: {
+                sendCode() {
+                    this.loading = true;
+                    this.sended = true;
+                    this.errorMessage = this.successMessage = "";
+                    axios.post("/api/phoneauth/sendcode", {
+                        phone: this.phoneNumber,
+                        noCaptcha: {
+                            nc_token: this.nc_token,
+                            csessionid: this.csessionid,
+                            sig: this.sig
+                        }
+                    }).then(resp => {
+                        this.loading = false;
+                        nc.reload();
+                        let data = resp.data;
+                        if (data.code) {
+                            this.errorMessage = data.message;
+                            return;
+                        } else {
+                            this.sended = true;
+                            this.successMessage = data.message;
+                        }
+                    });
+                },
+                auth() {
+                    this.loading = true;
+                    this.errorMessage = this.successMessage = "";
+                    axios.post("/api/phoneauth/auth", {
+                        code: this.code
+                    }).then(resp => {
+                        this.loading = false;
+                        let data = resp.data;
+                        if (data.code) {
+                            this.errorMessage = data.message;
+                            return;
+                        }
+                        this.successMessage = data.message;
+                        setInterval(() => {
+                            window.location.href = "/";
+                        }, 3000);
+                    });
+                }
+            }, mounted() {
+                axios.post("/api/phoneauth/preparation").then(resp => {
+                    let data = resp.data.data;
+                    this.nc_token = [data.appKey, (new Date()).getTime(), Math.random()].join(':');
+                    this.done = true;
+                    let NC_Opt = {
+                        renderTo: "#aliyun-captcha",
+                        appkey: data.appKey,
+                        scene: "nc_message",
+                        token: this.nc_token,
+                        customWidth: 300,
+                        trans: { "key1": "code0" },
+                        elementID: ["usernameID"],
+                        is_Opt: 0,
+                        language: "cn",
+                        isEnabled: true,
+                        timeout: 3000,
+                        times: 5,
+                        apimap: {
+                        },
+                        callback: (data) => {
+                            this.blockAuthed = true;
+                            this.csessionid = data.csessionid;
+                            this.sig = data.sig;
+                            console.log(this.nc_token)
+                            console.log(data.csessionid)
+                            console.log(data.sig)
+                        }
+                    };
+
+                    this.$nextTick(() => {
+                        console.log("Loading noCaptcha");
+                        nc = new noCaptcha(NC_Opt);
+                        console.log(nc);
+                        nc.upLang('cn', {
+                            _startTEXT: "请按住滑块，拖动到最右边",
+                            _yesTEXT: "验证通过",
+                            _error300: "哎呀，出错了，点击<a href=\"javascript:__nc.reset()\">刷新</a>再来一次",
+                            _errorNetwork: "网络不给力，请<a href=\"javascript:__nc.reset()\">点击刷新</a>",
+                        });
+                    });
+
+
+                });
+
+            }
+        });
+
+    });
+</script>
+<div id="sms-auth" v-if='done'>
+    <div class="ui left aligned container">
+        <div class="ui header">
+            <h1>短信验证</h1>
+        </div>
+        <div class="ui stacked segment" style="max-width: 35%;">
+            <div class="ui active dimmer" v-if="loading">
+                <div class="ui loader"></div>
+            </div>
+            <div class="ui form" v-bind:class="{error:errorMessage!='',success:successMessage!=''}">
+                <div class="ui field">
+                    <label>手机号码</label>
+                    <input type="text" placeholder="请输入11位国内手机号.." v-model="phoneNumber">
+                </div>
+                <div v-once style="margin-bottom: 30px;" class="center aligned">
+                    <div id="aliyun-captcha" class="nc-container"></div>
+                </div>
+
+                <div class="ui field" v-if="sended">
+                    <label>验证码</label>
+                    <input type="text" placeholder="请输入六位验证码.." v-model="code">
+                </div>
+
+                <div class="ui error message">
+                    <div class="header">错误</div>
+                    <p>{[errorMessage]}</p>
+                </div>
+                <div class="ui success message">
+                    <div class="header">成功</div>
+                    <p>{[successMessage]}</p>
+                </div>
+                <div class="ui green button" v-on:click="sendCode" v-if="blockAuthed">
+                    {[sended?"重发验证码":"发送验证码"]}
+                </div>
+                <div class="ui blue button" v-on:click="auth" v-if="sended">
+                    提交验证
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}

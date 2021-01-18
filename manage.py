@@ -1,8 +1,9 @@
+from routes.api_problem import refresh_cached_count
 from flask_script import Manager
 from main import web_app, db, redis_connection_pool
 from flask_migrate import Migrate, MigrateCommand
 import models
-from models import User
+from models import User, Problem
 manager = Manager(web_app)
 migrate = Migrate(web_app, db)
 manager.add_command('db', MigrateCommand)
@@ -38,6 +39,17 @@ def removeperm(userid, permstr):
     user.permissions = [x for x in user.permissions if x != permstr]
     db.session.commit()
     print("Done.")
+
+
+@manager.command
+def recache_allproblems():
+    """
+    刷新所有题目的AC数和提交数缓存
+    """
+    problem_ids = db.session.query(Problem.id).all()
+    for i, item in enumerate(problem_ids):
+        refresh_cached_count(item.id)
+        print(f"{i+1} / {len(problem_ids)} ok")
 
 
 if __name__ == '__main__':

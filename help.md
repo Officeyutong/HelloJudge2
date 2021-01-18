@@ -124,7 +124,7 @@ HelloJudge2会自动分配子任务内每个测试点的得分，使其和为子
 
 HelloJudge2保证同一份提交的所有Subtask会在同一台评测机进行评测。
 
-对于评测状态非```accepted```或```unaccepted```的提交，打开提交页面时会自动通过```Socket.io```实时更新评测信息。
+对于评测状态非```accepted```或```unaccepted```的提交，打开提交页面时会自动通过```Socket.io```(或者轮询)实时更新评测信息。
 
 ### 测试数据与同步
 
@@ -321,6 +321,12 @@ HelloJudge2具有权限系统。
         </tr>
         <tr>
             <td>
+                problem.use.题目ID
+            </td>
+            <td>使用某个私有题目(输入邀请码后取得)</td>
+        </tr>
+        <tr>
+            <td>
                 problem.publicize
             </td>
             <td>公开题目</td>
@@ -399,6 +405,22 @@ HelloJudge2具有权限系统。
         </tr>
         <tr>
             <td>
+                team.use.ID
+            </td>
+            <td>
+                使用某个私有团队的权限(输入邀请码后取得)
+            </td>
+        </tr>
+        <!-- <tr>
+            <td>
+                team.join.ID
+            </td>
+            <td>
+                不使用邀请码即可加入某个团队
+            </td>
+        </tr> -->
+        <tr>
+            <td>
                 user.manage
             </td>
             <td>
@@ -459,6 +481,103 @@ HelloJudge2具有权限系统。
             </td>
             <td>
                 管理习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                challenge.finish.挑战ID.习题集ID
+            </td>
+            <td>
+                表明用户已经完成一个挑战下的某个习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                challenge.finish.挑战ID.all
+            </td>
+            <td>
+                表明用户已经完成一个挑战以及这个挑战下的所有习题集
+            </td>
+        </tr>
+        <tr>
+            <td>
+                challenge.access.挑战ID
+            </td>
+            <td>
+                使用一个挑战的权限
+            </td>
+        </tr>
+        <tr>
+            <td>
+                challenge.use
+            </td>
+            <td>
+                使用挑战系统的权限
+            </td>
+        </tr>
+        <tr>
+            <td>
+                challenge.manage
+            </td>
+            <td>
+                管理挑战系统的权限
+            </td>
+        </tr>
+        <tr>
+            <td>
+                feed.manage
+            </td>
+            <td>
+                管理feed相关操作的权限(置顶等)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                problemtag.manage
+            </td>
+            <td>
+                管理全局题目标签（增删改查）
+            </td>
+        </tr>
+        <tr>
+            <td>
+                blog.use
+            </td>
+            <td>
+                使用博客系统的权限
+            </td>
+        </tr>
+        <tr>
+            <td>
+                permissionpack.manage
+            </td>
+            <td>
+                管理权限包
+            </td>
+        </tr>
+        <tr>
+            <td>
+                wiki.manage
+            </td>
+            <td>
+                管理wiki(创建 审核 修改配置)
+            </td>
+        </tr>
+        <tr>
+            <td>
+                wiki.edit
+            </td>
+            <td>
+                编辑wiki(编辑页面但是不能审核)
+            </td>
+        </tr>
+        
+        <tr>
+            <td>
+                virtualcontest.use
+            </td>
+            <td>
+                使用虚拟比赛
             </td>
         </tr>
     </tbody>

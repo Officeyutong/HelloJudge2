@@ -6,6 +6,7 @@
 <!-- <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css"> -->
 <!-- <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script> -->
 <script src="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.1.2/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/ansi_up@4.0.4/ansi_up.min.js"></script>
 <link href="https://cdn.bootcdn.net/ajax/libs/highlight.js/10.1.2/styles/default.min.css" rel="stylesheet">
 <style>
     pre>code {
@@ -13,6 +14,12 @@
         font-size: 130% !important;
         background-color: white !important;
         line-height: 25px;
+    }
+
+    .raw-span {
+        font-family: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+        white-space: pre-wrap;
+        word-wrap: break-word;
     }
 </style>
 {%endblock%}
@@ -22,8 +29,10 @@
     //     var startTime = new Date().getTime() + parseInt(time, 10);
     //     while (new Date().getTime() < startTime) { }
     // };
+    const ansi_up = new AnsiUp;
     var submission, socket;
     console.log("qwq");
+    let trackedCount = 0;
     $(document).ready(() => {
         const url = window.location.href.split("/");
         const submission_id = url[url.length - 1];
@@ -76,7 +85,8 @@
             }, mounted: function () {
 
             }, methods: {
-                copy_text: copy_text, rejudge() {
+                copy_text: copy_text,
+                rejudge() {
                     $.post("/api/rejudge", { submission_id: this.data.id }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
@@ -85,30 +95,57 @@
                         }
                         window.location.reload();
                     })
+                },
+                ansiToHtml(string) {
+                    return ansi_up.ansi_to_html(string);
                 }
             }
         })
+        const processData = (data) => {
+            let oldState = {};
+            if (submission.data !== null) {
+                for (let key of Object.keys(submission.data.judge_result)) {
+                    oldState[key] = submission.data.judge_result[key].collapsed;
+                }
+            }
+            let cloned = JSON.parse(JSON.stringify(data));
+            for (let key of Object.keys(cloned.judge_result)) {
+                let curr = cloned.judge_result[key];
+                curr.collapsed = false;
+                // submission.$set(submission.data.judge_result[key], "collapsed", false);
+                if (curr.testcases.length >= 50) curr.collapsed = true;
+                if (key in oldState) curr.collapsed = oldState[key];
+            }
+            return cloned;
+        };
         $.post("/api/get_submission_info", { submission_id: submission_id }).done((ctx) => {
             ctx = JSON.parse(ctx);
             if (ctx.code) {
                 show_error_modal(ctx.message);
                 return;
             }
-            submission.data = ctx.data;
-            submission.contestSubmit = submission.data.contest.isContest;
 
+            submission.data = processData(ctx.data);
+            submission.contestSubmit = submission.data.contest.isContest;
             $.post("/api/get_judge_status").done(ctx => {
                 submission.judge_status = JSON.parse(ctx).data;
                 if (submission.data.status == "judging" || submission.data.status == "waiting") {
                     if (submission.data.usePolling) {
                         console.log("Polling tracker started.");
+
                         let token = setInterval(() => {
+                            trackedCount++;
+                            if (trackedCount >= 100) {
+                                console.log("time out,cancelled");
+                                showErrorModal("评测跟踪器已超时，请刷新页面。");
+                                clearInterval(token);
+                            }
                             $.ajax({
                                 url: "/api/get_submission_info",
                                 data: {
                                     submission_id: submission_id
                                 },
-                                async: false,
+                                // async: false,
                                 method: "post",
                                 error: () => {
                                     console.log("Tracker cancelled");
@@ -119,11 +156,11 @@
                                     if (resp.data.status !== "judging" && resp.data.status !== "waiting") {
                                         clearInterval(token);
                                     }
-                                    submission.data = resp.data;
+                                    submission.data = processData(resp.data);
                                 }
                             })
 
-                        }, 500);
+                        }, 1000);
                     } else {
                         socket = io(window.location.origin + "/ws/submission");
                         console.log("Tracker connected.");
@@ -160,6 +197,8 @@
         <h2>查看提交</h2>
     </div>
     <div class="ui stack segment">
+        <div v-if="data.virtualContestID" style="color: red;font-size: large;">
+            此提交为虚拟比赛中的提交</div>
         <table class="ui very basic celled  table" style="max-width: 700px;">
             <tbody>
                 <tr>
@@ -180,7 +219,8 @@
                         比赛
                     </td>
                     <td>
-                        <a :href="'/contest/'+data.contest.id">{[data.contest.name]}</a>
+                        <a
+                            :href="'/contest/'+data.contest.id+'?virtual_contest='+(data.virtualContestID||-1)">{[data.contest.name]}</a>
                     </td>
                 </tr>
                 <tr>
@@ -254,7 +294,8 @@
                 <tr>
                     <td class="first-column">附加信息</td>
                     <td>
-                        <pre style="white-space: pre-wrap; word-wrap: break-word;">{[data.message]}</pre>
+                        <span class="raw-span" v-html="ansiToHtml(data.message)">
+                        </span>
                     </td>
                 </tr>
             </tbody>
@@ -270,7 +311,7 @@
                     {[key]}
                 </h3>
             </div>
-            <table class="ui very basic  celled  table" style="max-width: 5 00px;">
+            <table class="ui very basic  celled  table" style="">
                 <tbody>
                     <tr>
                         <td>得分/总分</td>
@@ -290,6 +331,19 @@
                             <judge-status :status="val.status"></judge-status>
                         </td>
                     </tr>
+                    <tr>
+                        <td>操作</td>
+                        <td>
+                            <!-- {[val]} -->
+                            <div class="ui green button" v-if="val.collapsed" v-on:click="val.collapsed=!val.collapsed">
+                                展开
+                            </div>
+                            <div class="ui red button" v-if="!val.collapsed" v-on:click="val.collapsed=!val.collapsed">
+                                折叠
+                            </div>
+
+                        </td>
+                    </tr>
                 </tbody>
             </table>
             <table class="ui basic table" style="max-width: 900px">
@@ -304,7 +358,8 @@
                         <th>附加信息</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody v-if="!val.collapsed">
+                    <!-- {[val.collapsed]} -->
                     <tr v-for="testcase in val.testcases">
                         <td><a :href="'/api/download_file/'+data.problem.id+'/'+testcase.input">{[testcase.input]}</a>
                         </td>
@@ -316,11 +371,10 @@
                         <td>
                             <judge-status :status="testcase.status"></judge-status>
                         </td>
-                        <td>{[testcase.time_cost]}ms</td>
+                        <td>{[testcase.time_cost]} ms</td>
                         <td>
                             <memory-cost-label v-bind:bytes="testcase.memory_cost" v-bind:unit="usingMemoryUnit">
                             </memory-cost-label>
-
                         </td>
                         <td>
                             {[testcase.message]}

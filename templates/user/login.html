@@ -33,7 +33,8 @@
                         return;
                     }
                     $.post("/api/login", {
-                        identifier: login_frame.identifier, password: this.md5WithSalt(login_frame.password)
+                        identifier: login_frame.identifier, 
+                        password: this.md5WithSalt(login_frame.password)
                     }).done(function (ctx) {
                         ctx = JSON.parse(ctx);
                         console.log(ctx);
@@ -45,6 +46,9 @@
 
                     });
                 }, resetPassword() {
+                    if (this.base.usePhoneAuth) {
+                        window.location.href = "/phone/reset_password";
+                    }
                     this.error_message = "";
                     if (this.identifier == "") {
                         this.error_message = "请输入用户名或电子邮件";

@@ -1,0 +1,85 @@
+{%extends "base.html"%}
+{%block title%}
+待做题目列表
+{%endblock%}
+{%block body%}
+
+<script>
+    $(document).ready(() => {
+        new Vue({
+            mixins: [baseMixin],
+            el: "#problemtodo",
+            data: {
+                done: false,
+                data: []
+            },
+            methods: {
+                remove(item, evt) {
+                    evt.target.classList.add("loading");
+                    axios.post("/api/problemtodo/remove", {
+                        problemID: item.id
+                    }).then(resp => {
+                        evt.target.classList.remove("loading");
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.data = this.data.filter(x => item.id != x.id);
+                    });
+                }
+            },
+            mounted() {
+                axios.post("/api/problemtodo/all").then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.data = data.data;
+                    this.done = true;
+                });
+            }
+        });
+    });
+</script>
+
+
+<div>
+    <div class="ui header">
+        <h1>待做题目列表</h1>
+    </div>
+    <div class="ui segment stacked" v-if="done" id="problemtodo">
+        <table class="ui center aligned table">
+            <thead>
+                <tr>
+                    <th>题目</th>
+                    <th>加入时间</th>
+                    <th>提交状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in data">
+                    <td>
+                        <a target="_blank" v-bind:href="'/show_problem/'+item.id">{[item.id]}. {[item.title]}</a>
+                    </td>
+                    <td>
+                        {[item.joinTime]}
+                    </td>
+                    <td>
+                        <a :href="item.submission.id==-1?null:('/show_submission/'+item.submission.id)">
+                            <judge-status :status="item.submission.status"></judge-status>
+                        </a>
+                    </td>
+                    <td>
+                        <div class="ui tiny red button" v-on:click="remove(item,$event)">
+                            删除
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{%endblock%}

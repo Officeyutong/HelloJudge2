@@ -97,11 +97,11 @@
                     <div class="header">发生错误</div>
                     <p>{[errorMessage]}</p>
                 </div>
-                <div class="ui field">
+                <div class="ui disabled field">
                     <label>用户名</label>
                     <input type="text" v-model="data.username">
                 </div>
-                <div class="ui field">
+                <div class="ui disabled field">
                     <label>电子邮箱</label>
                     <input type="text" v-model="data.email">
                 </div>
@@ -113,6 +113,24 @@
                     <label>头像</label>
                     请前往:<a href="https://en.gravatar.com/">https://en.gravatar.com/</a>进行更改.
                 </div>
+                <div class="ui field">
+                    <label>手机号验证</label>
+                    <div v-if="data.phone_verified">
+                        您的手机号码 {[data.phone_number]} 已经经过验证
+                    </div>
+                    <div v-else style="font-size: large;">
+                        请前往<a href="/phoneauth">此处</a>验证您的手机号
+                    </div>
+                </div>
+                <!-- <div class="ui field">
+                    <label>权限包领取</label>
+                    <div v-if="data.phone_verified">
+                        <a href="/permissionpack/user_packs" target="_blank">请前往此处进行操作</a>
+                    </div>
+                    <div v-else style="font-size: large;">
+                        请先验证手机号后再尝试领取权限包！
+                    </div>
+                </div> -->
                 <div class="ui field">
                     <label>Remote Judge 账户管理</label>
                     请前往:<a href="/remote_judge/accounts">这里</a>进行更改.
@@ -140,15 +158,21 @@
                 </div>
                 <div class="ui field">
                     <label>组权限列表</label>
-                    <div class="ui list">
-                        <div class="item" v-for="item in data.group_permissions">{[item]}</div>
+                    <div class="ui eight column grid">
+                        <div class="ui column" v-for="item in data.group_permissions">{[item]}</div>
                     </div>
+                    <!-- <div class="ui list">
+                        <div class="item" v-for="item in data.group_permissions">{[item]}</div>
+                    </div> -->
                 </div>
                 <div class="ui field">
                     <label>用户权限列表</label>
-                    <div class="ui list">
-                        <div class="item" v-for="item in data.permissions">{[item]}</div>
+                    <div class="ui eight column grid">
+                        <div class="ui column" v-for="item in data.permissions">{[item]}</div>
                     </div>
+                    <!-- <div class="ui list">
+                       
+                    </div> -->
                 </div>
                 <div class="ui divider" v-if="data.managable"></div>
 

@@ -68,16 +68,24 @@
                 <tr>
                     <th class="center aligned">比赛名</th>
                     <th class="center aligned">创建者</th>
+                    <th class="center aligned">权限</th>
                     <th class="center aligned">开始时间</th>
                     <th class="center aligned">结束时间</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="contest,i in data.list"
-                    v-bind:class="{positive:running(contest.start_time,contest.end_time  )}">
+                    v-bind:class="{positive:running(contest.start_time,contest.end_time)}">
                     <td class="center aligned"><a :href="'/contest/'+contest.id">{[contest.id]}. {[contest.name]}</a>
                     </td>
                     <td class="center aligned"><a :href="'/profile/'+contest.owner_id">{[contest.owner_username]}</a>
+                    </td>
+                    <td class="center aligned">
+                        <div v-if="contest.privateContest" :class="{positive:contest.hasPermission}">
+                            <i class="lock icon" v-if="!contest.hasPermission"></i>
+                            <i class="lock open icon" v-else></i>
+                        </div>
+                        <div v-else class="positive">公开比赛</div>
                     </td>
                     <td class="center aligned">{[makeTime(contest.start_time*1000)]}</td>
                     <td class="center aligned">{[makeTime(contest.end_time*1000)]}</td>

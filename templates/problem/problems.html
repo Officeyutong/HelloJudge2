@@ -4,152 +4,195 @@
 {%endblock%}
 {%block body%}
 <script>
+    let problems;
+    let page = parseInt(window.location.pathname.split("/").pop());
+    let toSearch = window.localStorage.getItem("hj2-home-search") || "";
+    window.localStorage.removeItem("hj2-home-search");
+
     $(document).ready(() => {
-        //这个东西不在vue里
-        $("#add-problem-button").click(() => {
-            $.post("/api/create_problem").done(ctx => {
-                ctx = JSON.parse(ctx);
-                if (ctx.code) {
-                    showErrorModal(ctx.message);
-                    return;
-                }
-                window.location.href = "/show_problem/" + ctx.problem_id;
-            });
-        })
         problems = new Vue({
-            delimiters: ['{[', ']}'],
             el: "#problems",
             mixins: [baseMixin],
             data: {
-                data: null,
-                page_count: 0,
                 done: false,
-                current_page: 0,
-                page_menu: [],
-                search_keyword: ""
-            }, methods: {
-                getColor(public) {
-                    if (!public) return {
-                        color: "green"
-                    };
-                    return {};
-                }
-            }
-        });
-        args = getRequest();
-        console.log(args);
-        if (args.search_keyword) problems.search_keyword = args.search_keyword;
-        $(".ui.selection.dropdown").dropdown({
-            apiSettings: {
-                url: "/api/ui_search_problem/{query}",
-                saveRemoteData: false
-            }
-        }).dropdown("setting", {
+                pageCount: 0,
+                currentPage: page,
+                filter: {
+                    searchKeyword: toSearch,
+                    tag: []
+                },
+                allTags: {},
+                currentLine: [],
+                showTags: false
+            },
 
-            saveRemoteData: false,
-            selectOnKeydown: false, forceSelection: false
+            methods: {
+                addTag(id) {
+                    if (!this.filter.tag.find(x => x == id)) {
+                        this.filter.tag.push(id);
+                    }
+                },
+                removeTag(id) {
+                    this.filter.tag = this.filter.tag.filter(x => x != id);
+                },
+                jumpTo(page) {
+                    this.done = false;
+                    window.history.pushState({}, "qwq", page);
+                    axios.post("/api/problem_list", {
+                        page: page,
+                        filter: this.filter
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+
+                        this.currentPage = page;
+                        this.pageCount = data.pageCount;
+                        this.currentLine = data.data;
+                        this.done = true;
+                    });
+                },
+                createProblem() {
+                    axios.post("/api/create_problem").then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        window.open("/show_problem/" + data.problem_id);
+                    });
+                },
+            }, mounted() {
+                axios.all([
+                    axios.post("/api/problemtag/all"),
+                    axios.post("/api/problem_list", {
+                        filter: this.filter,
+                        page: page
+                    })
+                ]).then(axios.spread((tags, list) => {
+                    for (let item of tags.data.data) {
+                        Vue.set(this.allTags, item.id, item);
+                    }
+                    let data = list.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.pageCount = data.pageCount;
+                    this.currentLine = data.data;
+                    this.done = true;
+                }));
+            }
         });
 
-        $(".ui.selection.dropdown").keyup((evt) => {
-            console.log(evt.which);
-            if (evt.which != 13) return;
-            var text = $(".ui.selection.dropdown .text").text();
-            if (text) {
-                if (text == "搜索") text = "";
-                console.log(text);
-                // return;
-                if (String(parseInt(text)) == text) {
-                    window.location.href = "/show_problem/" + text;
-                } else {
-                    // console.log("/problems/1?search_keyword=" + encodeURI(text));
-                    window.location.href = "/problems/1?search_keyword=" + (text);
-                }
-            }
-        });
-        $.post("/api/problem_list", { page: parseInt(window.location.href.split("/").pop()) || 1, search_keyword: problems.search_keyword }).done(ctx => {
-            ctx = JSON.parse(ctx);
-            if (ctx.code) {
-                showErrorModal(ctx.message);
-                return;
-            }
-            problems.data = ctx.data;
-            problems.page_count = ctx.page_count;
-            problems.current_page = ctx.current_page;
-            var arr = problems.page_menu;
-            for (var i = 1; i <= problems.page_count; i++) problems.page_menu.push(i);
-            // console.log(problems);
-            // console.log(arr);
-            if (arr.indexOf(problems.current_page) > 5) {
-                arr.splice(1, arr.indexOf(problems.current_page) - 4);
-                arr.splice(1, 1, -1);
-            }
-            if (arr.indexOf(problems.current_page) + 5 <= arr.length) {
-                arr.splice(arr.indexOf(problems.current_page) + 5, arr.length - 2 - (arr.indexOf(problems.current_page) + 5) + 1);
-                arr.splice(-2, 1, -1);
-            }
-            problems.done = true;
-        });
+
     });
 </script>
 
 <div class="ui header" style="margin-bottom: 50px;">
     <h1>题库</h1>
 </div>
-<div class="ui stacked segment">
+<div style="max-width: 80%;">
+    <div class="ui stacked segment" id="problems" v-if="done"
+        style="width:max-content;overflow-y: hidden;overflow-x: scroll;">
 
-    <div class="ui right aligned container">
-        
-        <a class="ui blue icon button" href="/remote_judge/add_problem" target="_blank">
-            <i class="ui plus icon"></i>添加远程题目..
-        </a>
-        <a class="ui blue icon button" href="/import_from_syzoj" target="_blank">
-            <i class="ui plus icon"></i>从SYZOJ导入题目..
-        </a>
-        <div class="ui green icon button" id="add-problem-button">
-            <i class="ui plus icon"></i>添加题目..
-        </div>
-    </div>
-    <div class="ui search selection dropdown">
-        <input type="hidden" id="search-input">
-        <i class="search icon"></i>
-        <div class="default text">搜索..</div>
-        <div class="menu">
-            <!-- <div class="item">qwq</div> -->
-        </div>
-    </div>
-    <div id="problems" v-if="done">
-        <div class="ui divider"></div>
-        <table class="ui very basic table">
-            <thead>
-                <tr>
-                    <th class="center aligned" style="max-width: 80px;width:80px;">题目编号</th>
-                    <th>题目</th>
-                    <th>通过数</th>
-                    <th>提交数</th>
-                    <th>通过率</th>
-                    <th>我的提交</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="item in data"
-                    v-bind:class="{positive:item.status&&item.status=='accepted',negative:item.status&&item.status!='accepted'}">
-                    <td class="center aligned" style="max-width: 80px;width:80px;">{[item.id]}</td>
-                    <td style="min-width: 400px;"><a :href="'/show_problem/'+item.id" v-bind:style="getColor(item.public)">{[item.title]}</a> </td>
-                    <td>{[item.accepted_submit]} </td>
-                    <td>{[item.total_submit]}</td>
-                    <td>{[parseInt(item.accepted_submit/item.total_submit*100)]}%</td>
-                    <td><a :href="'/show_submission/'+item.submission"
-                            v-if="item.submission!=-1">{[item.submission]}</a></td>
-                </tr>
-            </tbody>
-        </table>
-        <div class="ui center aligned container">
-            <div class="ui pagination menu">
-                <a class="item" v-for="item in page_menu" :class="{disabled:item==-1,active:item==current_page}"
-                    :href="item==-1?null:('/problems/'+item+'?search_keyword='+encodeURI(search_keyword))"
-                    target="__blank">{[
-                    item==-1?"...":item]}</a>
+        <div class="ui right aligned container">
+
+            <!-- <a class="ui blue icon button" href="/remote_judge/add_problem" target="_blank">
+                <i class="ui plus icon"></i>添加远程题目..
+            </a> -->
+            <a class="ui blue icon button" href="/tags/edit" target="_blank">
+                <i class="ui plus icon"></i>题目标签编辑
+            </a>
+            <a class="ui blue icon button" href="/import_from_syzoj" target="_blank">
+                <i class="ui plus icon"></i>从SYZOJ导入题目..
+            </a>
+            <div class="ui green icon button" v-on:click="createProblem">
+                <i class="ui plus icon"></i>添加题目..
             </div>
+        </div>
+        <div class="ui container" style="margin-top: 30px;">
+            <div class="ui two column grid">
+                <div class="ui column">
+                    <div class="ui icon input">
+                        <input type="text" placeholder="按回车键发起搜索..." v-model="filter.searchKeyword"
+                            v-on:keyup.enter="jumpTo(currentPage)">
+                        <i class="search icon"></i>
+                    </div>
+
+                </div>
+                <div class="ui column">
+                    <div class="ui right aligned container">
+                        <div class="ui green tiny button" v-on:click="showTags=!showTags">
+                            {[showTags?"隐藏":"题目标签筛选"]}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="ui container" v-if="showTags">
+            <div class="ui header">
+                <h3>所有标签</h3>
+            </div>
+            <div>
+                <a class="ui label" :class="[item.color]" v-for="item in allTags" v-on:click="addTag(item.id)">
+                    {[item.display]}
+                </a>
+            </div>
+            <div class="ui divider"></div>
+            <div class="ui header">
+                <h3>已选中标签</h3>
+            </div>
+            <div>
+                <a class="ui label" :class="[allTags[item].color]" v-for="item in filter.tag"
+                    v-on:click="removeTag(item)">
+                    {[allTags[item].display]}
+                </a>
+            </div>
+            <div class="ui divider">
+
+            </div>
+            <div class="ui tiny red blue button" v-on:click="jumpTo(1)">
+                执行搜索
+            </div>
+        </div>
+        <div>
+            <div class="ui divider"></div>
+            <table class="ui very basic table">
+                <thead>
+                    <tr>
+                        <th class="center aligned" style="max-width: 80px;width:80px;">题目编号</th>
+                        <th>题目</th>
+                        <th>标签</th>
+                        <th>通过数</th>
+                        <th>提交数</th>
+                        <th>通过率</th>
+                        <th>我的提交</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in currentLine"
+                        v-bind:class="{positive:item.mySubmission.id!=-1&&item.mySubmission.status=='accepted',negative:item.mySubmission.id!=-1&&item.mySubmission.status!='accepted'}">
+                        <td class="center aligned" style="max-width: 80px;width:80px;">{[item.id]}</td>
+                        <td style="min-width: 400px;"><a :href="'/show_problem/'+item.id"
+                                v-bind:style="{color:item.public?null:'green'}" target="_blank">{[item.title]}</a> </td>
+                        <td>
+                            <a class="ui label" v-for="tag in item.tags" v-bind:class="[allTags[tag].color]">
+                                {[allTags[tag].display]}
+                            </a>
+                        </td>
+                        <td>{[item.acceptedSubmit]} </td>
+                        <td>{[item.totalSubmit]}</td>
+                        <td>{[(item.acceptedSubmit!==0)?(parseInt(item.acceptedSubmit/item.totalSubmit*100)+'%'):"无提交"]}
+                        </td>
+                        <td><a :href="'/show_submission/'+item.mySubmission.id"
+                                v-if="item.mySubmission.id!=-1">{[item.mySubmission.id]}</a></td>
+                    </tr>
+                </tbody>
+            </table>
+            <page-menu :page-count="pageCount" :callback="jumpTo" :current-page="currentPage"></page-menu>
         </div>
     </div>
 </div>

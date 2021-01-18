@@ -19,11 +19,19 @@
                 password2: "",
                 loading: false
             },
+
             mounted() {
-                if (this.base.isLogin) {
-                    window.location.href = "/";
-                    return;
-                }
+                let token = setInterval(() => {
+                    if (this.base.loaded) {
+                        if (this.base.isLogin) window.location.href = "/";
+                        else if (this.base.usePhoneAuth) {
+                            window.open("/phone/register");
+                            window.close();
+                        }
+                        else clearInterval(token);
+                    }
+                }, 100);
+
             },
             methods: {
                 register: function () {
@@ -39,7 +47,8 @@
                     }
                     this.loading = true;
                     $.post("/api/register", {
-                        username: register_frame.username, password: this.md5WithSalt(register_frame.password), email: register_frame.email
+                        username: register_frame.username,
+                        password: this.md5WithSalt(register_frame.password), email: register_frame.email
                     }).done(function (ctx) {
                         register_frame.loading = false;
                         ctx = JSON.parse(ctx);
@@ -82,11 +91,17 @@
                         <input type="password" v-model="password2" v-on:keyup.enter="register">
                     </div>
                 </div>
+                <div class="ui message">
+                    <div class="ui header">警告</div>
+                    <p>用户名和电子邮箱在注册后无法更改!</p>
+                </div>
+
                 <div class="ui error message">
                     <div class="header">错误</div>
                     <p>{[error_message]}</p>
                 </div>
-                <div class="ui green submit button" v-on:click="register" v-bind:class="{loading:loading,disabled:loading}">提交</div>
+                <div class="ui green submit button" v-on:click="register"
+                    v-bind:class="{loading:loading,disabled:loading}">提交</div>
             </div>
         </div>
     </div>

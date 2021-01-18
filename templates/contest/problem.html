@@ -15,110 +15,15 @@
 
 <!-- <script src="/static/vue2-ace.js"></script> -->
 <script>
-
+    let virtualID = getRequest().virtual_contest || -1;
     var show_problem;
-    Vue.component("editor", {
-        delimiters: ['{[', ']}'],
-        render: function (h) {
-            var height = this.height ? this.px(this.height) : '100%'
-            var width = this.width ? this.px(this.width) : '100%'
-            return h('div', {
-                attrs: {
-                    style: "height: " + height + '; width: ' + width,
-                }
-            })
-        },
-        props: {
-            value: {
-                type: String,
-                required: true
-            },
-            lang: String,
-            theme: String,
-            height: true,
-            width: true,
-            options: Object
-        },
-        data: function () {
-            return {
-                editor: null,
-                contentBackup: ""
-            }
-        },
-        methods: {
-            px: function (n) {
-                if (/^\d*$/.test(n)) {
-                    return n + "px";
-                }
-                return n;
-            }
-        },
-        watch: {
-            value: function (val) {
-                if (this.contentBackup !== val) {
-                    this.editor.session.setValue(val, 1);
-                    this.contentBackup = val;
-                }
-            },
-            theme: function (newTheme) {
-                this.editor.setTheme('ace/theme/' + newTheme);
-            },
-            lang: function (newLang) {
-                this.editor.getSession().setMode('ace/mode/' + newLang);
-            },
-            options: function (newOption) {
-                this.editor.setOptions(newOption);
-            },
-            height: function () {
-                this.$nextTick(function () {
-                    this.editor.resize()
-                })
-            },
-            width: function () {
-                this.$nextTick(function () {
-                    this.editor.resize()
-                })
-            }
-        },
-        beforeDestroy: function () {
-            this.editor.destroy();
-            this.editor.container.remove();
-        },
-        mounted: function () {
-            var vm = this;
-            var lang = this.lang || 'text';
-            var theme = this.theme || 'chrome';
 
-            // require('brace/ext/emmet');
-
-            var editor = vm.editor = ace.edit(this.$el);
-            this.$emit('init', editor);
-
-            editor.$blockScrolling = Infinity;
-            //editor.setOption("enableEmmet", true);
-            editor.getSession().setMode('ace/mode/' + lang);
-            editor.setTheme('ace/theme/' + theme);
-            editor.setValue(this.value, 1);
-            this.contentBackup = this.value;
-            editor.setFontSize(18);
-            editor.setOption("wrap", "free");
-            ace.require("ace/ext/language_tools");
-            editor.setOptions({
-                enableBasicAutocompletion: true,
-                enableSnippets: true,
-                enableLiveAutocompletion: true
-            });
-            editor.on('change', function () {
-                var content = editor.getValue();
-                vm.$emit('input', content);
-                vm.contentBackup = content;
-            });
-            if (vm.options)
-                editor.setOptions(vm.options);
-        }
-    });
     $(document).ready(() => {
-        // ace.require("ace/ext/language_tools");
+        let splits = window.location.pathname.split("/");
+        let problemID = splits.pop();
+        splits.pop();
+        let contestID = splits.pop();
+
         show_problem = new Vue({
             el: "#show-problem",
             delimiters: ['{[', ']}'],
@@ -128,10 +33,21 @@
                 langs: {},
                 selected_id: "",
                 code: "",
-                done: false, contestID: -1, problemID: -1, usedParameters: []
+                done: false,
+                contestID: contestID,
+                problemID: problemID,
+                virtualID: virtualID,
+                usedParameters: []
             }, methods: {
                 submit: function () {
-                    $.post("/api/submit", { contest_id: contestID, problem_id: problemID, code: this.code, language: this.selected_id, usedParameters: JSON.stringify(this.usedParameters) }).done(ctx => {
+                    $.post("/api/submit", {
+                        contest_id: contestID,
+                        problem_id: problemID,
+                        code: this.code,
+                        language: this.selected_id,
+                        usedParameters: JSON.stringify(this.usedParameters),
+                        virtualID: (this.virtualID != -1) ? this.virtualID : undefined
+                    }).done(ctx => {
                         ctx = JSON.parse(ctx);
                         if (ctx.code) {
                             showErrorModal(ctx.message);
@@ -140,7 +56,6 @@
                         window.location.href = "/show_submission/" + ctx.submission_id;
                     })
                 }
-            }, watch: {
             }, computed: {
                 total_score: function () {
                     var result = 0;
@@ -187,14 +102,12 @@
             }
         });
 
-        let splits = window.location.href.split("/");
-        let problemID = splits.pop();
-        splits.pop();
-        let contestID = splits.pop();
-        show_problem.contestID = contestID;
-        show_problem.problemID = problemID;
 
-        axios.post("/api/contest/problem/show", { contestID: contestID, problemID: problemID }).then(ctx => {
+        axios.post("/api/contest/problem/show", {
+            contestID: contestID,
+            problemID: problemID,
+            virtualID: virtualID
+        }).then(ctx => {
             ctx = ctx.data;
             if (ctx.code != 0) {
                 if (ctx.is_remote) {
@@ -207,8 +120,6 @@
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
-            // console.log()
-
             $.post("/api/get_supported_langs").done((ctx) => {
                 ctx = JSON.parse(ctx);
                 var obj = {}
@@ -281,7 +192,7 @@
             <!-- <div class="ui " -->
         </div>
         <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
-        <div class="ui container problem-meta">
+        <div class="ui container problem-meta" v-if="data.problem_type!='submit_answer'">
             <div class="ui header">
                 <h3>提交代码</h3>
             </div>
@@ -298,7 +209,6 @@
                                             <h4>{[val.display]}</h4>
                                         </span>{[val.version]}
                                     </span>
-                                    <!-- <p></p> -->
                                 </a>
                             </div>
                         </div>
@@ -343,6 +253,15 @@
                     <i class="paper plane outline icon"></i>
                     提交！
                 </div>
+            </div>
+        </div>
+        <div v-else>
+            <div class="ui center aligned container" style="margin-top: 30px;">
+                <a class="ui icon red button" target="_blank"
+                    :href="'/submit_answer/'+problemID+'?contest='+contestID+'&virtualID='+virtualID">
+                    <i class="paper plane outline icon"></i>
+                    提交答案
+                </a>
             </div>
         </div>
         <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">

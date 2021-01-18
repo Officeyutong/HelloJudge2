@@ -1,12 +1,19 @@
+from os import name
 from main import web_app as app
 from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
 from utils import *
 
 from models import *
+from models.user import User
+from models import Follower
 from sqlalchemy.sql.expression import *
 # from werkzeug.utils import secure_filename
-from typing import Tuple
+from typing import Tuple, Set
+from common.utils import unpack_argument
+from common.permission import require_permission
+import sqlalchemy.sql.expression as expr
+import math
 
 
 @app.route("/api/this_should_be_the_first_request", methods=["POST"])
@@ -40,7 +47,8 @@ def query_login_state():
         "judgeStatus": config.JUDGE_STATUS,
         "salt": config.PASSWORD_SALT,
         "appName": config.APP_NAME,
-        "usePolling":config.USE_POLLING
+        "usePolling": config.USE_POLLING,
+        "usePhoneAuth": config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(
@@ -59,7 +67,7 @@ def login():
     """
     登录
     参数:
-        identifier:str 用户名或者邮箱
+        identifier:str 用户名或者邮箱或手机号
         password:str 密码的加盐md5
     返回:
         {
@@ -69,6 +77,8 @@ def login():
     """
     if session.get("uid") is not None:
         return make_response(-1, message="你已经登录了！")
+    if db.session.query(User).filter_by(email=request.form["identifier"]).count() > 1:
+        return make_response(-1, message="此邮箱对应多个账号，请使用用户名登录!")
     query = db.session.query(User).filter(or_(
         User.email == request.form["identifier"], User.username == request.form["identifier"])).filter(User.password == request.form["password"])
     if query.count() == 0:
@@ -92,6 +102,9 @@ def auth_email():
     username: 用户名
     token: 验证密钥
     """
+    if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
+        return make_response(-1, message="当前不使用邮箱注册")
+
     from config import AUTH_PASSWORD, AUTH_TOKEN, REGISTER_EMAIL_AUTH_EXPIRE_SECONDS
     from common.aes import encrypt, decrypt
     from common.datatypes import load_from_json, RegisterToken
@@ -137,6 +150,8 @@ def register():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
+    if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
+        return make_response(-1, message="当前不使用邮箱注册")
     if session.get("uid") is not None:
         return make_response(-1, message="你已经登录了！")
     import re
@@ -161,8 +176,8 @@ def register():
     #             db.session.commit()
     #             return make_response(-1, message=f"验证邮件已经发送到您的新邮箱{request.form['email']}")
 
-    query = db.session.query(User).filter(or_(
-        User.email == request.form["email"], User.username == request.form["username"]))
+    query = db.session.query(User).filter(
+        User.username == request.form["username"])
     if query.count():
         return make_response(-1, message="此用户名或邮箱已被用于注册账号")
     from datetime import datetime
@@ -186,14 +201,17 @@ def register():
         # user.auth_token = str(uuid.uuid1())
         print("token", encoded_token)
         send_mail(config.REGISTER_AUTH_EMAIL.format(
-            auth_token=encoded_token), "验证邮件", request.form["email"])
+            auth_token=quote_plus(quote_plus(encoded_token))), "验证邮件", request.form["email"])
         # db.session.add(user)
         # db.session.commit()
         return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
     else:
         # 不需要验证
-        user = User(username=request.form["username"],
-                    email=request.form["email"], password=request.form["password"], register_time=datetime.now())
+        user = User(
+            username=request.form["username"],
+            email=request.form["email"],
+            password=request.form["password"],
+            register_time=datetime.now())
 
         db.session.add(user)
         db.session.commit()
@@ -243,7 +261,12 @@ def require_reset_password():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
+    if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
+        return make_response(-1, message="当前不使用邮箱验证密码")
+
     import uuid
+    if db.session.query(User).filter(User.email == request.form["identifier"]).count() > 1:
+        return make_response(-1, message="此邮箱对应多个用户，请使用用户名进行操作")
     query = db.session.query(User).filter(or_(
         User.email == request.form["identifier"], User.username == request.form["identifier"]))
     if query.count() == 0:
@@ -288,6 +311,10 @@ def reset_password():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
+    if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
+        return make_response(-1, message="当前不使用邮箱重置密码")
+    if db.session.query(User).filter(User.email == request.form["identifier"]).count() > 1:
+        return make_response(-1, message="此邮箱对应多个用户，请使用用户名进行操作")
     query = db.session.query(User).filter(or_(
         User.email == request.form["identifier"], User.username == request.form["identifier"]))
     if query.count() == 0:
@@ -329,6 +356,101 @@ def reset_password():
 #     db.session.commit()
 #     return make_response(0, message="操作完成")
 
+@app.route("/api/user/toggle_follow_state", methods=["POST"])
+@unpack_argument
+def api_user_toggle_follow_state(target: int):
+    if not session.get("uid"):
+        return make_response(-1, message="请先登录")
+    source = int(session.get("uid"))
+    if source == target:
+        return make_response(-1, message="禁止关注你自己")
+
+    if (query := db.session.query(Follower).filter_by(
+        source=int(session.get("uid")),
+        target=target
+    )).count():
+        query.delete()
+        followed = False
+    else:
+        if db.session.query(Follower).filter_by(source=source).count() >= config.FOLLOWING_COUNT_LIMIT:
+            return make_response(-1, message=f"你最多只能关注 {config.FOLLOWING_COUNT_LIMIT} 个人")
+
+        db.session.add(Follower(
+            source=session.get('uid'),
+            target=target
+        ))
+        followed = True
+    db.session.commit()
+    return make_response(0, message="操作完成", data={"followed": followed})
+
+
+@app.route("/api/user/get_follower_list", methods=["POST"])
+@unpack_argument
+def api_user_get_follower_list(target: int, page: int = 1):
+    """
+    {
+        "code":
+        "data":[
+            {
+                "uid":"",
+                "username":"",
+                "email":"",
+                "followedByMe":"当前登录的用户是否关注了该用户",
+                "time":
+            }
+        ],
+        "pageCount":""
+    }
+    """
+    total_count = db.session.query(Follower).filter_by(target=target).count()
+    page_count = int(math.ceil(total_count/config.FOLLOWERS_PER_PAGE))
+    followers_resp = db.session.query(User.id, User.username, User.email, Follower.time).join(User, User.id == Follower.source).filter(Follower.target == target).slice(
+        (page-1)*config.FOLLOWERS_PER_PAGE,
+        page*config.FOLLOWERS_PER_PAGE
+    ).all()
+    data = [{
+        "uid": item.id,
+        "username": item.username,
+        "email": item.email,
+        "time": str(item.time),
+        "followedByMe": db.session.query(Follower).filter_by(source=session.get("uid", -1), target=item.id).count() != 0
+    } for item in followers_resp]
+    return make_response(0, data=data, pageCount=page_count)
+
+
+@app.route("/api/user/get_followee_list", methods=["POST"])
+@unpack_argument
+def api_user_get_followee_list(source: int, page: int = 1):
+    """
+    {
+        "code":
+        "data":[
+            {
+                "uid":"",
+                "username":"",
+                "email":"",
+                "followedByMe":"当前登录的用户是否关注了该用户",
+                "time":
+            }
+        ],
+        "pageCount":""
+    }
+    """
+    total_count = db.session.query(Follower).filter_by(source=source).count()
+    page_count = int(math.ceil(total_count/config.FOLLOWERS_PER_PAGE))
+    followees_resp = db.session.query(User.id, User.username, User.email, Follower.time).join(User, User.id == Follower.target).filter(Follower.source == source).slice(
+        (page-1)*config.FOLLOWERS_PER_PAGE,
+        page*config.FOLLOWERS_PER_PAGE
+    ).all()
+    data = [{
+        "uid": item.id,
+        "username": item.username,
+        "email": item.email,
+        "time": str(item.time),
+        "followedByMe": db.session.query(Follower).filter_by(source=session.get("uid", -1), target=item.id).count() != 0
+    } for item in followees_resp]
+    return make_response(0, data=data, pageCount=page_count)
+
 
 @app.route("/api/get_user_profile", methods=["POST"])
 def get_user_profile():
@@ -357,7 +479,8 @@ def get_user_profile():
                 "group_name":"权限组名",
                 "managable":"是否有权限管理",
                 "canSetAdmin":"是否有权限切换管理员模式",
-                "group_permissions":"权限组权限列表"
+                "group_permissions":"权限组权限列表",
+                "following": "是否follow过该用户"
             }
         }
     """
@@ -365,32 +488,74 @@ def get_user_profile():
     if user.count() == 0:
         return make_response(-1, message="未知用户ID")
     user: User = user.one()
-    ret = user.as_dict()
-    del ret["password"]
+    ret = {
+        "id": user.id,
+        "banned": user.banned,
+        "username": user.username,
+        "description": user.description,
+        "email": user.email,
+        "register_time": str(user.register_time),
+        "rating": user.rating,
+        "rating_history": user.rating_history,
+        "permission_group": user.permission_group,
+        "permissions": user.permissions,
+        "phone_verified": user.phone_verified,
+        "following": False
+    }
+    if session.get("uid", None):
+        ret["following"] = db.session.query(Follower).filter_by(
+            source=int(session.get("uid")),
+            target=user.id
+        ).count() != 0
+    if user.phone_verified:
+        ret["phone_number"] = "*" * \
+            (len(user.phone_number)-4)+user.phone_number[-4:]
+    # del ret["password"]
     # del ret["reset_token"]
     # del ret["auth_token"]
     problems = db.session.query(Submission.problem_id).filter(and_(Submission.uid == user.id, Submission.status == "accepted")
                                                               ).distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
-    ret["rating"] = user.get_rating()
-    ret["register_time"] = str(ret["register_time"])
-    joined_teams = []
-    for item in user.joined_teams:
-        team = Team.by_id(item)
-        joined_teams.append({"id": team.id, "name": team.name})
-    ret["joined_teams"] = joined_teams
+    # for item in user.joined_teams:
+    #     team = Team.by_id(item)
+    #     joined_teams.append({"id": team.id, "name": team.name})
+    ret["joined_teams"] = [
+        {
+            "id": x.team_id,
+            "name": x.name
+        }
+        for x in db.session.query(
+            TeamMember.team_id,
+            Team.name
+        ).join(Team).filter(TeamMember.uid == user.id)
+    ]
     for item in ret["rating_history"]:
         contest_name: Tuple[str] = db.session.query(Contest.name).filter(
             Contest.id == item["contest_id"]).one_or_none()
         if not contest_name:
-            contest_name = "比赛不存在"
-        # print(contest_name)
-        item["contest_name"] = contest_name.name
+            item["contest_name"] = "比赛不存在"
+            # contest_name = "比赛不存在"
+        else:
+            # print(contest_name)
+            item["contest_name"] = contest_name.name
     # ret["hasEmailAuth"] = user.auth_token == ""
     group: PermissionGroup = db.session.query(PermissionGroup).filter(
         PermissionGroup.id == user.permission_group).one()
     ret["group_name"] = group.name
-    ret["group_permissions"] = group.permissions
+    group_perms: Set[str] = set()
+    loaded_groups: Set[str] = set()
+    while group:
+        if group.id in loaded_groups:
+            break
+        group_perms.update(group.permissions)
+        loaded_groups.add(group.id)
+        if group.inherit:
+            group = db.session.query(PermissionGroup).filter_by(
+                id=group.inherit).one_or_none()
+        else:
+            break
+
+    ret["group_permissions"] = list(group_perms)
     # ret["permissions"] = list(set(db.session.query(PermissionGroup.name).filter(
     #     PermissionGroup.id == user.permission_group).one().permissions).union(ret["permissions"]))
     ret["managable"] = permission_manager.has_permission(
@@ -474,7 +639,7 @@ def update_profile():
     from redis import Redis
     client = Redis(connection_pool=redis_connection_pool)
     client.delete(f"hj2-perm-{user.id}")
-    user.username = data["username"]
+    # user.username = data["username"]
 
     user.description = data["description"]
     if data["changePassword"]:
@@ -484,30 +649,30 @@ def update_profile():
     if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限封禁/解封此用户")
     user.banned = data["banned"]
-    if user.email != data["email"]:
-        # 注册不需要邮箱验证的话，改邮箱也不需要
-        if config.REQUIRE_REGISTER_AUTH and not permission_manager.has_permission(session.get("uid"), "user.manage"):
-            db.session.commit()
-            from common.aes import encrypt
-            from config import AUTH_PASSWORD, AUTH_TOKEN, CHANGE_EMAIL_EXPIRE_SECONDS
-            from urllib.parse import quote_plus
-            from common.datatypes import EmailChangeToken
-            import time
-            data = EmailChangeToken(uid=user.id,
-                                    new_email=data["email"],
-                                    token=AUTH_TOKEN,
-                                    expire_after=int(
-                                        time.time())+CHANGE_EMAIL_EXPIRE_SECONDS
-                                    )
-            print("raw", encrypt(AUTH_PASSWORD, data.as_json()))
-            encoded_data = quote_plus(quote_plus(
-                encrypt(AUTH_PASSWORD, data.as_json())))
-            send_mail(config.CHANGE_EMAIL_AUTH_EMAIL.format(
-                change_token=encoded_data), "更改邮箱", data.new_email)
-            print("encoded", encoded_data)
-            return make_response(0, message="数据已经更改成功。请前往新邮箱中点击确认。")
-        else:
-            user.email = data["email"]
+    # if user.email != data["email"]:
+    #     # 注册不需要邮箱验证的话，改邮箱也不需要
+    #     if config.REQUIRE_REGISTER_AUTH and not permission_manager.has_permission(session.get("uid"), "user.manage"):
+    #         db.session.commit()
+    #         from common.aes import encrypt
+    #         from config import AUTH_PASSWORD, AUTH_TOKEN, CHANGE_EMAIL_EXPIRE_SECONDS
+    #         from urllib.parse import quote_plus
+    #         from common.datatypes import EmailChangeToken
+    #         import time
+    #         data = EmailChangeToken(uid=user.id,
+    #                                 new_email=data["email"],
+    #                                 token=AUTH_TOKEN,
+    #                                 expire_after=int(
+    #                                     time.time())+CHANGE_EMAIL_EXPIRE_SECONDS
+    #                                 )
+    #         print("raw", encrypt(AUTH_PASSWORD, data.as_json()))
+    #         encoded_data = quote_plus(quote_plus(
+    #             encrypt(AUTH_PASSWORD, data.as_json())))
+    #         send_mail(config.CHANGE_EMAIL_AUTH_EMAIL.format(
+    #             change_token=encoded_data), "更改邮箱", data.new_email)
+    #         print("encoded", encoded_data)
+    #         return make_response(0, message="数据已经更改成功。请前往新邮箱中点击确认。")
+    #     else:
+    #         user.email = data["email"]
 
     db.session.commit()
     # 检查邮箱相关

@@ -56,7 +56,7 @@ def iderun_update():
         "message": request.form["message"],
         "status": request.form["status"]
     }
-    # print(f"Updating...{request.form['run_id']}")
+    print(f"Updating...{request.form['run_id']}")
     flask_socketio.emit("update", data, room="iderun",
                         namespace="/ws/iderun", broadcast=True)
 

@@ -93,13 +93,32 @@
         });
         post = new Vue({
             data: {
-                text: "", error_message: "", success_message: "", sending: false, title: "", top: false, editing: false
+                text: "",
+                error_message: "",
+                success_message: "",
+                sending: false,
+                title: "",
+                top: false,
+                editing: false,
+                lastRenderedAt: 0,
+                lastRenderResult: ""
             },
             el: "#post",
             delimiters: ['{[', ']}'],
+            watch: {
+                text: function (newOne, oldOne) {
+                    let currentStamp = parseInt(this.lastRendered = (new Date()).valueOf() / 1000);
+                    console.log("Current: ", currentStamp, " Last at: ", this.lastRenderedAt);
+                    if (currentStamp - this.lastRenderedAt > 1) {
+                        console.log("ReRendering...");
+                        this.lastRenderResult = converter.makeHtml(this.text);
+                        this.lastRenderedAt = currentStamp;
+                    }
+                }
+            },
             computed: {
                 preview_content() {
-                    return converter.makeHtml(this.text);
+                    return this.lastRenderResult;
                 }
             }, methods: {
                 update() {
@@ -217,7 +236,7 @@
             {[success_message]}
         </div>
         <div class="ui message">
-            支持 Markdown 与 Latex.
+            支持 Markdown 与 LaTeX.
         </div>
     </div>
     <div class="ui segment" v-html="preview_content">

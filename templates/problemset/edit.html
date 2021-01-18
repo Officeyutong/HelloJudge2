@@ -19,7 +19,15 @@
                 done: false,
                 currentID: id,
                 loading: false
-            }, methods: {
+            },
+            computed: {
+                maxID() {
+                    let max = 0;
+                    for (let item of this.data.problems) max = Math.max(max, item);
+                    return max;
+                }
+            },
+            methods: {
                 submit() {
                     this.loading = true;
                     this.successMessage = this.errorMessage = "";
@@ -129,7 +137,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="ui small green button" v-on:click="data.problems.push(1)">
+                                <div class="ui small green button" v-on:click="data.problems.push(maxID+1)">
                                     添加
                                 </div>
                             </td>

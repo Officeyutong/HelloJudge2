@@ -1,8 +1,10 @@
+from re import match
 from main import web_app as app
 from main import db, config, basedir
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models import *
+from models.user import User
 from sqlalchemy.sql.expression import *
 from werkzeug.utils import secure_filename
 import datetime
@@ -11,23 +13,79 @@ import re
 from common.utils import unpack_argument
 from common.permission import require_permission
 from main import permission_manager
+import sqlalchemy.sql.expression as expr
 legal_paths = re.compile(
-    r"^(broadcast)|(discussion((.global)|(.problem((.global)|.(?P<id>[0-9]+)))))$")
+    r"^(wiki)|(blog\.user\.(?P<uid>[0-9]+))|(broadcast)|(discussion((\.global)|(\.problem((\.global)|\.(?P<id>[0-9]+)))))$")
 path_query = re.compile(
-    r"^(broadcast)|(discussion((.global)?|(.problem((.global)|.(?P<id>[0-9]+))?)))$")
+    r"^(wiki)|(blog)|(blog\.user\.(?P<uid>[0-9]+))|(broadcast)|(discussion((\.global)?|(\.problem((\.global)|\.(?P<id>[0-9]+))?)))$")
 
 
 def can_post_at(user: User, path: str):
-    if not permission_manager.has_permission(user.id, "discussion.manage") and path.startswith("broadcast"):
+    # 不合法的路径不能发帖
+    if not legal_paths.match(path):
         return False
+    # 有讨论管理权限可以在任何地方发帖
+    if permission_manager.has_permission(user.id, "discussion.manage"):
+        return True
     match_result = legal_paths.match(path)
-    if not match_result:
-        return False
+    main_path = match_result.group()
+    if main_path == "wiki" or main_path == "broadcast":
+        return permission_manager.has_permission(user.id, "discussion.manage")
+    elif main_path.startswith("blog"):
+        uid = int(match_result.groupdict()["uid"])
+        if not db.session.query(User.id).filter(User.id == uid).count():
+            return False
+        if not permission_manager.has_permission(user.id, "blog.use"):
+            return False
+        if not permission_manager.has_permission(user.id, "discussion.manage") and user.id != uid:
+            return False
+        return True
     if match_result.groupdict().get("id", None):
         problem_id = int(match_result.groupdict()["id"])
         if not Problem.has(problem_id):
             return False
     return True
+
+
+@app.route("/api/get_path_name", methods=["POST"])
+@unpack_argument
+def get_path_name(path: str):
+    """
+    查询路径名
+    参数:
+    path:str 路径
+    返回:
+    {
+        "code":-1,
+        "name":"qwq"
+    }
+    """
+    if not path_query.match(path):
+        return make_response(-1, message="非法路径名")
+
+    if path == "wiki":
+        result = "百科"
+    elif path == "blog":
+        result = "所有博客"
+    elif (match_result := re.compile(r"blog.user.(?P<uid>[0-9]+)").match(path)):
+        user_obj: User = db.session.query(User.username).filter(
+            User.id == int(match_result.groupdict()["uid"])).one()
+        result = f"用户 {user_obj.username} 的博客"
+    elif path == "discussion":
+        result = "所有讨论"
+    elif path == "discussion.global":
+        result = "全局讨论"
+    elif path == "discussion.problem":
+        result = "所有题目讨论"
+    elif path == "discussion.problem.global":
+        result = "题目全局讨论"
+    elif path == "broadcast":
+        result = "公告"
+    elif (match_result := re.compile(r"discussion.problem.(?P<id>[0-9]+)").match(path)):
+        result = f"题目 {match_result.groupdict()['id']} 的讨论"
+    else:
+        result = path
+    return make_response(0, name=result)
 
 
 @app.route("/api/discussion/remove", methods=["POST"])
@@ -52,7 +110,7 @@ def discussion_remove(discussionID: int):
 
 @app.route("/api/discussion/update", methods=["POST"])
 @unpack_argument
-def discussion_update(id: int, content: str, title: str, top: bool):
+def discussion_update(id: int, content: str, title: str, top: bool, private: bool = False):
     """
     更新讨论
     id:讨论ID
@@ -75,13 +133,14 @@ def discussion_update(id: int, content: str, title: str, top: bool):
     if top and not permission_manager.has_permission(user.id, "discussion.manage"):
         return make_response(-1, message="你没有权限发送置顶讨论")
     discussion.top = top
+    discussion.private = private
     db.session.commit()
     return make_response(0, message="操作成功")
 
 
 @app.route("/api/post_discussion", methods=["POST"])
 @unpack_argument
-def post_discussion(title: str, content: str, path: str, top: bool):
+def post_discussion(title: str, content: str, path: str, top: bool, private: bool = False):
     """
     发送讨论
     参数:
@@ -113,6 +172,7 @@ def post_discussion(title: str, content: str, path: str, top: bool):
     discussion.time = datetime.datetime.now()
     discussion.top = top
     discussion.uid = user.id
+    discussion.private = private
     db.session.add(discussion)
     db.session.commit()
     return make_response(0, discussion_id=discussion.id)
@@ -133,13 +193,21 @@ def post_comment(content: str, discussionID: int):
         "last_page":"最后一页的页码"
     }
     """
-    if not Discussion.has(discussionID):
-        return make_response(-1, message="讨论ID不合法")
+    # if not Discussion.has(discussionID):
+    #     return make_response(-1, message="讨论ID不合法")
     # content = request.form.get("content", "")
     if not content:
         return make_response(-1, message="内容不能为空")
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
+    discussion: Discussion = db.session.query(
+        Discussion.uid,
+        Discussion.private
+    ).filter_by(id=discussionID).one_or_none()
+    if not discussion:
+        return make_response(-1, message="讨论ID不合法")
+    if discussion.private and session.get("uid") != discussion.uid and not permission_manager.has_permission(session.get("uid"), "discussion.manage"):
+        return make_response(-1, message="你不能回复私有讨论")
     comment: Comment = Comment()
     comment.discussion_id = discussionID
     comment.content = content
@@ -152,7 +220,7 @@ def post_comment(content: str, discussionID: int):
 
 @app.route("/api/get_discussion_list", methods=["POST"])
 @unpack_argument
-def get_discussion_list(path: str, page: id, countLimit: int = 10**8):
+def get_discussion_list(path: str, page: int, countLimit: int = 10**8):
     """
     获取讨论列表
     参数:
@@ -175,7 +243,8 @@ def get_discussion_list(path: str, page: id, countLimit: int = 10**8):
                 "title":"讨论题目",
                 "comment_count":0,//评论数量
                 "last_comment_time":"最后评论时间",
-                "id":-1//讨论ID
+                "id":-1//讨论ID,
+                "private":"是否私有"
                 }
         ]
     }
@@ -189,7 +258,16 @@ def get_discussion_list(path: str, page: id, countLimit: int = 10**8):
         "data": [],
         "managable": permission_manager.has_permission(session.get("uid", None), "discussion.manage")
     }
-
+    if not session.get("uid", None):
+        result = result.filter_by(private=False)
+    else:
+        if not permission_manager.has_permission(session.get("uid", None), "discussion.manage"):
+            result = result.filter(
+                expr.or_(
+                    Discussion.private == False,
+                    Discussion.uid == session.get("uid")
+                )
+            )
     result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSIONS_PER_PAGE,
                                                                                          min(page*config.DISCUSSIONS_PER_PAGE, (page-1)*config.DISCUSSIONS_PER_PAGE+int(countLimit)))
     for item in result:
@@ -206,7 +284,8 @@ def get_discussion_list(path: str, page: id, countLimit: int = 10**8):
             "title": item.title,
             "comment_count": comments.count(),
             "last_comment_time": str(comments.first().time) if (comments.count() != 0) else None,
-            "id": item.id
+            "id": item.id,
+            "private": item.private
         })
     return make_response(0, **ret)
 
@@ -228,8 +307,13 @@ def get_comments():
         "current_page":"当前页"
     }
     """
-    if not Discussion.has(int(request.form["discussion_id"])):
+    discussion: Discussion = db.session.query(Discussion.id, Discussion.uid, Discussion.private).filter_by(
+        id=request.form["discussion_id"]).one_or_none()
+
+    if not discussion:
         return make_response(-1, message="讨论ID不存在")
+    if discussion.private and session.get("uid") != discussion.uid and not permission_manager.has_permission(session.get("uid"), "discussion.manage"):
+        return make_response(-1, message="你不能查看私有讨论")
     result = db.session.query(Comment).filter(
         Comment.discussion_id == int(request.form["discussion_id"]))
     page = int(request.form.get("page", 1))
@@ -253,30 +337,6 @@ def get_comments():
     return make_response(0, **ret)
 
 
-@app.route("/api/get_path_name", methods=["POST"])
-@unpack_argument
-def get_path_name(path: str):
-    """
-    查询路径名
-    参数:
-    path:str 路径
-    返回:
-    {
-        "code":-1,
-        "name":"qwq"
-    }
-    """
-    if not path_query.match(path):
-        return make_response(-1, message="非法路径名")
-    return make_response(0, name=({
-        "discussion": "所有讨论",
-        "discussion.global": "全局讨论",
-        "discussion.problem": "所有题目讨论",
-        "discussion.problem.global": "题目全局讨论",
-        "broadcast": "公告"
-    }.get(path, f"题目 {path.split('.')[-1]} 的讨论")))
-
-
 @app.route("/api/get_discussion", methods=["POST"])
 @unpack_argument
 def get_discussion(id: int):
@@ -295,9 +355,14 @@ def get_discussion(id: int):
         }
     }
     """
+    discussion: Discussion = db.session.query(Discussion.id, Discussion.uid, Discussion.private).filter_by(
+        id=id).one_or_none()
+
     import flask
-    if not Discussion.has(id):
+    if not discussion:
         flask.abort(404)
+    if discussion.private and session.get("uid") != discussion.uid and not permission_manager.has_permission(session.get("uid"), "discussion.manage"):
+        return make_response(-1, message="你不能查看私有讨论")
     ret = {
         "data": db.session.query(Discussion).filter(Discussion.id == id).one().as_dict()
     }

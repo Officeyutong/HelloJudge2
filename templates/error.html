@@ -8,12 +8,18 @@
         let args = getRequest();
         console.log(args);
         $("#message").text(args.message);
+        if (args.title) {
+            $("#title").text(args.title);
+        }
     });
 </script>
 <div class="ui container">
-    <div class="ui segment stacked">
+    <div class="ui header">
+        <h1>发生错误</h1>
+    </div>
+    <div class="ui segment stacked" style="font-size: large;">
         <div class="ui error message">
-            <div class="ui header">
+            <div class="ui header" id="title">
                 错误
             </div>
             <div class="message" id="message"></div>

@@ -1,0 +1,158 @@
+{%extends "base.html"%}
+{%block title%}
+创建或编辑Wiki页面
+{%endblock%}
+{%block body%}
+
+<script>
+    let page = parseInt(window.location.pathname.split("/").pop());
+    if (isNaN(page)) page = -1;
+    let params = getRequest();
+    let baseVersion = -1;
+    if (params.baseversion) {
+        baseVersion = parseInt(params.baseversion);
+    }
+    $(document).ready(() => {
+        new Vue({
+            mixins: [baseMixin],
+            el: "#edit",
+            data: {
+                done: false,
+                title: "",
+                content: "",
+                editing: page != -1,
+                HTMLContent: "",
+                lastUpdate: 0,
+                editingData: {},
+                navigationID: "",
+                baseVersion: baseVersion,
+                comment: ""
+            },
+            watch: {
+                content(newItem, old) {
+                    if (this.getTime() - this.lastUpdate >= 3) {
+                        this.HTMLContent = this.makeHTML(this.content);
+                        this.lastUpdate = this.getTime();
+                    }
+                }
+            },
+            methods: {
+                getTime() {
+                    return (new Date()).getTime() / 1000;
+                },
+                submit(evt) {
+                    let target = evt.target;
+                    target.classList.add("loading");
+                    if (this.editing) {
+                        axios.post("/api/wiki/newversion", {
+                            page: page,
+                            version: this.editingData.version,
+                            content: this.content,
+                            navigation_id: this.navigationID,
+                            comment: this.comment
+                        }).then(resp => {
+                            target.classList.remove("loading");
+                            let data = resp.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            showSuccessModal(data.message);
+                        });
+                    } else {
+                        axios.post("/api/wiki/createpage", {
+                            title: this.title,
+                            content: this.content,
+                            navigation_id: (this.navigationID.trim() === "") ? null : this.navigationID
+                        }).then(resp => {
+                            target.classList.remove("loading");
+                            let data = resp.data;
+                            if (data.code) {
+                                showErrorModal(data.message);
+                                return;
+                            }
+                            showSuccessModal(data.message);
+                            window.open("/wiki/" + data.pageID);
+                        });
+                    }
+                }
+            },
+            mounted() {
+                if (this.editing) {
+                    axios.post("/api/wiki/page", {
+                        page: page,
+                        editing: true,
+                        version: this.baseVersion
+                    }).then(resp => {
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        this.editingData = data.data;
+                        this.title = this.editingData.title;
+                        this.content = this.editingData.content;
+                        this.navigationID = this.editingData.navigationID;
+                        this.done = true;
+                    });
+                } else {
+                    this.done = true;
+                }
+            }
+        });
+    });
+</script>
+
+
+<div v-if="done" id="edit">
+    <div class="ui header">
+        <h1>{[editing?"编辑Wiki条目":"创建Wiki条目"]}</h1>
+    </div>
+    <div class="ui segment stacked">
+        <div class="ui two column grid">
+            <div class="ui eight wide column">
+                <div class="ui segment" v-html="HTMLContent"
+                    style="overflow-y: scroll;word-wrap: break-word;max-height: 800px;"></div>
+            </div>
+            <div class="ui eight wide column">
+                <div class="ui form">
+                    <div class="ui field">
+                        <label>标题</label>
+                        <input v-model="title" v-bind:disabled="editing">
+                    </div>
+                    <div class="ui field">
+                        <label>导航菜单ID</label>
+                        <input v-model="navigationID" placeholder="留空则在该页面不使用导航栏">
+                    </div>
+                    <div class="ui field" v-if="editing">
+                        <label>版本</label>
+                        <div>基于用户 <a :href="'/profile/'+editingData.user.uid"
+                                target="_blank">{[editingData.user.username]}</a> 于 {[editingData.time]} 发布的版本
+                            {[editingData.version]}</div>
+                    </div>
+                    <div class="ui field" v-if="editing">
+                        <label>版本注释</label>
+                        <input v-model="comment">
+                    </div>
+                    <div class="ui field">
+                        <label>Wiki内容</label>
+                        <editor v-model="content" lang="markdown" height="600px" width="100%"></editor>
+                    </div>
+                    <div class="ui right aligned container">
+                        <div class="ui green button" v-on:click="submit($event)">
+                            提交
+                        </div>
+                        <!-- <div class="ui red button" v-if="editing" v-on:click="remove">
+                            删除
+                        </div> -->
+                    </div>
+                </div>
+
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{%endblock%}

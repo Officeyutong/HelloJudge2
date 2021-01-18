@@ -4,104 +4,91 @@
 {%endblock%}
 {%block body%}
 <script>
-    Vue.component("filter-input", {
-        delimiters: ["{[", "]}"],
-        data() {
-            return {
-                filters: ["uid", "status", "min_score", "max_score", "problem", "contest"],
-                selectedFilter: "uid",
-                value: ""
-            }
-        },
-        props: ["callback"],
-        template: `
-        <div class="ui three column grid">
-    <div class="ui row">
-
-        <div class="ui five wide right aligned column">
-            <div class="ui compact menu">
-                <div class="ui simple dropdown item">
-                    {[selectedFilter]}
-                    <i class="dropdown icon"></i>
-                    <div class="menu">
-                        <div class="item" v-for="item in filters" v-on:click="selectedFilter=item">{[item]}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="ui ten wide column">
-            <div class="ui fluid input">
-                <input placeholder="按回车确认" type="text" v-model="value"
-                    v-on:keyup.enter="callback(selectedFilter,value)">
-            </div>
-        </div>
-        <div class="ui one wide column">
-
-        </div>
-    </div>
-
-</div>
-`
-    })
-    let submissions;
-    let currentPage = parseInt(window.location.href.split("/").pop()) || 1;
-    let filter = getRequest().filter || "";
-    let obj = {};
-    for (let str of filter.split(",")) {
-        let [k, v] = str.split("=");
-        if (k)
-            obj[k] = v;
-    }
-    filter = obj;
     $(document).ready(() => {
-        submissions = new Vue({
-            delimiters: ['{[', ']}'],
+        let page = parseInt(window.location.pathname.split("/").pop()) || 1;
+        const { filter } = getRequest();
+
+        new Vue({
+            mixins: [baseMixin],
             el: "#submissions",
-            methods: {
-                removeKey(obj, key) {
-                    Vue.delete(obj, key);
-                }, go() {
-                    window.location.href = "/submissions/" + this.currentPage + (this.encodedFilter ? "?filter=" + encodeURIComponent(this.encodedFilter) : "");
-
-                }, addFilter(key, val) {
-                    Vue.set(this.filter, key, val);
-                    // this.filter[key] = val;
-                }
-            },
-            computed: {
-                encodedFilter() {
-                    let string = "";
-                    for (let key of Object.keys(this.filter)) {
-                        string += key + "=" + this.filter[key] + ",";
-                    }
-
-                    return string.substr(0, string.length - 1);
-                }
-            },
             data: {
-                data: null,
+                currentPage: page,
+                data: [],
+                pageCount: 0,
+                loading: false,
                 done: false,
-                judge_status: null,
-                currentPage: currentPage,
-                filter: filter,
-                callback(x) {
-                    // console.log(x);
-                    // console.log(filterString);
-                    console.log(this.encodedFilter);
-                    window.location.href = "/submissions/" + x + (submissions.encodedFilter ? "?filter=" + encodeURIComponent(submissions.encodedFilter) : "");
+                showFilter: false,
+                filter: {
+                    uid: {
+                        used: false,
+                        value: ""
+                    },
+                    status: {
+                        used: false,
+                        value: "accepted"
+                    },
+                    min_score: {
+                        used: false,
+                        value: 0
+                    },
+                    max_score: {
+                        used: false,
+                        value: 100
+                    },
+                    contest: {
+                        used: false,
+                        value: -1
+                    },
+                    problem: {
+                        used: false,
+                        value: 1
+                    }
+                }
+            },
+            mounted() {
+                if (filter) {
+                    for (let item of filter.split(",")) {
+                        const [key, value] = item.split("=");
+                        console.log(key, value);
+                        this.filter[key] = {
+                            used: true,
+                            value: value
+                        };
+
+                    }
+                }
+                (async () => {
+                    await this.loadPage(this.currentPage);
+                })();
+            },
+            methods: {
+                async loadPage(page) {
+                    this.loading = true;
+                    let resp = (await axios.post("/api/submission_list", {
+                        page: page,
+                        filter: this.makeFilter()
+                    })).data;
+                    this.loading = false;
+                    if (resp.code) {
+                        showErrorModal(resp.message);
+                        return;
+                    }
+                    this.pageCount = resp.page_count;
+                    this.data = resp.data;
+                    window.history.pushState({}, "qwq", page);
+                    this.done = true;
+                },
+                makeFilter() {
+                    let result = {};
+                    for (let key of Object.keys(this.filter)) {
+                        let curr = this.filter[key];
+                        if (curr.used) {
+                            result[key] = this.filter[key].value;
+                        }
+                    }
+                    return result;
                 }
             }
-        });
-        $.post("/api/submission_list", { page: currentPage, filter: (submissions.encodedFilter || "") }).done(ctx => {
-            ctx = JSON.parse(ctx);
-            if (ctx.code) {
-                showErrorModal(ctx.message);
-                return;
-            }
-            submissions.data = ctx.data;
-            submissions.page_count = ctx.page_count;
-            submissions.currentPage = ctx.current_page;
-            submissions.done = true;
         });
     });
 </script>
@@ -110,7 +97,7 @@
     <div class="ui header" style="margin-bottom: 50px;">
         <h1>提交</h1>
     </div>
-    <div class="ui header">
+    <!-- <div class="ui header">
         <h3>筛选</h3>
     </div>
     <div class="ui stacked segment">
@@ -131,7 +118,7 @@
                 </tr>
             </tbody>
         </table>
-            <!-- <div class="ui divider"></div>
+        <div class="ui divider"></div>
             <div class="ui message">
                 <div class="ui header">帮助</div>
                 status的取值有以下四种:
@@ -141,9 +128,113 @@
                     <li>judging:评测中</li>
                     <li>waiting:等待评测中</li>
                 </list>
-            </div> -->
-    </div>
+            </div>
+    </div> -->
     <div class="ui stacked segment">
+        <div class="ui dimmer" v-bind:class="{active:loading}">
+            <div class="ui loader"></div>
+        </div>
+        <div class="ui right aligned container">
+            <div class="ui green tiny button" v-on:click="showFilter=true" v-if="!showFilter">
+                过滤
+            </div>
+            <div class="ui blue tiny button" v-on:click="showFilter=false" v-if="showFilter">
+                隐藏
+            </div>
+        </div>
+        <div v-if="showFilter">
+            <div class="ui form">
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.uid.used">
+                        <label>过滤UID/用户名</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.uid.used">
+                    <label>UID/用户名</label>
+                    <input type="text" v-model="filter.uid.value">
+                </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.problem.used">
+                        <label>过滤题目ID</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.problem.used">
+                    <label>题目ID</label>
+                    <input type="text" v-model="filter.problem.value">
+                </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.status.used">
+                        <label>过滤状态</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.status.used">
+                    <div class="ui compact menu">
+                        <div class="ui simple dropdown item">
+                            <judge-status :status="filter.status.value"></judge-status>
+                            <i class="dropdown icon"></i>
+                            <div class="menu">
+                                <div class="item" v-on:click="filter.status.value='accepted'">
+                                    <judge-status status="accepted"></judge-status>
+                                </div>
+                                <div class="item" v-on:click="filter.status.value='unaccepted'">
+                                    <judge-status status="unaccepted"></judge-status>
+                                </div>
+                                <div class="item" v-on:click="filter.status.value='compile_error'">
+                                    <judge-status status="compile_error"></judge-status>
+                                </div>
+                                <div class="item" v-on:click="filter.status.value='judging'">
+                                    <judge-status status="judging"></judge-status>
+                                </div>
+                                <div class="item" v-on:click="filter.status.value='waiting'">
+                                    <judge-status status="waiting"></judge-status>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.min_score.used">
+                        <label>过滤最低分</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.min_score.used">
+                    <label>最低分</label>
+                    <input type="text" v-model="filter.min_score.value">
+                </div>
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.max_score.used">
+                        <label>过滤最高分</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.max_score.used">
+                    <label>最高分</label>
+                    <input type="text" v-model="filter.max_score.value">
+                </div>
+
+                <div class="ui field">
+                    <div class="ui toggle checkbox">
+                        <input type="checkbox" v-model="filter.contest.used">
+                        <label>过滤比赛</label>
+                    </div>
+                </div>
+                <div class="ui field" v-if="filter.contest.used">
+                    <label>比赛</label>
+                    <input type="text" v-model="filter.contest.value">
+                </div>
+                <div class="ui green tiny button" v-on:click="loadPage(1)">
+                    加载
+                </div>
+            </div>
+            <div class="ui divider"></div>
+        </div>
         <table class="ui very basic table">
             <thead>
                 <tr>
@@ -161,7 +252,7 @@
             <tbody>
                 <tr v-for="item in data">
                     <td class="center aligned" style="max-width: 80px;width:80px;"><a
-                            :href="'/show_submission/'+item.id" target="__blank">{[item.id]}</a></td>
+                            :href="'/show_submission/'+item.id" target="_blank">{[item.id]}</a></td>
                     <td style="max-width: 350px;" class="center aligned"><a
                             :href="'/show_problem/'+item.problem_id">{[item.problem_id]}.
                             {[item.problem_title]}</a> </td>
@@ -184,7 +275,7 @@
                 </tr>
             </tbody>
         </table>
-        <page-menu v-bind:page-count="page_count" v-bind:current-page="currentPage" v-bind:callback="callback">
+        <page-menu v-bind:page-count="pageCount" v-bind:current-page="currentPage" v-bind:callback="loadPage">
         </page-menu>
     </div>
 </div>

@@ -1,0 +1,34 @@
+{%extends "base.html"%}
+{%block title%}
+PLACEHOLDER
+{%endblock%}
+{%block body%}
+<script>
+    let path = window.location.href.replace(/.*\/wiki/g, "");
+    console.log(path);
+    $(document).ready(() => {
+        $("#bottom-banner").remove();
+        $(".ui.main.container").removeAttr("style");
+        let frame = document.createElement("iframe");
+        frame.src = "/wiki-raw" + path + "?jump=no";
+        frame.style.position = "absolute";
+        frame.style.left = "0px";
+        frame.style.height = "100%";
+        frame.style.width = "100%";
+        let innerDocument = frame.contentDocument;
+        const loaded = () => {
+            $(frame.contentDocument.body).find("a").attr("target", "_parent")
+            let token = setInterval(() => {
+                if(frame.contentDocument){
+                    document.title = document.title.replace("PLACEHOLDER", frame.contentDocument.title);
+                    clearInterval(token);
+                }
+            }, 100);
+
+        };
+        frame.onload = loaded;
+        $(".ui.main.container").append(frame);
+    });
+</script>
+
+{%endblock%}

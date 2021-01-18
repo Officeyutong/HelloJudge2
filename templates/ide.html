@@ -91,21 +91,23 @@
                     })
                     this.done = true;
                     this.loadFromBroswer();
-                    if (!this.base.usePolling) {
-                        socket = io.connect("/ws/iderun");
-                        socket.emit("init");
-                        socket.on("update", x => {
-                            console.log("recv", x);
-                            if (x.run_id != ide.runID) return;
-                            let now = new Date();
+                    setTimeout(() => {
+                        if (!this.base.usePolling) {
+                            socket = io.connect("/ws/iderun");
+                            socket.emit("init");
+                            socket.on("update", x => {
+                                console.log("recv", x);
+                                if (x.run_id != ide.runID) return;
+                                let now = new Date();
 
-                            this.output = now.toLocaleString() + "\n" + x.message;
-                            if (x.status == "done") {
-                                this.loading = false;
-                                ide.runID = "";
-                            }
-                        });
-                    }
+                                this.output = now.toLocaleString() + "\n" + x.message;
+                                if (x.status == "done") {
+                                    this.loading = false;
+                                    ide.runID = "";
+                                }
+                            });
+                        }
+                    }, 3000);
                 });
 
             }

@@ -16,7 +16,22 @@
                 data: null,
                 done: false,
                 currentID: id,
+                unlocking: false
             }, methods: {
+                unlock() {
+                    this.unlocking = true;
+                    (async () => {
+                        let result = await axios.post("/api/problemset/unlock_permissions", { problemset: this.currentID });
+                        this.unlocking = false;
+                        let data = result.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        } else {
+                            showSuccessModal(data.message);
+                        }
+                    })();
+                },
                 remove() {
                     $("#remove-warning-modal").modal({
                         onApprove: () => {
@@ -43,9 +58,9 @@
                     $("title").text(this.data.name + " - {{APP_NAME}}");
                     this.done = true;
                 });
-                this.$nextTick(() => {
-                    $("#ranklist-table-head").sticky();
-                });
+                // this.$nextTick(() => {
+                //     $("#ranklist-table-head").sticky();
+                // });
             }
         });
 
@@ -71,38 +86,31 @@
                     <h3>题目列表</h3>
                 </div>
                 <div class="ui segment stacked">
-                    <div class="ui list">
-                        <a class="item" v-for="problem in data.problems" style="padding-bottom: 10px;font-size: large;"
-                            target="_blank" :href="'/show_problem/'+problem.id">
-                            {[problem.id]} - {[problem.title]}
-                        </a>
-                    </div>
-                </div>
-                <div v-if="data.showRanklist">
-                    <div class="ui header">
-                        <h3>排行榜</h3>
-                    </div>
-                    <div class="ui segment stacked">
-                        <table class="ui very basic celled table">
-                            <thead id="ranklist-table-head">
-                                <tr>
-                                    <th v-for="problem in data.problems">
-                                        <a target="_blank" :href="'/show_problem/'+problem.id">
-                                            {[problem.id]}. {[problem.title]}
-                                        </a>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="user in data.ranklist">
-                                    <td v-for="problem in user.problems"
-                                        v-bind:class="{positive:problem.status=='accepted',negative:problem.status=='unaccepted'}">
-                                        <a :href="'/show_submission/'+problem.submissionID">{[problem.score]}</a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="ui table">
+                        <thead>
+                            <tr>
+                                <th>题目</th>
+                                <th>我的提交</th>
+                                <!-- <th>我的分数</th> -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="problem in data.problems">
+                                <td>
+                                    <a target="_blank" :href="'/show_problem/'+problem.id">
+                                        {[problem.id]} - {[problem.title]}
+                                    </a>
+                                </td>
+                                <td>
+                                    <a target="_blank"
+                                        :href="problem.userResult.submissionID==-1?null:('/show_submission/'+problem.userResult.submissionID)">
+                                        <judge-status :status="problem.userResult.status"></judge-status>
+
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="ui five wide column">
@@ -124,6 +132,9 @@
                             </tr>
                         </tbody>
                     </table>
+                    <div class="ui green button" v-on:click="unlock" v-bind:class="{loading:unlocking}">
+                        解锁权限
+                    </div>
                     <a class="ui green button" v-if="data.managable" :href="'/problemset/edit/'+data.id"
                         target="_blank">
                         编辑
