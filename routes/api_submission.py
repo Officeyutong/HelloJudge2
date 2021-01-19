@@ -338,27 +338,31 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
         "problem": lambda x, y: x.filter(Submission.problem_id == y),
         "contest": lambda x, y: x.filter(Submission.contest_id == y),
     }
-
+    if "problem" in filter:
+        value = filter["problem"]
+        # 如果题目允许查看提交且用户具有权限
+        problem = db.session.query(Problem).filter_by(
+            id=value).one_or_none()
+        if not problem:
+            return make_response(-1, message="未知题目ID")
+        # print("testing")
+        result = result.filter(Submission.problem_id == value)
+        if (not problem.public) and problem.submission_visible and permission_manager.has_permission(session.get("uid", -1), f"problem.use.{problem.id}"):
+            # print("tested")
+            result = result.union(
+                db.session.query(Submission).filter_by(
+                    problem_id=problem.id, contest_id=-1)
+            )
     for key, value in filter.items():
-
+        # print(key, value)
         if not key:
             continue
         if key not in filters:
             return make_response(-1, message=f"过滤器{key}={value}未知")
-        result = filters[key](result, value)
         if key == "problem":
-            # 如果题目允许查看提交且用户具有权限
-            problem = db.session.query(Problem).filter_by(
-                id=value).one_or_none()
-            if not problem:
-                return make_response(-1, message="未知题目ID")
-            # print("testing")
-            if (not problem.public) and problem.submission_visible and permission_manager.has_permission(session.get("uid", -1), f"problem.use.{problem.id}"):
-                # print("tested")
-                result = result.union(
-                    db.session.query(Submission).filter_by(
-                        problem_id=problem.id, contest_id=-1)
-                )
+            continue
+        result = filters[key](result, value)
+
     result = result.order_by(Submission.id.desc())
     count = result.count()
     import math

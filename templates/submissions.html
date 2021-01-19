@@ -62,6 +62,19 @@
                 })();
             },
             methods: {
+                encodeFilters() {
+                    let buf = "";
+                    for (let key of Object.keys(this.filter)) {
+                        const val = this.filter[key];
+                        if (val.used) {
+                            buf += "," + `${key}=${val.value}`
+                        }
+                    }
+                    let result = encodeURIComponent(buf.substr(1));
+                    // console.log(result);
+                    return result;
+
+                },
                 async loadPage(page) {
                     this.loading = true;
                     let resp = (await axios.post("/api/submission_list", {
@@ -75,7 +88,8 @@
                     }
                     this.pageCount = resp.page_count;
                     this.data = resp.data;
-                    window.history.pushState({}, "qwq", page);
+                    let filters = this.encodeFilters();
+                    window.history.pushState({}, "qwq", page + (this.encodeFilters() ? ("?filter=" + filters) : ""));
                     this.done = true;
                 },
                 makeFilter() {
