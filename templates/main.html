@@ -223,6 +223,32 @@
                     </div>
                 </div>
             </div>
+            <div class="ui divider"></div>
+            <div>
+                <div class="ui header">
+                    <h2>排名</h2>
+                </div>
+                <table class="ui very basic celled table">
+                    <thead>
+                        <tr>
+                            <th>用户</th>
+                            <th>个人简介</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="item,i in homeData.ranklist">
+                            <td class="center aligned">#{[i]}. <a target="_blank" :href="'/profile/'+item.uid">{[item.username]}</a></td>
+                            <td class="center aligned">
+                                <div v-html="makeHTML(item.description)"
+                                    style="max-height: 50px;overflow-y: hidden;overflow-x: hidden;max-width: 700px;">
+                                </div>
+                            </td>
+                            <td class="center aligned">{[item.rating]}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

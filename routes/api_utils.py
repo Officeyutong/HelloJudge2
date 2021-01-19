@@ -32,7 +32,7 @@ def api_home_page():
                 "url":"跳转链接"
             }],
             "swiperInterval":"轮播切换间隔(ms)",
-            "rankList":[
+            "ranklist":[
                 {
                     "username":"用户名",
                     "uid":"用户ID",
