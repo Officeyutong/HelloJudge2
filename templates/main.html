@@ -238,7 +238,7 @@
                     </thead>
                     <tbody>
                         <tr v-for="item,i in homeData.ranklist">
-                            <td class="center aligned">#{[i]}. <a target="_blank" :href="'/profile/'+item.uid">{[item.username]}</a></td>
+                            <td class="center aligned">#{[i+1]}. <a target="_blank" :href="'/profile/'+item.uid">{[item.username]}</a></td>
                             <td class="center aligned">
                                 <div v-html="makeHTML(item.description)"
                                     style="max-height: 50px;overflow-y: hidden;overflow-x: hidden;max-width: 700px;">
