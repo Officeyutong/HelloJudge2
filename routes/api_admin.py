@@ -8,6 +8,9 @@ from common.permission import require_permission
 from common.utils import unpack_argument, make_json_response
 from typing import List
 import math
+import time
+import datetime
+from sqlalchemy.sql import expression as expr
 
 
 @app.route("/api/test", methods=["POST"])
@@ -22,6 +25,14 @@ def admin_show():
     """
     获取后台信息
     """
+    now = datetime.datetime.now()
+    day_begin = datetime.datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day
+    )
+    day_end = day_begin + datetime.timedelta(days=1)
+
     result = {
         "problemCount": db.session.query(Problem).count(),
         "publicProblemCount": db.session.query(Problem).filter(Problem.public == True).count(),
@@ -30,6 +41,12 @@ def admin_show():
         "discussionCount": db.session.query(Discussion).count(),
         "acceptedSubmissionCount": db.session.query(Submission).filter(Submission.status == "accepted").count(),
         # "unAuthorizedCount": db.session.query(User).filter(User.auth_token != "").count(),
+        "todaySubmissionCount": db.session.query(Submission).filter(
+            expr.and_(
+                day_begin <= Submission.submit_time,
+                Submission.submit_time <= day_end
+            )
+        ).count(),
         "settings": []
     }
     settings = result["settings"]
@@ -368,3 +385,16 @@ def api_admin_global_feed_list(page: int = 1):
             "top": bool(item.top)
         } for item in result
     ], pageCount=page_count)
+
+
+@app.route("/api/admin/switch_user", methods=["POST"])
+@require_permission(permission_manager, permission="backend.manage")
+@unpack_argument
+def api_admin_switch_user(target_user: int):
+    query = db.session.query(User).filter_by(id=target_user)
+    if not query.count():
+        return make_response(-1, message="目标用户不存在")
+    session["uid"] = target_user
+    session["login_time"] = str(int(time.time()))
+    session.permanment = True
+    return make_response(0, message="操作完成")

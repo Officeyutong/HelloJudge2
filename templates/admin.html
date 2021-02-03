@@ -16,7 +16,9 @@
                 currentTab: "general",
                 ratedContests: [],
                 permissionGroups: [],
-
+                userManage: {
+                    suID: -1
+                },
                 userTab: {
                     loading: false, successMessage: "", errorMessage: "",
                     userData: [],
@@ -31,14 +33,26 @@
                     toRemove: -1
                 }
             }, methods: {
+                userManageSU(evt) {
+                    (async () => {
+                        evt.target.classList.add("loading");
+                        let resp = (await axios.post("/api/admin/switch_user", { target_user: parseInt(this.userManage.suID) })).data;
+                        evt.target.classList.remove("loading");
+                        if (resp.code) {
+                            showErrorModal(resp.message);
+                            return;
+                        }
+                        showSuccessModal(resp.message);
+                    })();
+                },
                 removeFeed(id, index, evt) {
                     showConfirmModal("您确定要删除这条推送吗？此操作不可撤销。", async () => {
                         if (evt) {
-                            evt.target.classList.add("loading");
+                            evt.target.add("loading");
                         }
                         let resp = (await axios.post("/api/admin/remove_feed", { feed_id: id })).data;
                         if (evt) {
-                            evt.target.classList.remove("loading");
+                            evt.target.remove("loading");
                         }
 
                         if (resp.code) {
@@ -221,73 +235,82 @@
             Wiki管理</div>
         <div class="item" v-bind:class="{active:currentTab=='globalFeed'}" v-on:click="currentTab='globalFeed'">
             全局推送</div>
+        <div class="item" v-bind:class="{active:currentTab=='userManage'}" v-on:click="currentTab='userManage'">
+            用户管理</div>
+
 
 
 
     </div>
     <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='general'}">
         <div class="ui three column grid">
-            <div class="ui row">
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="tasks icon"></i> {[data.problemCount]}
-                        </div>
-                        <div class="label">
-                            题目数量
-                        </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="tasks icon"></i> {[data.problemCount]}
                     </div>
-                </div>
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="tasks icon"></i> {[data.publicProblemCount]}
-                        </div>
-                        <div class="label">
-                            公开题目数量
-                        </div>
-                    </div>
-                </div>
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="address card icon"></i>{[data.userCount]}
-                        </div>
-                        <div class="label">
-                            用户数量
-                        </div>
+                    <div class="label">
+                        题目数量
                     </div>
                 </div>
             </div>
-            <div class="ui row">
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="hdd icon"></i> {[data.submissionCount]}
-                        </div>
-                        <div class="label">
-                            提交数量
-                        </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="tasks icon"></i> {[data.publicProblemCount]}
+                    </div>
+                    <div class="label">
+                        公开题目数量
                     </div>
                 </div>
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="hdd icon"></i> {[data.acceptedSubmissionCount]}
-                        </div>
-                        <div class="label">
-                            通过提交数量
-                        </div>
+            </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="address card icon"></i>{[data.userCount]}
+                    </div>
+                    <div class="label">
+                        用户数量
                     </div>
                 </div>
-                <div class="ui column">
-                    <div class="ui statistic">
-                        <div class="value">
-                            <i class="keyboard outline icon"></i> {[data.discussionCount]}
-                        </div>
-                        <div class="label">
-                            讨论数量
-                        </div>
+            </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="hdd icon"></i> {[data.submissionCount]}
+                    </div>
+                    <div class="label">
+                        提交数量
+                    </div>
+                </div>
+            </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="hdd icon"></i> {[data.acceptedSubmissionCount]}
+                    </div>
+                    <div class="label">
+                        通过提交数量
+                    </div>
+                </div>
+            </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="keyboard outline icon"></i> {[data.discussionCount]}
+                    </div>
+                    <div class="label">
+                        讨论数量
+                    </div>
+                </div>
+            </div>
+            <div class="ui column">
+                <div class="ui statistic">
+                    <div class="value">
+                        <i class="hdd icon"></i> {[data.todaySubmissionCount]}
+                    </div>
+                    <div class="label">
+                        今日提交数量
                     </div>
                 </div>
             </div>
@@ -486,7 +509,7 @@
                     </td>
                     <td>{[item.content]}</td>
                     <td>
-                        <div class="ui tiny red button" v-on:click="removeFeed(item.id,i,$event)">
+                        <div class="ui tiny red button" v-on:click="removeFeed(item.id,i,$evt)">
                             删除
                         </div>
                     </td>
@@ -498,7 +521,18 @@
             </page-menu>
         </div>
     </div>
-
+    <div class="ui bottom attached tab segment stacked" v-bind:class="{active:currentTab=='userManage'}">
+        <div class="ui header">
+            <h1>用户管理</h1>
+        </div>
+        <div class="ui header">
+            <h3>切换用户</h3>
+        </div>
+        <div class="ui action input">
+            <input type="text" placeholder="输入目标用户ID..." v-model="userManage.suID">
+            <button class="ui green button" v-on:click="userManageSU">切换</button>
+        </div>
+    </div>
 </div>
 <div class="ui tiny modal" id="remove-rated-contest-modal">
     <div class="ui header">
