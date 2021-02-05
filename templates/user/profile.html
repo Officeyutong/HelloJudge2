@@ -201,8 +201,9 @@
                     <div class="extra content" v-if="data.banned">
                         <span style="color:red">此账户已被封禁</span>
                     </div>
-                    <div class="extra content" v-if="data.managable||base.uid==data.id">
-                        <a target="_blank" :href="'/profile_edit/'+data.id" class="ui tiny button">设置</a>
+                    <div class="extra content">
+                        <a target="_blank" :href="'/profile_edit/'+data.id" class="ui tiny button"
+                            v-if="data.managable||base.uid==data.id">设置</a>
                         <a target="_blank" :href="'/blog/list/'+data.id" class="ui tiny button">博客</a>
                         <div class="ui tiny button" :class="{blue:data.following}" v-on:click="toggleStateX">
                             {[data.following?"已关注":"未关注"]}
