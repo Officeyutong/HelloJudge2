@@ -279,7 +279,8 @@
                             <judge-status :status="item.status"></judge-status>
                         </a>
                     </td>
-                    <td><a :href="'/show_submission/'+item.id" target="_blank">
+                    <td>
+                        <a v-if="item.status!=='invisible'" :href="'/show_submission/'+item.id" target="_blank">
                             <score-label :score="item.score" :full_score="item.total_score"></score-label>
                         </a>
                     </td>

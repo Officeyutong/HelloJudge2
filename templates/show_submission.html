@@ -248,7 +248,7 @@
                     </td>
                 </tr>
 
-                <tr>
+                <tr v-if="data.status!=='invisible'">
                     <td>得分/总分</td>
                     <td>
                         <score-label :score="data.score" :full_score="data.problem.score"></score-label>
