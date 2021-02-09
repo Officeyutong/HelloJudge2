@@ -14,44 +14,27 @@
     <link rel="stylesheet" href="/static/semantic.css">
     <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
     {%else%}
-    <!-- <script src="/static/clipboard.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script> -->
-    <!-- <script src="//cdn.staticfile.org/jquery/3.3.1/jquery.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"
         integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
-    <!-- <script src="//cdn.staticfile.org/vue/2.5.17/vue.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"
         integrity="sha256-KSlsysqp7TXtFo/FHjb1T9b425x3hrvzjMWaJyKbpcI=" crossorigin="anonymous"></script>
-    <!-- <script src="//cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"></script> -->
-    <!-- <script src="https://cdn.bootcdn.net/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"
         integrity="sha256-CgSoWC9w5wNmI1aN8dIMK+6DPelUEtvDr+Bc2m/0Nx8=" crossorigin="anonymous"></script>
-    <!-- <script src="//cdn.staticfile.org/jquery-cookie/1.4.1/jquery.cookie.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js"></script>
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"> -->
-    <!-- <link href="https://cdn.bootcdn.net/ajax/libs/semantic-ui/2.4.1/semantic.min.css" rel="stylesheet"> -->
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css" integrity="sha256-UXesixbeLkB/UYxVTzuj/gg3+LMzgwAmg3zD+C4ZASQ=" crossorigin="anonymous"> -->
     <link rel="stylesheet" href="/static/semantic.min.css">
-    <!-- <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.min.js"></script> -->
-    <!-- <script src="https://cdn.staticfile.org/axios/0.19.2/axios.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.0/dist/axios.min.js"
         integrity="sha256-OPn1YfcEh9W2pwF1iSS+yDk099tYj+plSrCS6Esa9NA=" crossorigin="anonymous"></script>
     {%endif%}
-    <!-- <link href="https://cdn.staticfile.org/KaTeX/0.11.1/katex.min.css" rel="stylesheet"> -->
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
         integrity="sha256-tn6hZ2YGDv0w1/DaFL4MiUoXuAVclrtFZs13ch3TB9M=" crossorigin="anonymous">
-    <!-- <script src="https://cdn.staticfile.org/KaTeX/0.11.1/katex.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
         integrity="sha256-1qhJwAgsSPVSSjlQVTewHS49eaoAbOz651dveUANVBI=" crossorigin="anonymous"></script>
-    <!-- <script src="https://cdn.bootcss.com/KaTeX/0.10.2/contrib/auto-render.min.js"></script> -->
-    <!-- <script src="https://cdn.staticfile.org/showdown/1.9.1/showdown.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"
         integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xss@1.0.8/dist/xss.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/showdown-xss-filter@0.2.0/showdown-xss-filter.min.js"></script>
     <script src="https://cdn.staticfile.org/SyntaxHighlighter/3.0.83/scripts/shCore.min.js"></script>
-    <!-- <script src="https://unpkg.com/axios/dist/axios.min.js"></script> -->
     <script src="https://cdn.staticfile.org/socket.io/2.3.0/socket.io.js"></script>
     <link rel="stylesheet" href="/static/style.css">
     <script src="/static/md5.js"></script>
@@ -62,12 +45,8 @@
     <script>
         const debug_post = function (url, data) {
             $.post(url, data).done(ctx => console.log(JSON.parse(ctx)));
-            // axios.post(url, data).then((ret) => {
-            //     console.log(JSON.parse(ret));
-            // });
         }
         const debugPostX = function (url, data) {
-            // $.post(url, data).done(ctx => console.log(JSON.parse(ctx)));
             axios.post(url, data).then((ret) => {
                 console.log(ret.data);
             });
@@ -78,7 +57,6 @@
         const htmlDecode = input => {
             let doc = new DOMParser().parseFromString(input, "text/html");
             return doc.documentElement.textContent;
-
         };
 
         const renderLatex = function (str) {
@@ -135,8 +113,6 @@
         const CSRF_TOKEN = "{%if USING_CSRF_TOKEN %} {{csrf_token() }} {%else%}{%endif%}";
 
         axios.interceptors.request.use((config) => {
-            // config.headers['X-Requested-With'] = 'XMLHttpRequest';
-            // config.headers["content-type"] = "application/x-www-form-urlencoded";
             config.headers["X-CSRFtoken"] = CSRF_TOKEN;
             return config;
         });
@@ -150,14 +126,10 @@
         });
 
         axios.interceptors.response.use(resp => {
-            // console.log(resp);
             return resp;
         }, err => {
             let response = err.response;
             showErrorModal(response.data, response.status + " " + response.statusText)
-            // console.log("qwq", Object.keys(err));
-            // console.log(err.response);
-            // console.log(typeof err)
         });
         const judge_status = {
             done: false, data: {}
@@ -233,7 +205,6 @@
                     this.showText ? this.get_text(this.status) : null
                 ]);
             },
-            // template: "<div :class='\"ui \"+get_color(status)+\" label\"'><i :class='get_icon(status) '></i>{[get_text(status)]}</div>",
             data() {
                 return {
                     judgeStatus: judge_status
@@ -281,19 +252,18 @@
                         });
                         return result;
                     }
-                }, {
+                },
+                {
                     type: "output",
                     regex: /!!!problem-card: ?([0-9]+)!!!/g,
                     replace: (str, problemID) => {
                         return `<iframe src="/card/problem/${problemID}" frameborder="0" style="min-width:400px;height:75px"> </iframe>`;
                     }
-                }
+                },
+                "xssfilter"
             ], tables: true, literalMidWordUnderscores: true
         });
         $(document).ready(() => {
-            // $("a").forEach((x) => {
-            //     if (!x.attr("no-new-tab")) x.attr("target", "_blank");
-            // });
             baseMixin = {
                 delimiters: ['{[', ']}'],
 
@@ -337,16 +307,6 @@
                         })
                     }, md5: hex_md5
                 }, mounted() {
-                    this.$nextTick(() => {
-                        // $(".dropdown").dropdown();
-                        // $("#discussion-item").popup();
-                        // $("#user-button").popup({
-                        //     popup: $("#user-popup-content"),
-                        //     position: "right center",
-                        //     inline: true
-                        // });
-
-                    });
                 }
             })
             $.post("/api/query_login_state").done((ctx) => {
@@ -436,14 +396,10 @@
                 var vm = this;
                 var lang = this.lang || 'text';
                 var theme = this.theme || 'chrome';
-
-                // require('brace/ext/emmet');
-
                 var editor = vm.editor = ace.edit(this.$el);
                 this.$emit('init', editor);
 
                 editor.$blockScrolling = Infinity;
-                //editor.setOption("enableEmmet", true);
                 editor.getSession().setMode('ace/mode/' + lang);
                 editor.setTheme('ace/theme/' + theme);
                 editor.setValue(this.value, 1);
