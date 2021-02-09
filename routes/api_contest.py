@@ -355,10 +355,17 @@ def contest_list(page: int = 1):
     }
     """
     result = db.session.query(Contest).order_by(Contest.id.desc())
+    subquery = db.session.query(
+        Submission.contest_id).filter(expr.and_(
+            Submission.contest_id != -1,
+            Submission.uid == session.get("uid", -1)
+        )).distinct()
+    result = db.session.query(Contest).order_by(Contest.id.desc())
     if not permission_manager.has_permission(session.get("uid", None), "contest.manage"):
         result = result.filter(expr.or_(
             Contest.owner_id == session.get("uid", -1),
-            Contest.private_contest == False
+            Contest.private_contest == False,
+            Contest.id.in_(subquery)
         ))
     count = result.count()
     import math
