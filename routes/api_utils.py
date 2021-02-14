@@ -1,13 +1,25 @@
 from main import web_app as app
 from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
-from utils import *
-from models import *
-from sqlalchemy.sql.expression import *
-from werkzeug.utils import secure_filename
-from models import User
-from typing import List
 
+from werkzeug.utils import secure_filename
+from common.utils import unpack_argument
+from common.permission import require_permission
+import requests
+from urllib.parse import urljoin
+
+from common.utils import make_json_response as make_response
+from sqlalchemy.sql import expression as expr
+from models.user import User
+from models.problem import Problem
+from utils import generate_file_list
+import ujson
+from io import StringIO
+import pathlib
+import shutil
+import os
+import time
+import datetime
 
 @app.route("/api/home_page", methods=["POST"])
 def api_home_page():
@@ -62,70 +74,6 @@ def api_home_page():
         ]
     }
     return make_response(0, data=result)
-# @app.route("/api/home_page", methods=["POST"])
-# def home_page():
-#     """
-#     返回主页数据
-#     {
-#         "data":{
-#             "broadcasts":[
-#                 {
-#                     "title":"xxx",
-#                     "id":"xxx",
-#                     "time":'xxx'
-#                 }
-#             ],
-#             "ranklist":[
-#                 "username":"xxx",
-#                 "uid":-1,
-#                 "description":"xxx"
-#             ],
-#             "recent_problems":[
-#                 "title":"xxx",
-#                 "id":"xxx",
-#                 "create_time":"xxx"
-#             ],
-#             "discussions":[
-#                 "title":"xxx",
-#                 "id":-1,
-#                 "time":""
-#             ],
-#             "friend_links":[
-#                 {
-#                     "name":"qwq","url":"qwq"
-#                 }
-#             ]
-#         }
-#     }
-#     """
-#     result = {"broadcasts": [], "ranklist": [],
-#               "recent_problems": [], "app_name": config.APP_NAME, "discussions": [], "friend_links": config.FRIEND_LINKS}
-#     broadcasts = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(or_(Discussion.path == "broadcast", Discussion.path.like("broadcast.%"))).order_by(
-#         Discussion.id.desc()).limit(config.HOMEPAGE_BROADCAST).all()
-#     for item in broadcasts:
-#         result["broadcasts"].append({
-#             "title": item.title, "id": item.id, "time": str(item.time)
-#         })
-#     ranklist = db.session.query(User.id, User.description, User.username, User.rating).order_by(
-#         User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
-#     for item in ranklist:
-#         result["ranklist"].append({
-#             "username": item.username, "id": item.id, "description": item.description, "rating": item.rating
-#         })
-#     problems = db.session.query(Problem.title, Problem.id, Problem.create_time).filter(Problem.public == True).order_by(
-#         Problem.create_time.desc()).limit(config.HOMEPAGE_PROBLEMS).all()
-#     for item in problems:
-#         result["recent_problems"].append({
-#             "title": item.title, "id": item.id, "create_time": str(item.create_time)
-#         })
-#     discussions = db.session.query(Discussion.title, Discussion.time, Discussion.id).filter(Discussion.path.like("discussion.%")).order_by(Discussion.top.desc()).order_by(
-#         Discussion.time.desc()).limit(config.HOMEPAGE_DISCUSSIONS).all()
-#     for item in discussions:
-#         result["discussions"].append({
-#             "title": item.title, "id": item.id, "time": str(item.time)
-#         })
-#     return make_response(0, data=result)
-
 
 @app.route("/api/get_judge_status", methods=["POST", "GET"])
 def get_judge_status():
@@ -170,9 +118,100 @@ def get_supported_lang():
     result.sort(key=lambda x: x["id"])
     return make_response(0, list=result)
 
+@app.route("/api/utils/import_from_syzoj_ng", methods=["POST"])
+@unpack_argument
+@require_permission(permission_manager, "problem.manage")
+def api_utils_import_from_syzoj_ng(api_server: str, problem_id: str, public: bool, locale: str = "zh_CN"):
+    def make_url(url: str):
+        # print(url, "to", urljoin(api_server, url))
+        return urljoin(api_server, url)
+    problem_data = requests.post(make_url("/api/problem/getProblem"), json={
+        "testData": True,
+        "displayId": problem_id,
+        "judgeInfo": True,
+        "samples": True,
+        "localizedContentsOfLocale": locale,
+        "judgeInfoToBePreprocessed": True
+    }).json()
+    print(problem_data)
+    stmt = StringIO()
+    examples = []
+    for item in problem_data["localizedContentsOfLocale"]["contentSections"]:
+        if item["type"] == "Text":
+            stmt.write(f"### {item['sectionTitle']}\n\n{item['text']}\n\n")
+        elif item["type"] == "Sample":
+            curr = problem_data["samples"]
+            id = item["sampleId"]
+            examples.append({
+                "input": curr[id]["inputData"],
+                "output": curr[id]["outputData"],
+            })
+    judge_info = problem_data["judgeInfo"]
+    time_limit = judge_info["timeLimit"]
+    memory_limit = judge_info["memoryLimit"]
+    score = 100//(len(judge_info["subtasks"]))
+    last_score = 100 - score * len(judge_info["subtasks"])
+    subtasks = [
+        {
+            "name": f"Subtask{i+1}",
+            "score": score + (last_score if i == len(judge_info["subtasks"])-1 else 0),
+            "method": {"groupmin": "min", "sum": "sum", "groupmul": "min"}[subtask["scoringType"].lower()],
+            "testcases":[
+                    {
+                        "input": testcase["inputFile"],
+                        "output":testcase["outputFile"]
+                    } for testcase in subtask["testcases"]
+            ],
+            "time_limit":time_limit,
+            "memory_limit":memory_limit
+        } for i, subtask in enumerate(judge_info["subtasks"])
+    ]
+    for subtask in subtasks:
+        score = subtask["score"]
+        score_per_case = score//len(subtask["testcases"])
+        last_score - score - score_per_case*len(subtask["testcases"])
+        for item in subtask["testcases"]:
+            item["full_score"] = score_per_case
+        subtask["testcases"][-1]["full_score"] += last_score
+    problem = Problem(
+        uploader_id=session.get("uid"),
+        title=problem_data["localizedContentsOfLocale"]["title"],
+        content=stmt.getvalue(),
+        example=examples,
+        files=[{
+            "name": item["filename"],
+            "size":item["size"],
+        } for item in problem_data["testData"]],
+        subtasks=subtasks,
+        public=public,
+        create_time=datetime.datetime.now()
+    )
+    db.session.add(problem)
+    db.session.commit()
+    working_dir = pathlib.Path(config.UPLOAD_DIR)/str(problem.id)
+    shutil.rmtree(working_dir, ignore_errors=True)
+    os.mkdir(working_dir)
+    file_links = requests.post(make_url("/api/problem/downloadProblemFiles"), json={
+        "filenameList": [item["filename"] for item in problem_data["testData"]],
+        "problemId": problem_id,
+        "type": "TestData"
+    }).json()
+    print(file_links)
+    current_time = str(time.time())
+    for file in file_links["downloadInfo"]:
+        print(f"Downloading {file['filename']}")
+        with requests.get(file["downloadUrl"]) as resp:
+            with open(working_dir/file["filename"], "wb") as f:
+                for chunk in resp.iter_content(1024):
+                    f.write(chunk)
+            with open(working_dir/(file["filename"]+".lock"), "w") as f:
+                f.write(current_time)
+    return make_response(0, problem_id=problem.id)
+
 
 @app.route("/api/import_from_syzoj", methods=["POST"])
-def import_from_syzoj():
+@unpack_argument
+def import_from_syzoj(url: str, willPublic: bool):
     """
     从SYZOJ导入题目
     参数:
@@ -203,7 +242,7 @@ def import_from_syzoj():
         return make_response(-1, message="你没有权限执行此操作")
     try:
 
-        with requests.get(f"{request.form['url']}/export") as urlf:
+        with requests.get(f"{url}/export") as urlf:
             data = decode_json(urlf.content.decode())["obj"]
         print("JSON data: {}".format(data))
         import datetime
@@ -218,7 +257,7 @@ def import_from_syzoj():
                           output_file_name=data["file_io_output_name"],
                           create_time=datetime.datetime.now()
                           )
-        if request.form["willPublic"].lower() == "true":
+        if willPublic:
             if not permission_manager.has_any_permission(user.id, "problem.publicize", "problem.manage"):
                 return make_response(-1, message="你没有权限公开题目")
             problem.public = True
@@ -231,7 +270,7 @@ def import_from_syzoj():
         db.session.commit()
 
         work_dir = pathlib.PurePath(tempfile.mkdtemp())
-        with requests.get(f"{request.form['url']}/testdata/download") as urlf:
+        with requests.get(f"{url}/testdata/download") as urlf:
             pack = zipfile.ZipFile(BytesIO(urlf.content))
             pack.extractall(work_dir)
             pack.close()
@@ -355,7 +394,7 @@ def export_problem(id):
     """
     problem: Problem = Problem.by_id(id)
     if not problem or not problem.public:
-        return encode_json({
+        return ujson.dumps({
             "success": False, "error": {
                 "message": "无此题目", "nextUrls": {}
             }
@@ -375,7 +414,7 @@ def export_problem(id):
             "type": problem.problem_type, "tags": []
         }
     }
-    return encode_json(result)
+    return ujson.dumps(result)
 
 
 @app.route("/show_problem/<int:id>/testdata/download", methods=["GET", "POST"])

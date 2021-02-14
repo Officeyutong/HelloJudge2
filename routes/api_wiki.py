@@ -1,6 +1,5 @@
 from utils import make_response
 from common.utils import unpack_argument
-from flask.templating import render_template
 from main import config, web_app, permission_manager, background_task_queue, db
 from pathlib import Path
 from flask import send_from_directory, redirect, request, Blueprint, session

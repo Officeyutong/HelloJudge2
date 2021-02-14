@@ -10,6 +10,7 @@ from datetime import timedelta
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 # from concurrent.futures import ThreadPoolExecutor
+from common.log import LogManager
 from common.permission import PermissionManager
 from redis import ConnectionPool
 from typing import Set, NoReturn
@@ -73,6 +74,9 @@ def add_permission(uid: int, perm: str):
 
 permission_manager: PermissionManager = PermissionManager(
     redis_connection_pool, db, get_permissions, add_permission)
+
+log_manager: LogManager = LogManager(
+    redis_connection_pool, config.DEFAULT_LOG_EXPIRE)
 
 
 def _import_routes():
