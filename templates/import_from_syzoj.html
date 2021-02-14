@@ -40,7 +40,7 @@
                         } else {
                             resp = (await axios.post("/api/import_from_syzoj", {
                                 url: this.url,
-                                willPublic: this.public
+                                willPublic: this.willPublic
                             })).data;
                         }
                         this.errorMessage = "";
