@@ -47,6 +47,13 @@ def admin_show():
                 Submission.submit_time <= day_end
             )
         ).count(),
+        "todayCESubmissionCount": db.session.query(Submission).filter(
+            expr.and_(
+                day_begin <= Submission.submit_time,
+                Submission.submit_time <= day_end,
+                Submission.status == "compile_error"
+            )
+        ).count(),
         "settings": []
     }
     settings = result["settings"]
