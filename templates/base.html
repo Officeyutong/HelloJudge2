@@ -233,6 +233,21 @@
         });
         var sidebar;
         let baseObject;
+        const showdownClassMap = {
+            h1: 'ui large header',
+            h2: 'ui medium header',
+            ul: 'ui list',
+            li: 'ui item',
+            table: "ui table"
+        }
+
+        const showdownBindings = Object.keys(showdownClassMap)
+            .map(key => ({
+                type: 'output',
+                regex: new RegExp(`<${key}(.*)>`, 'g'),
+                replace: `<${key} class="${showdownClassMap[key]}" $1>`
+            }));
+
         const converter = new showdown.Converter({
             extensions: [
                 "xssfilter",
@@ -260,7 +275,8 @@
                     replace: (str, problemID) => {
                         return `<iframe src="/card/problem/${problemID}" frameborder="0" style="min-width:400px;height:75px"> </iframe>`;
                     }
-                }
+                },
+                ...showdownBindings
             ], tables: true, literalMidWordUnderscores: true
         });
         $(document).ready(() => {
