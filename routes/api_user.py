@@ -200,8 +200,10 @@ def register():
             AUTH_PASSWORD, data.as_json())
         # user.auth_token = str(uuid.uuid1())
         print("token", encoded_token)
+        quoted = quote_plus(quote_plus(encoded_token))
+        print("quoted",quoted)
         send_mail(config.REGISTER_AUTH_EMAIL.format(
-            auth_token=quote_plus(quote_plus(encoded_token))), "验证邮件", request.form["email"])
+            auth_token=quoted), "验证邮件", request.form["email"])
         # db.session.add(user)
         # db.session.commit()
         return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
