@@ -134,7 +134,8 @@ def view_phone_reset_password():
 
 
 @app.route("/auth_email/<string:token>")
-def view_auth_email(token):
+@app.route("/auth_email/")
+def view_auth_email(token=""):
     return render_template("user/auth_email.html")
 
 
