@@ -4,7 +4,7 @@
 {%endblock%}
 {%block body%}
 <script>
-    let virtualID = getRequest().virtual_content || -1;
+    let virtualID = getRequest().virtual_contest || -1;
     let contestID = parseInt(window.location.pathname.split("/").pop());
     $(document).ready(() => {
         new Vue({

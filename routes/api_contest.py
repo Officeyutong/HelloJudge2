@@ -16,7 +16,7 @@ from common.permission import require_permission
 import sqlalchemy.sql.expression as expr
 from sqlalchemy import distinct, alias
 import datetime
-
+import json
 
 router = Blueprint("contest", __name__)
 
@@ -774,7 +774,19 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
     return make_response(0, data=result)
 
 
-def get_contest_rank_list(contest: Contest) -> dict:
+def get_contest_rank_list(contest: Contest, virtual_id: int = -1) -> dict:
+    import datetime
+    # extra_contitions = []
+    print(f"{virtual_id=}")
+    if virtual_id != -1:
+        virtual_contest: VirtualContest = db.session.query(
+            VirtualContest.start_time
+        ).filter(VirtualContest.id == virtual_id).one()
+        time_delta = datetime.datetime.now() - virtual_contest.start_time
+    else:
+        time_delta = datetime.datetime.now()-contest.start_time  # 默认为非虚拟比赛情况
+    print(f"{time_delta=}")
+    # time_delta: 逻辑意义上的，当前比赛进程时间(如果当前正在使用虚拟比赛，则为当前时间距离虚拟比赛开始时间所经过的时间)
     users = db.session.query(
         Submission.uid,
         Submission.virtual_contest_id
@@ -786,11 +798,30 @@ def get_contest_rank_list(contest: Contest) -> dict:
             User.id,
             User.username
         ).filter_by(id=item.uid).one()
-        using_virtual = (item.virtual_contest_id is not None)
+        using_virtual = (item.virtual_contest_id != -
+                         1) and (item.virtual_contest_id is not None)
         virtual_contest_id = item.virtual_contest_id
+        extra_conditions = []
+        # print(item)
         if using_virtual:
             virtual_contest: VirtualContest = db.session.query(
                 VirtualContest.start_time).filter_by(id=virtual_contest_id).one()
+            extra_conditions = [
+                Submission.submit_time <= virtual_contest.start_time+time_delta
+            ]
+        else:
+            extra_conditions = [
+                Submission.submit_time <= contest.start_time+time_delta
+            ]
+        if db.session.query(Submission).filter(expr.and_(
+            Submission.uid == user.id,
+            Submission.contest_id == contest.id,
+            (Submission.virtual_contest_id ==
+             virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None),
+            *extra_conditions
+        )).count() == 0:
+            # 因为虚拟比赛的提交时间限制而啥都没搞到的
+            continue
         current = {
             "uid": user.id,
             "username": user.username,
@@ -824,7 +855,8 @@ def get_contest_rank_list(contest: Contest) -> dict:
                         Submission.contest_id == contest.id,
                         Submission.problem_id == id,
                         (Submission.virtual_contest_id ==
-                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None)
+                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None),
+                        *extra_conditions
                     )
                 )
 
@@ -842,7 +874,8 @@ def get_contest_rank_list(contest: Contest) -> dict:
                         Submission.problem_id == id,
                         Submission.status != "compile_error",
                         (Submission.virtual_contest_id ==
-                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None)
+                         virtual_contest_id) if using_virtual else Submission.virtual_contest_id.is_(None),
+                        *extra_conditions
                     )
                 )
 
@@ -864,7 +897,13 @@ def get_contest_rank_list(contest: Contest) -> dict:
                 # print(f"ac time cal,{using_virtual=}, {int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60)}")
                 last = {
                     "score": best_submit.score*weight,
-                    "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id < best_submit.id).count(),
+                    "submit_count": db.session.query(Submission.id).filter(expr.and_(
+                        Submission.contest_id == contest.id,
+                        Submission.uid == user.id,
+                        Submission.status != "accepted",
+                        Submission.id < best_submit.id,
+                        *extra_conditions
+                    )).count(),
                     "ac_time": int((best_submit.submit_time-(contest.start_time if not using_virtual else virtual_contest.start_time)).total_seconds()/60),
                     "submit_id": best_submit.id,
                     "status": best_submit.status,
@@ -872,12 +911,24 @@ def get_contest_rank_list(contest: Contest) -> dict:
                 }
                 last["penalty"] = last["ac_time"] + \
                     last["submit_count"]*config.FAIL_SUBMIT_PENALTY
-                if db.session.query(Submission.id).filter(Submission.contest_id == contest.id and Submission.id < best_submit.id and Submission.problem_id == id and Submission.status == "accepted").count() == 0:
+                if db.session.query(Submission.id).filter(expr.and_(
+                    Submission.contest_id == contest.id,
+                    Submission.id < best_submit.id,
+                    Submission.problem_id == id,
+                    Submission.status == "accepted",
+                    *extra_conditions
+                )).count() == 0:
                     last["first_blood"] = True
             else:
                 last = {
                     "score": best_submit.score*weight,
-                    "submit_count": db.session.query(Submission.id).filter(Submission.contest_id == contest.id).filter(Submission.uid == user.id).filter(Submission.status != "accepted").filter(Submission.id <= best_submit.id).count(),
+                    "submit_count": db.session.query(Submission.id).filter(expr.and_(
+                        Submission.contest_id == contest.id,
+                        Submission.uid == user.id,
+                        Submission.status != "accepted",
+                        Submission.id <= best_submit.id,
+                        *extra_conditions
+                    )).count(),
                     "ac_time": -1,
                     "submit_id": best_submit.id,
                     "status": best_submit.status,
@@ -988,6 +1039,7 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
     virtual_contest: VirtualContest = db.session.query(
         VirtualContest
     ).filter_by(id=virtualID).one_or_none()
+    # show_all_submissions_when_using_virtual_contest = False
     if using_virtual:
         if not virtual_contest:
             return make_response(-1, message="虚拟比赛不存在")
@@ -997,6 +1049,8 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
             # return make_response(-)
         can_see_ranklist = (not virtual_contest.running()
                             ) or (contest.ranklist_visible)
+        # 虚拟比赛跑完了，同时显示上其他虚拟比赛的提交
+        # show_all_submissions_when_using_virtual_contest = not virtual_contest.running()
     else:
         can_see_ranklist = contest.can_see_ranklist(
             session.get("uid"), permission_manager)
@@ -1007,14 +1061,18 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
     import redis
     from main import redis_connection_pool
     from json import JSONEncoder, JSONDecoder
-    key = f"hj2-contest-ranklist-{contest.id}"
+    key = f"hj2-contest-ranklist-{contest.id}-virtual-{virtualID}"
     client = redis.Redis(connection_pool=redis_connection_pool)
     if not client.exists(key):
         print(f"Ranklist for {key} not found, generating..")
-        ranklist_data = get_contest_rank_list(contest)
+        # if show_all_submissions_when_using_virtual_contest:
+
+        #     ranklist_data = get_contest_rank_list(contest, -1)
+        # else:
+        ranklist_data = get_contest_rank_list(contest, virtualID)
         client.set(key, JSONEncoder().encode(ranklist_data),
                    ex=config.RANKLIST_UPDATE_INTEVAL)
         # print(ranklist_data)
     else:
-        ranklist_data = JSONDecoder().decode(client.get(key).decode())
+        ranklist_data = json.loads(client.get(key).decode())
     return make_response(0, data=ranklist_data)
