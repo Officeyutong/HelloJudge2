@@ -4,28 +4,33 @@
 {%endblock%}
 {%block body%}
 <script>
-    let ranklist;
+    let virtualID = getRequest().virtual_content || -1;
+    let contestID = parseInt(window.location.pathname.split("/").pop());
     $(document).ready(() => {
-        ranklist = new Vue({
+        new Vue({
             delimiters: ['{[', ']}'],
             el: "#ranklist",
             mixins: [baseMixin],
             data: {
                 data: null,
                 done: false,
-            }, methods: {
-
+                contestID: contestID,
+                virtualID: virtualID
+            }, mounted() {
+                (async () => {
+                    let resp = await axios.post("/api/contest/ranklist", {
+                        contestID: this.contestID,
+                        virtualID: this.virtualID
+                    });
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.data = data.data;
+                    this.done = true;
+                })();
             }
-        });
-        axios.post("/api/contest/ranklist", { contestID: window.location.href.split("/").pop() }).then(ctx => {
-            // ctx = JSON.parse(ctx);
-            ctx = ctx.data;
-            if (ctx.code) {
-                showErrorModal(ctx.message);
-                return;
-            }
-            ranklist.data = ctx.data;
-            ranklist.done = true;
         });
     });
 </script>
