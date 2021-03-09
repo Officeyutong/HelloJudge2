@@ -38,17 +38,23 @@ def query_login_state():
                 "评测状态列表"
             },
             "appName":"应用程序名",
-            "usePolling":"是否使用轮询"
+            "usePolling":"是否使用轮询",
+            "registerURL":"注册页面的URL",
+            "gravatarURL":"gravatarURL前缀"
+
         }
 
     """
+    use_phone_auth = config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD
     result = {
         "result": session.get("uid") is not None,
         "judgeStatus": config.JUDGE_STATUS,
         "salt": config.PASSWORD_SALT,
         "appName": config.APP_NAME,
         "usePolling": config.USE_POLLING,
-        "usePhoneAuth": config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD
+        "usePhoneAuth": use_phone_auth,
+        "registerURL": "/phone/register" if use_phone_auth else "/register",
+        "gravatarURL": config.GRAVATAR_URL_PREFIX
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(

@@ -290,7 +290,9 @@
                         uid: -1,
                         email: "",
                         usePhoneAuth: false,
-                        loaded: false
+                        loaded: false,
+                        registerURL: "",
+                        gravatarURL: ""
                     }
                 }, methods: {
                     makeHTML(v) {
@@ -301,7 +303,7 @@
                         return md5WithSalt(v);
                     },
                     makeProfileImageURL(email, size) {
-                        return "https://www.gravatar.com/avatar/" + this.md5(email) + (size ? `?size=${size}` : "");
+                        return this.base.gravatarURL + this.md5(email) + (size ? `?size=${size}` : "");
                     },
                     decodeHTML(input) {
                         return htmlDecode(input);
