@@ -17,3 +17,4 @@ aliyun-python-sdk-core-v3
 eventlet
 openpyxl
 pymysql
+argon2-cffi

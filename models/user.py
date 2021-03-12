@@ -19,7 +19,7 @@ class User(db.Model):
     # 用户名
     username = Column(String(20), unique=True)
     # 密码
-    password = Column(String(64))
+    password = Column(String(256))
     # 个人简介
     description = Column(mysql.LONGTEXT, default="")
     # 电子邮件

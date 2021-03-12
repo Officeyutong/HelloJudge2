@@ -12,6 +12,7 @@ import sqlalchemy.sql.expression as expr
 import re
 import datetime
 import time
+import argon2
 router = Blueprint("phoneuser", __name__)
 
 
@@ -28,7 +29,8 @@ def api_resetpassword(
     if not phoneauth.validate_sms_code(phone, authcode):
         return make_response(-1, message="验证码错误")
     user: User = db.session.query(User).filter_by(phone_number=phone).one()
-    user.password = password
+    hasher = argon2.PasswordHasher()
+    user.password = hasher.hash(password)
     db.session.commit()
     return make_response(0, message="操作完成")
 
@@ -73,10 +75,11 @@ def api_register(
         return make_response(-1, message="当前用户名或邮箱或手机号已被他人使用!")
     if not phoneauth.validate_sms_code(phone, authcode):
         return make_response(-1, message="验证码校验失败")
+    hasher = argon2.PasswordHasher()
     user = User(
         username=username,
         email=email,
-        password=password,
+        password=hasher.hash(password),
         register_time=datetime.datetime.now(),
         phone_number=phone,
         phone_verified=True

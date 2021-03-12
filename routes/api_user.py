@@ -14,7 +14,7 @@ from common.utils import unpack_argument
 from common.permission import require_permission
 import sqlalchemy.sql.expression as expr
 import math
-
+import argon2
 
 @app.route("/api/this_should_be_the_first_request", methods=["POST"])
 @app.route("/api/query_login_state", methods=["POST"])
@@ -68,6 +68,7 @@ def query_login_state():
     return make_response(0, **result)
 
 
+
 @app.route("/api/login", methods=["POST"])
 def login():
     """
@@ -86,14 +87,29 @@ def login():
     if db.session.query(User).filter_by(email=request.form["identifier"]).count() > 1:
         return make_response(-1, message="此邮箱对应多个账号，请使用用户名登录!")
     query = db.session.query(User).filter(or_(
-        User.email == request.form["identifier"], User.username == request.form["identifier"])).filter(User.password == request.form["password"])
+        User.email == request.form["identifier"], User.username == request.form["identifier"]))
     if query.count() == 0:
         return make_response(-1, message="用户名或密码错误")
+    if query.count() != 1:
+        return make_response(-1, message="请使用用户名登录")
     user: User = query.one()
     if user.banned:
         return make_response(-1, message="此账户已被封禁.")
-    # if user.auth_token != "":
-    #     return make_response(-1, message="请点击您邮箱内的激活邮件验证您的账号。如果没有收到或者想要更改邮箱请使用您的用户名重新注册")
+    hasher = argon2.PasswordHasher()
+    password = request.form["password"]
+    if not user.password.startswith("$argon2"):
+        # 用户密码存的仍然是md5，验证后改为argon2
+        if password != user.password:
+            return make_response(-1, message="用户名或密码错误")
+        user.password = hasher.hash(password)
+        db.session.commit()
+    try:
+        hasher.verify(user.password, password)
+    except argon2.exceptions.VerifyMismatchError:
+        return make_response(-1, message="用户名或密码错误")
+    if hasher.check_needs_rehash(user.password):
+        user.password = hasher.hash(password)
+        db.session.commit()
     session["uid"] = query.one().id
     import time
     session["login_time"] = str(int(time.time()))
@@ -164,30 +180,14 @@ def register():
     import utils
     if re.match(config.USERNAME_REGEX, request.form["username"]) is None:
         return make_response(-1, message="用户名必须满足以下正则表达式:"+config.USERNAME_REGEX)
-    # if config.REQUIRE_REGISTER_AUTH:
-    #     user = db.session.query(User).filter(
-    #         User.username == request.form["username"])
-    #     if user.count():
-    #         user: User = user.one()
-    #         next_query = db.session.query(User).filter(
-    #             User.email == request.form["email"])
-    #         if next_query.count() != 0 and next_query.one().username != request.form["username"]:
-    #             return make_response(-1, message="此邮箱已被使用")
-    #         if user.auth_token != "":
-    #             import uuid
-    #             user.auth_token = str(uuid.uuid1())
-    #             send_mail(config.REGISTER_AUTH_EMAIL.format(
-    #                 auth_token=user.auth_token), "验证邮件", request.form["email"])
-    #             user.email = request.form["email"]
-    #             db.session.commit()
-    #             return make_response(-1, message=f"验证邮件已经发送到您的新邮箱{request.form['email']}")
-
     query = db.session.query(User).filter(
         User.username == request.form["username"])
     if query.count():
         return make_response(-1, message="此用户名或邮箱已被用于注册账号")
     from datetime import datetime
     # import uuid
+    hasher = argon2.PasswordHasher()
+    password_hash = hasher.hash(request.form["password"])
     if config.REQUIRE_REGISTER_AUTH:
         # 需要邮箱验证
         from config import AUTH_PASSWORD, AUTH_TOKEN, REGISTER_EMAIL_AUTH_EXPIRE_SECONDS
@@ -198,7 +198,7 @@ def register():
         data = RegisterToken(
             username=request.form["username"],
             email=request.form["email"],
-            password=request.form["password"],
+            password=password_hash,
             expire_after=int(time.time())+REGISTER_EMAIL_AUTH_EXPIRE_SECONDS,
             token=AUTH_TOKEN
         )
@@ -206,10 +206,8 @@ def register():
             AUTH_PASSWORD, data.as_json())
         # user.auth_token = str(uuid.uuid1())
         print("token", encoded_token)
-        quoted = quote_plus(quote_plus(encoded_token))
-        print("quoted",quoted)
         send_mail(config.REGISTER_AUTH_EMAIL.format(
-            auth_token=quoted), "验证邮件", request.form["email"])
+            auth_token=quote_plus(quote_plus(encoded_token))), "验证邮件", request.form["email"])
         # db.session.add(user)
         # db.session.commit()
         return make_response(-1, message="验证邮件已经发送到您邮箱的垃圾箱，请注意查收")
@@ -218,7 +216,7 @@ def register():
         user = User(
             username=request.form["username"],
             email=request.form["email"],
-            password=request.form["password"],
+            password=password_hash,
             register_time=datetime.now())
 
         db.session.add(user)
@@ -228,6 +226,7 @@ def register():
         import time
         session["login_time"] = str(int(time.time()))
         return make_response(0)
+
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -303,6 +302,7 @@ def require_reset_password():
     return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")
 
 
+
 @app.route("/api/reset_password", methods=["POST"])
 def reset_password():
     """
@@ -340,29 +340,15 @@ def reset_password():
         return make_response(-1, message="用户ID错误")
     if time.time() >= token.expire_after:
         return make_response(-1, message="请求已过期，请重新申请")
-    user.password = request.form["password"]
+    hasher = argon2.PasswordHasher()
+    password_hash = hasher.hash(request.form["password"])
+    user.password = password_hash
     # 之后强制所有客户端下线重新登录
     import time
     user.force_logout_before = int(time.time())
     db.session.commit()
     return make_response(0, message="密码重置完成，请使用新密码登录。")
 
-
-# @app.route("/api/user/pass_email_auth", methods=["POST"])
-# def user_pass_email_auth():
-#     """
-#     强行让某用户通过邮箱验证
-#     uid:用户ID
-#     """
-#     if not session.get("uid"):
-#         return make_response(-1, message="请先登录")
-#     operator: User = User.by_id(session.get("uid"))
-#     if not permission_manager.has_permission(operator.id, "user.manage"):
-#         return make_response(-1, message="你没有权限进行此操作")
-#     user: User = User.by_id(request.get_json()["uid"])
-#     user.auth_token = ""
-#     db.session.commit()
-#     return make_response(0, message="操作完成")
 
 @app.route("/api/user/toggle_follow_state", methods=["POST"])
 @unpack_argument
@@ -651,37 +637,13 @@ def update_profile():
 
     user.description = data["description"]
     if data["changePassword"]:
-        user.password = data["newPassword"]
+        hasher = argon2.PasswordHasher()
+        user.password = hasher.hash(data["newPassword"])
         import time
         user.force_logout_before = int(time.time())
     if data["banned"] != user.banned and not permission_manager.has_permission(operator.id, "user.manage"):
         return make_response(-1, message="你没有权限封禁/解封此用户")
     user.banned = data["banned"]
-    # if user.email != data["email"]:
-    #     # 注册不需要邮箱验证的话，改邮箱也不需要
-    #     if config.REQUIRE_REGISTER_AUTH and not permission_manager.has_permission(session.get("uid"), "user.manage"):
-    #         db.session.commit()
-    #         from common.aes import encrypt
-    #         from config import AUTH_PASSWORD, AUTH_TOKEN, CHANGE_EMAIL_EXPIRE_SECONDS
-    #         from urllib.parse import quote_plus
-    #         from common.datatypes import EmailChangeToken
-    #         import time
-    #         data = EmailChangeToken(uid=user.id,
-    #                                 new_email=data["email"],
-    #                                 token=AUTH_TOKEN,
-    #                                 expire_after=int(
-    #                                     time.time())+CHANGE_EMAIL_EXPIRE_SECONDS
-    #                                 )
-    #         print("raw", encrypt(AUTH_PASSWORD, data.as_json()))
-    #         encoded_data = quote_plus(quote_plus(
-    #             encrypt(AUTH_PASSWORD, data.as_json())))
-    #         send_mail(config.CHANGE_EMAIL_AUTH_EMAIL.format(
-    #             change_token=encoded_data), "更改邮箱", data.new_email)
-    #         print("encoded", encoded_data)
-    #         return make_response(0, message="数据已经更改成功。请前往新邮箱中点击确认。")
-    #     else:
-    #         user.email = data["email"]
-
     db.session.commit()
     # 检查邮箱相关
     return make_response(0, message="操作完成")
