@@ -27,6 +27,10 @@ def rejudge():
     if not permission_manager.has_any_permission(session.get("uid", None), "submission.manage", "submission.rejudge"):
         return make_response(-1, message="你没有权限这样做")
     submit: Submission = Submission.by_id(request.form["submission_id"])
+    problem: Problem = db.session.query(
+        Problem.problem_type).filter_by(id=submit.problem_id).one()
+    if problem.problem_type == "submit_answer":
+        return make_response(-1, message="提交答案题不能重测")
     if not submit:
         return make_response(-1, message="提交不存在")
     from api.judge import push_to_queue
