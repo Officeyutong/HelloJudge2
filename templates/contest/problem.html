@@ -280,7 +280,17 @@
 
                     </tbody>
                 </table>
-                <div class="ui header" v-if="data.downloads.length!=0">
+                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
+                    <div class="ui header">
+                        <h4>文件下载</h4>
+                    </div>
+                    <a v-for="file in data.downloads" :href="`/api/contest/${contestID}/${problemID}/download_file/`+file"><span>{[file]}
+                        </span></a>
+                    <!-- <div class="ui right aligned container">
+                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
+                    </div> -->
+                </div>
+                <!-- <div class="ui header" v-if="data.downloads.length!=0">
                     <h4>文件下载</h4>
                 </div>
                 <table class="ui very basic fluid collapsing celled table" v-if="data.downloads.length!=0">
@@ -291,7 +301,7 @@
                             </td>
                         </tr>
                     </tbody>
-                </table>
+                </table> -->
             </div>
 
         </div>

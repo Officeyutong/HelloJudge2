@@ -369,6 +369,7 @@ def download_file(id: int, filename: str):
     返回:
         无
     """
+    # print(id,filename)
     problem = db.session.query(Problem).filter(
         Problem.id == id)
     import flask
