@@ -36,8 +36,6 @@ def view_register_phone():
 
 @app.route("/register")
 def view_register():
-    if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
-        return redirect("/phone/register")
     return render_template("user/register.html")
 
 

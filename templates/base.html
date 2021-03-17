@@ -332,6 +332,9 @@
                 baseMixin.data.base.isLogin = ctx.result;
                 baseMixin.data.base.usePolling = ctx.usePolling;
                 baseMixin.data.base.usePhoneAuth = ctx.usePhoneAuth;
+                baseMixin.data.base.registerURL = ctx.registerURL;
+                baseMixin.data.base.gravatarURL = ctx.gravatarURL;
+
                 if (ctx.result) {
                     baseMixin.data.base.username = ctx.username;
                     baseMixin.data.base.email = ctx.email;
@@ -340,6 +343,7 @@
 
                 }
                 baseMixin.data.base.loaded = true;
+
             });
 
         });
@@ -498,7 +502,7 @@
                 <a class="item" target="_blank" href="/login" v-if="!base.isLogin">
                     请登录...
                 </a>
-                <a class="item" href="/register" v-if="!base.isLogin">
+                <a class="item" :href="base.registerURL" v-if="!base.isLogin">
                     或者注册...
                 </a>
                 <a class="item" :href="'/profile_edit/'+base.uid" v-if="base.backend_managable" target="_blank">
