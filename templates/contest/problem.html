@@ -118,6 +118,7 @@
                 return;
             }
             $("title").text(ctx.data.title + " - " + ctx.data.id + " - {{APP_NAME}}");
+            ctx.data.downloads.sort();
             show_problem.data = ctx.data;
             show_problem.code = show_problem.data.last_code;
             $.post("/api/get_supported_langs").done((ctx) => {
