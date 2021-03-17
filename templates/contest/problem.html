@@ -99,6 +99,7 @@
                 else {
                     this.html_content = this.value;
                 }
+                $(".ui.sticky").sticky({ context: "#target" })
             }
         });
 
@@ -140,172 +141,182 @@
     });
 
 </script>
-<div style="top:10%;max-width: 700px;">
+<div style="top:10%;">
 
     <div id="show-problem" v-if="done">
 
         <div class="ui header">
-            <h1> {[data.id]}: {[data.title]} </h1>
+            <h1> #{[parseInt(data.id)+1]}: {[data.title]} </h1>
         </div>
-
-        <problem-meta name="题目背景" v-bind:value="data.background"></problem-meta>
-        <problem-meta name="题目内容" v-bind:value="data.content"></problem-meta>
-        <problem-meta name="输入格式" v-bind:value="data.input_format"></problem-meta>
-        <problem-meta name="输出格式" v-bind:value="data.output_format"></problem-meta>
-        <div class="ui two column grid" v-for="item,index in data.example">
-            <div class="ui column">
-                <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render="false"
-                    :use_pre="true">
-                </problem-meta>
-            </div>
-            <div class="ui column">
-                <problem-meta v-bind:name="'样例 '+(index+1)+' 输出'" v-bind:value="item.output" :render="false"
-                    :use_pre="true">
-                </problem-meta>
-            </div>
-        </div>
-        <div class="ui container problem-meta">
-            <div class="ui header">
-                <h3>子任务</h3>
-            </div>
-            <table class="ui table">
-                <thead>
-                    <tr>
-                        <th>子任务名</th>
-                        <th>评分方式</th>
-                        <th>时间限制</th>
-                        <th>内存限制</th>
-                        <th>说明</th>
-                        <th>分数</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="subtask in data.subtasks">
-                        <td>{[subtask.name]}</td>
-                        <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
-                        <td>{[subtask.time_limit]} ms</td>
-                        <td>{[subtask.memory_limit]} MB</td>
-                        <td v-html="makeHTML(subtask.comment)"></td>
-                        <td>{[subtask.score]}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <!-- <div class="ui " -->
-        </div>
-        <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
-        <div class="ui container problem-meta" v-if="data.problem_type!='submit_answer'">
-            <div class="ui header">
-                <h3>提交代码</h3>
-            </div>
-            <div class="ui one column grid">
-                <div class="ui column">
-                    <div class="ui two column grid" style="min-height: 500px;">
-                        <div class="ui four wide column">
-                            <div class="ui vertical pointing menu"
-                                style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
-                                <a class="item" v-for="val,key in langs" :data-id="key"
-                                    v-bind:class="{active:selected_id==key}" @click="selected_id=key">
-                                    <span>
-                                        <span class="ui header">
-                                            <h4>{[val.display]}</h4>
-                                        </span>{[val.version]}
-                                    </span>
-                                </a>
-                            </div>
-                        </div>
-                        <div class="twelve wide stretched column" style="padding-left: 0;">
-                            <div class="ui container">
-                                <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
-                                    style="left:30px;min-height: 500px;">
-                                </editor>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="ui column">
-                    <div class="ui segment">
-                        <table class="ui very basic celled table">
-                            <thead>
-                                <tr>
-                                    <th>名称</th>
-                                    <th>参数</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
+        <div class="ui segment" id="target" style="max-width: 70%;">
+            <div class="ui right rail">
+                <div class="ui sticky">
+                    <div class="ui segment stacked" style="max-width: 300px">
+                        <table class="ui very basic fluid collapsing celled table">
                             <tbody>
-                                <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
-                                    <td> {[item.name]} </td>
-                                    <td> {[item.parameter]} </td>
+
+                                <tr>
+                                    <td>题目分数</td>
+                                    <td>{[total_score]}</td>
+                                </tr>
+                                <tr v-if="data.using_file_io">
+                                    <td style="word-break: break-all;">输入/输出文件</td>
+                                    <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                        <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
+                            <div class="ui header">
+                                <h4>文件下载</h4>
+                            </div>
+                            <a v-for="file in data.downloads"
+                                :href="`/api/contest/${contestID}/${problemID}/download_file/`+file"><span>{[file]}
+                                </span></a>
+                            <!-- <div class="ui right aligned container">
+                                <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
+                            </div> -->
+                        </div>
+                        <!-- <div class="ui header" v-if="data.downloads.length!=0">
+                            <h4>文件下载</h4>
+                        </div>
+                        <table class="ui very basic fluid collapsing celled table" v-if="data.downloads.length!=0">
+                            <tbody>
+                                <tr v-for="file in data.downloads" style="width: 100%">
                                     <td>
-                                        <div class="ui toggle checkbox">
-                                            <input type="checkbox" hidden :checked="usedParameters.includes(i)?1:null">
-                                            <label
-                                                v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
-                                        </div>
+                                        <a :href="`/api/contest/${contestID}/${problemID}/download_file/`+file">{[file]}</a>
                                     </td>
                                 </tr>
                             </tbody>
-                        </table>
+                        </table> -->
                     </div>
-                </div>
-            </div>
-            <div class="ui center aligned container" style="margin-top: 30px;">
-                <div class="ui icon green button" @click="submit">
-                    <i class="paper plane outline icon"></i>
-                    提交！
-                </div>
-            </div>
-        </div>
-        <div v-else>
-            <div class="ui center aligned container" style="margin-top: 30px;">
-                <a class="ui icon red button" target="_blank"
-                    :href="'/submit_answer/'+problemID+'?contest='+contestID+'&virtualID='+virtualID">
-                    <i class="paper plane outline icon"></i>
-                    提交答案
-                </a>
-            </div>
-        </div>
-        <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
-            <div class="ui segment stacked" style="max-width: 300px">
-                <table class="ui very basic fluid collapsing celled table">
-                    <tbody>
 
+                </div>
+            </div>
+            <problem-meta name="题目背景" v-bind:value="data.background"></problem-meta>
+            <problem-meta name="题目内容" v-bind:value="data.content"></problem-meta>
+            <problem-meta name="输入格式" v-bind:value="data.input_format"></problem-meta>
+            <problem-meta name="输出格式" v-bind:value="data.output_format"></problem-meta>
+            <div class="ui two column grid" v-for="item,index in data.example">
+                <div class="ui column">
+                    <problem-meta v-bind:name="'样例 '+(index+1)+' 输入'" v-bind:value="item.input" :render="false"
+                        :use_pre="true">
+                    </problem-meta>
+                </div>
+                <div class="ui column">
+                    <problem-meta v-bind:name="'样例 '+(index+1)+' 输出'" v-bind:value="item.output" :render="false"
+                        :use_pre="true">
+                    </problem-meta>
+                </div>
+            </div>
+            <div class="ui container problem-meta">
+                <div class="ui header">
+                    <h3>子任务</h3>
+                </div>
+                <table class="ui table">
+                    <thead>
                         <tr>
-                            <td>题目分数</td>
-                            <td>{[total_score]}</td>
+                            <th>子任务名</th>
+                            <th>评分方式</th>
+                            <th>时间限制</th>
+                            <th>内存限制</th>
+                            <th>说明</th>
+                            <th>分数</th>
                         </tr>
-                        <tr v-if="data.using_file_io">
-                            <td style="word-break: break-all;">输入/输出文件</td>
-                            <td>{[data.input_file_name]}/{[data.output_file_name]}</td>
+                    </thead>
+                    <tbody>
+                        <tr v-for="subtask in data.subtasks">
+                            <td>{[subtask.name]}</td>
+                            <td>{[({min:"取最小值",sum:"求和"})[subtask.method]]}</td>
+                            <td>{[subtask.time_limit]} ms</td>
+                            <td>{[subtask.memory_limit]} MB</td>
+                            <td v-html="makeHTML(subtask.comment)"></td>
+                            <td>{[subtask.score]}</td>
                         </tr>
-
                     </tbody>
                 </table>
-                <div v-if="data.downloads.length!=0" style="margin-top: 20px;">
-                    <div class="ui header">
-                        <h4>文件下载</h4>
-                    </div>
-                    <a v-for="file in data.downloads" :href="`/api/contest/${contestID}/${problemID}/download_file/`+file"><span>{[file]}
-                        </span></a>
-                    <!-- <div class="ui right aligned container">
-                        <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
-                    </div> -->
-                </div>
-                <!-- <div class="ui header" v-if="data.downloads.length!=0">
-                    <h4>文件下载</h4>
-                </div>
-                <table class="ui very basic fluid collapsing celled table" v-if="data.downloads.length!=0">
-                    <tbody>
-                        <tr v-for="file in data.downloads" style="width: 100%">
-                            <td>
-                                <a :href="`/api/contest/${contestID}/${problemID}/download_file/`+file">{[file]}</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table> -->
+                <!-- <div class="ui " -->
             </div>
-
+            <problem-meta name="提示" v-bind:value="data.hint"></problem-meta>
+            <div class="ui container problem-meta" v-if="data.problem_type!='submit_answer'">
+                <div class="ui header">
+                    <h3>提交代码</h3>
+                </div>
+                <div class="ui one column grid">
+                    <div class="ui column">
+                        <div class="ui two column grid" style="min-height: 500px;">
+                            <div class="ui four wide column">
+                                <div class="ui vertical pointing menu"
+                                    style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
+                                    <a class="item" v-for="val,key in langs" :data-id="key"
+                                        v-bind:class="{active:selected_id==key}" @click="selected_id=key">
+                                        <span>
+                                            <span class="ui header">
+                                                <h4>{[val.display]}</h4>
+                                            </span>{[val.version]}
+                                        </span>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="twelve wide stretched column" style="padding-left: 0;">
+                                <div class="ui container">
+                                    <editor v-model="code" v-bind:lang="langs[selected_id].ace_mode" theme="github"
+                                        style="left:30px;min-height: 500px;">
+                                    </editor>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ui column">
+                        <div class="ui segment">
+                            <table class="ui very basic celled table">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>参数</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item,i in data.extra_parameter" v-if="selected_id.match(item.lang)">
+                                        <td> {[item.name]} </td>
+                                        <td> {[item.parameter]} </td>
+                                        <td>
+                                            <div class="ui toggle checkbox">
+                                                <input type="checkbox" hidden
+                                                    :checked="usedParameters.includes(i)?1:null">
+                                                <label
+                                                    v-on:click="usedParameters.includes(i)?(usedParameters.splice(usedParameters.indexOf(i),1)):usedParameters.push(i)">使用</label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="ui center aligned container" style="margin-top: 30px;">
+                    <div class="ui icon green button" @click="submit">
+                        <i class="paper plane outline icon"></i>
+                        提交！
+                    </div>
+                </div>
+            </div>
+            <div v-else>
+                <div class="ui center aligned container" style="margin-top: 30px;">
+                    <a class="ui icon red button" target="_blank"
+                        :href="'/submit_answer/'+problemID+'?contest='+contestID+'&virtualID='+virtualID">
+                        <i class="paper plane outline icon"></i>
+                        提交答案
+                    </a>
+                </div>
+            </div>
         </div>
+
+
+        <!-- <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
+            
+        </div> -->
     </div>
     <div class="ui basic modal" id="no-perm-modal">
         <div class="ui icon header">

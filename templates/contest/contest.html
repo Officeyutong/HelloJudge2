@@ -245,7 +245,7 @@
                             <judge-status v-bind:status="problem.status"></judge-status>
                         </a>
                     </td>
-                    <td><a :href="'/contest/'+data.id+'/problem/'+problem.id+'?virtual_contest='+virtualID">{[problem.id]}.
+                    <td><a :href="'/contest/'+data.id+'/problem/'+problem.id+'?virtual_contest='+virtualID">#{[parseInt(problem.id)+1]}.
                             {[problem.title]}</a></td>
                     <td v-if="data.rank_criterion=='score'">{[problem.weight]}</td>
                     <td>
