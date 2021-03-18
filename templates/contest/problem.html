@@ -20,6 +20,7 @@
 
     $(document).ready(() => {
         let splits = window.location.pathname.split("/");
+        console.log(splits);
         let problemID = splits.pop();
         splits.pop();
         let contestID = splits.pop();
@@ -170,9 +171,14 @@
                             <div class="ui header">
                                 <h4>文件下载</h4>
                             </div>
-                            <a v-for="file in data.downloads"
-                                :href="`/api/contest/${contestID}/${problemID}/download_file/`+file"><span>{[file]}
-                                </span></a>
+                            <div>
+                                <a class="ui label" v-for="file,i in data.downloads"
+                                    :href="`/api/contest/${contestID}/${problemID}/download_file/`+file"
+                                    style="margin-bottom: 5px;"><span>{[file]} </span></a>
+                            </div>
+                            <!-- <a v-for="file in data.downloads"
+                                ><span>{[file]}
+                                </span></a> -->
                             <!-- <div class="ui right aligned container">
                                 <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
                             </div> -->
