@@ -1,5 +1,7 @@
 config.py
 uploads/
+test.html
+pack_output
 # migrations/
 data.db
 temp/
