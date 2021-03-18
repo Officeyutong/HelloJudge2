@@ -331,7 +331,7 @@
                     <div class="ui field">
                         <div class="ui toggle checkbox">
                             <input type="checkbox" class="hidden" v-model="data.public">
-                            <label @click="data.public=!data.public">公开
+                            <label v-on:click="data.public=!data.public">公开
                                 (如果此题非公开，则用户必须具有problem.use.{[data.id]}权限才可以使用)</label>
                         </div>
                     </div>
@@ -344,7 +344,7 @@
                         <div class="ui toggle checkbox">
                             <input type="checkbox" class="hidden" v-model="data.submissionVisible">
                             <label
-                                @click="data.submissionVisible=!data.submissionVisible">允许用户查看提交(如果勾选，则有权限使用该题目的用户可以查看其他人在该题目的提交)</label>
+                                v-on:click="data.submissionVisible=!data.submissionVisible">允许用户查看提交(如果勾选，则有权限使用该题目的用户可以查看其他人在该题目的提交)</label>
                         </div>
                     </div>
 
@@ -388,7 +388,7 @@
                                         <input type="checkbox" class="hidden"
                                             :checked="data.downloads.includes(val.name)?1:null">
                                         <label :data="val.name"
-                                            @click="data.downloads.includes(val.name)?(data.downloads.splice(data.downloads.indexOf(val.name),1)):data.downloads.push(val.name)">公开</label>
+                                            v-on:click="data.downloads.includes(val.name)?(data.downloads.splice(data.downloads.indexOf(val.name),1)):data.downloads.push(val.name)">公开</label>
                                     </div>
                                 </td>
                                 <td>
@@ -396,7 +396,7 @@
                                         <input type="checkbox" class="hidden"
                                             :checked="data.provides.includes(val.name)?1:null">
                                         <label :data="val.name"
-                                            @click="data.provides.includes(val.name)?(data.provides.splice(data.downloads.indexOf(val.name),1)):data.provides.push(val.name)">编译时提供</label>
+                                            v-on:click="data.provides.includes(val.name)?(data.provides.splice(data.downloads.indexOf(val.name),1)):data.provides.push(val.name)">编译时提供</label>
                                     </div>
                                 </td>
                             </tr>
@@ -445,14 +445,14 @@
                                     <div class="ui field">
                                         <div class="ui toggle checkbox">
                                             <input type="checkbox" v-model="data.using_file_io"
-                                                @click="data.using_file_io=!data.using_file_io">
+                                                v-on:click="data.using_file_io=!data.using_file_io">
                                             <label>使用文件IO</label>
                                         </div>
                                     </div>
                                     <div class="ui field">
                                         <div class="ui toggle checkbox">
                                             <input type="checkbox" v-model="submitAnswer"
-                                                @click="submitAnswer=!submitAnswer">
+                                                v-on:click="submitAnswer=!submitAnswer">
                                             <label>提交答案题</label>
                                         </div>
                                     </div>
@@ -564,7 +564,7 @@
                                             placeholder="按回车生效..">
                                     </div>
                                 </div>
-                                <div class="ui green button" @click="auto_generate">自动生成子任务</div>
+                                <div class="ui green button" v-on:click="auto_generate">自动生成子任务</div>
                             </div>
                             <div class="ui divider"></div>
                             <div v-for="subtask,index in data.subtasks">
@@ -648,7 +648,7 @@
                             </div>
 
                             <div class="ui container">
-                                <div class="ui green button" @click="add_subtask">添加子任务</div>
+                                <div class="ui green button" v-on:click="add_subtask">添加子任务</div>
                             </div>
                         </div>
                     </div>

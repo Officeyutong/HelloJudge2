@@ -172,7 +172,7 @@
                     </div>
                     <div class="text" v-html="render(item.content)"></div>
                     <div class="actions">
-                        <a @click="reply(item.username)">回复</a>
+                        <a v-on:click="reply(item.username)">回复</a>
                     </div>
                 </div>
                 <div class="ui divider"></div>

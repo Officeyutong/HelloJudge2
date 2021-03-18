@@ -241,7 +241,7 @@
             },
             template: '<div class="ui container problem-meta"  v-if="value!=\'\'"><div class="ui fluid two column grid"><div class="ui column">\
                             <div class="ui header"><h3>{[name]}</h3></div></div><div class="ui right aligned column">\
-                                <div class="ui tiny orange circular icon button" @click="copyText(value)"><i class="clipboard outline icon"></i></div>\
+                                <div class="ui tiny orange circular icon button" v-on:click="copyText(value)"><i class="clipboard outline icon"></i></div>\
                                     </div></div>    <div class="ui stack segment"><div  v-html="htmlContent" v-if="!usePre"></div><pre v-html="htmlContent" style="white-space:pre-wrap;word-break:break-word;" v-else></pre>    </div></div>',
             props: {
                 //内容
@@ -312,7 +312,7 @@
                             <div class="ui vertical pointing menu"
                                 style="overflow-y: scroll;height:500px; max-width: 170px; overflow-x: hidden">
                                 <a class="item" v-for="value,key in problemData.remoteOJ.availableLanguages"
-                                    v-bind:class="{active:selectedLanguage==key}" @click="selectedLanguage=key">
+                                    v-bind:class="{active:selectedLanguage==key}" v-on:click="selectedLanguage=key">
                                     <span>
                                         <span class="ui header">
                                             <h4>{[value.display]}</h4>
@@ -349,7 +349,7 @@
                                     </a>
                                 </div>
                             </div>
-                            <div class="ui icon green button" @click="submit" v-bind:class="{loading:running}">
+                            <div class="ui icon green button" v-on:click="submit" v-bind:class="{loading:running}">
                                 <i class="paper plane outline icon"></i>
                                 提交！
                             </div>

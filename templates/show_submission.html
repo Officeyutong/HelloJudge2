@@ -385,7 +385,7 @@
             <div class="ui divider"></div>
         </div>
         <div class="ui container" style="max-width: 500px;">
-            <div class="ui tiny orange circular icon button" @click="copy_text(data.code)"><i
+            <div class="ui tiny orange circular icon button" v-on:click="copy_text(data.code)"><i
                     class="clipboard outline icon"></i></div>
 
             <pre><code class="ui segment">{[data.code]}</code></pre>

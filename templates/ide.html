@@ -225,7 +225,7 @@
                 <div class="ui four wide column">
                     <div class="ui vertical pointing menu" style="overflow-y: scroll;height:500px;  overflow-x: hidden">
                         <a class="item" v-for="val,key in langs" :data-id="key"
-                            v-bind:class="{active:selectedLang==key}" @click="selectedLang=key">
+                            v-bind:class="{active:selectedLang==key}" v-on:click="selectedLang=key">
                             <span>
                                 <span class="ui header">
                                     <h4>{[val.display]}</h4>
