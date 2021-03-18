@@ -18,3 +18,7 @@ eventlet
 openpyxl
 pymysql
 argon2-cffi
+jinja2
+aiofiles
+bs4
+aiohttp

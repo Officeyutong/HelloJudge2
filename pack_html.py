@@ -2,7 +2,6 @@ import ast
 import pathlib
 import os
 import dataclasses
-from routes.api_wiki import save_config
 import jinja2
 import shutil
 import asyncio
@@ -10,7 +9,6 @@ import aiofiles
 import re
 import bs4
 import aiohttp
-import ast
 from urllib.parse import urlparse
 import hashlib
 import argparse
