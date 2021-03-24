@@ -15,7 +15,7 @@
                 md5: hex_md5
             },
             delimiters: ['{[', ']}'],
-            mixins: [baseMixin],
+            // mixins: [baseMixin],
             props: ["data"],
             computed: {
                 content() {
@@ -25,7 +25,7 @@
             template: `<div class="ui two column grid">
             <div class="row">
                 <div class="column" style="width:65px;">
-                    <img :src="makeProfileImageURL(data.email)" class="ui small circular image"></img>
+                    <img :src="data.profileURL" class="ui small circular image"></img>
                 </div>
                 <div class="column" style="max-width: 1000px;width:90%;">
                     <div style="font-size: 10px;color:rgba(0,0,0,.6);margin-bottom:10px;"><a :href="'/profile/'+data.uid" target="_blank">{[data.username]}</a></div>
@@ -46,7 +46,7 @@
         discussion = new Vue({
             el: "#discussion",
             delimiters: ['{[', ']}'],
-            mixins:[baseMixin],
+            mixins: [baseMixin],
             data: {
                 data: null, done: false, current_page: 1, page_count: -1, comments: [], text: "", title: ""
             }, methods: {
@@ -97,6 +97,7 @@
                 lastRenderedAt: 0,
                 lastRenderResult: ""
             },
+            mixins: [baseMixin],
             el: "#post",
             delimiters: ['{[', ']}'],
             watch: {
@@ -153,7 +154,7 @@
         <div v-if="data.private" class="ui red label">私有</div>
     </div>
     <div class="ui segment stacked">
-        <discussion-item :data="data"></discussion-item>
+        <discussion-item :data="{...data,profileURL:makeProfileImageURL(data.email)}"></discussion-item>
     </div>
     <div class="ui header">
         <h4>评论</h4>
