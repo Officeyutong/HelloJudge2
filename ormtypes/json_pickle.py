@@ -1,7 +1,7 @@
 import sqlalchemy.types as types
 from sqlalchemy.dialects import mysql
-from jsonpickle import encode, decode
-
+# from jsonpickle import encode, decode
+from ujson import encode, decode
 
 class JsonPickle(types.TypeDecorator):
     impl = mysql.LONGTEXT
