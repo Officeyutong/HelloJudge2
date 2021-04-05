@@ -1,3 +1,4 @@
+from sqlalchemy.sql import expression as expr
 from main import web_app as app
 from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
@@ -214,7 +215,20 @@ def get_submission_info():
     # has_perm_to_use_problem = problem.public or ((not problem.public) and permission_manager.has_permission(
     #     session.get("uid", -1), f"problem.use.{problem.id}")) or permission_manager.has_permission(session.get("uid", -1), "problem.manage")
     have_permission_to_use_problem = (problem.public or (permission_manager.has_permission(
-        session.get("uid", -1), f"problem.use.{problem.id}") and not problem.public and problem.submission_visible)) and submit.contest_id < 0
+        session.get("uid", -1), f"problem.use.{problem.id}") and not problem.public and problem.submission_visible)) and (
+            submit.contest_id < 0
+            or (
+                (
+                    permission_manager.has_permission(session.get(
+                        "uid", -1), f"contest.use.{submit.contest_id}")
+                    or
+                    db.session.query(Contest.id).filter(
+                        Contest.id == submit.contest_id, Contest.private_contest == False).count() > 0
+                ) and
+                db.session.query(Contest.id).filter(
+                    Contest.id == submit.contest_id, Contest.closed == True).count() > 0
+            )
+    )
     # print("cansee = ",have_permission_to_use_problem)
     if session.get("uid"):
         user: User = db.session.query(User).filter(
@@ -352,10 +366,20 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
         # print("testing")
         result = result.filter(Submission.problem_id == value)
         if (not problem.public) and problem.submission_visible and permission_manager.has_permission(session.get("uid", -1), f"problem.use.{problem.id}"):
+            visible_contests = {
+                contest.id
+                for contest in db.session.query(Contest.id, Contest.private_contest).filter(Contest.closed == True).all()
+                if not contest.private_contest or permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}")
+            }
             # print("tested")
             result = result.union(
-                db.session.query(Submission).filter_by(
-                    problem_id=problem.id, contest_id=-1)
+                db.session.query(Submission).filter(expr.and_(
+                    Submission.problem_id == problem.id,
+                    expr.or_(
+                        Submission.contest_id == -1,
+                        Submission.contest_id.in_(visible_contests)
+                    )
+                ))
             )
     for key, value in filter.items():
         # print(key, value)
