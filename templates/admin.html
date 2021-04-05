@@ -48,11 +48,11 @@
                 removeFeed(id, index, evt) {
                     showConfirmModal("您确定要删除这条推送吗？此操作不可撤销。", async () => {
                         if (evt) {
-                            evt.target.add("loading");
+                            evt.target.classList.add("loading");
                         }
                         let resp = (await axios.post("/api/admin/remove_feed", { feed_id: id })).data;
                         if (evt) {
-                            evt.target.remove("loading");
+                            evt.target.classList.remove("loading");
                         }
 
                         if (resp.code) {
@@ -519,7 +519,7 @@
                     </td>
                     <td>{[item.content]}</td>
                     <td>
-                        <div class="ui tiny red button" v-on:click="removeFeed(item.id,i,$evt)">
+                        <div class="ui tiny red button" v-on:click="removeFeed(item.id,i,$event)">
                             删除
                         </div>
                     </td>
