@@ -83,7 +83,7 @@ def blog_list(uid: int = 1, page: int = 1):
     result = []
     for item in data:
         last_comment = db.session.query(Comment.time).filter_by(
-            discussion_id=item.id).order_by(Comment.time.desc()).one_or_none()
+            discussion_id=item.id).order_by(Comment.time.desc()).limit(1).one_or_none()
         current = {
             "id": item.id,
             "title": item.title,
