@@ -236,7 +236,7 @@
                 <h4 class="ui block attached header">
                     通过题目
                 </h4>
-                <div class="ui bottom attached segment">
+                <div class="ui bottom attached segment" style="word-wrap: break-word;">
                     <div v-if="data.ac_problems.length==0">这个人很懒,还没有做过题...</div>
                     <span v-for="item in data.ac_problems" v-else><a :href="'/show_problem/'+item">{[item]}&nbsp;</a>
                     </span>
