@@ -33,7 +33,7 @@ view_file_name = local_dir/"routes"/"view.py"
 output_dir = local_dir/"pack_output"
 
 MINIFIER_CMD = """
-html-minifier --collapse-whitespace --remove-comments --remove-optional-tags 
+html-minifier --collapse-whitespace --conservative-collapse --remove-comments --remove-optional-tags 
 --remove-redundant-attributes --remove-script-type-attributes --remove-tag-whitespace --use-short-doctype --minify-css true --minify-js true --input-dir {INPUT_DIR} --output-dir {OUTPUT_DIR}
 """
 
