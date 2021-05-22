@@ -305,7 +305,7 @@ def upgrade():
     session.execute("""
     UPDATE user SET id = 0 WHERE username = "!System"
     """)
-    db.session.commit()
+    session.commit()
     # session.add(models.User(
     #     id=SYSTEM_NOTIFICATION_USERID,
     #     banned=False,
