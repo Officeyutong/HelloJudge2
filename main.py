@@ -102,10 +102,6 @@ def _import_routes():
         log, url_prefix="/api/log")
     web_app.register_blueprint(
         wiki, url_prefix="/api/wiki")
-    web_app.register_blueprint(
-        phoneutil, url_prefix="/api/phoneutil")
-    web_app.register_blueprint(
-        phoneuser, url_prefix="/api/phoneuser")
     # print(web_app.url_map)
 
 _import_routes()
