@@ -29,11 +29,6 @@ def view_login():
     return render_template("user/login.html")
 
 
-@app.route("/phone/register")
-def view_register_phone():
-    return render_template("user/register_phone.html")
-
-
 @app.route("/register")
 def view_register():
     return render_template("user/register.html")
@@ -124,11 +119,6 @@ def view_contest_ranklist(id):
 @app.route("/reset_password/<string:token>")
 def view_reset_password(token):
     return render_template("user/reset_password.html")
-
-
-@app.route("/phone/reset_password")
-def view_phone_reset_password():
-    return render_template("user/reset_password_phone.html")
 
 
 @app.route("/auth_email/<string:token>")
@@ -234,11 +224,6 @@ def view_sendsms_card():
     return render_template("card/send_smscode.html")
 
 
-@app.route("/phoneauth")
-def view_phoneauth():
-    return render_template("phoneauth.html")
-
-
 @app.route("/tags/edit")
 def view_tags_edit():
     return render_template("tags_edit.html")
@@ -247,7 +232,6 @@ def view_tags_edit():
 @app.route("/tags_edit/<int:id>")
 def view_problem_tags_edit(id: int):
     return render_template("problem/tags.html")
-
 
 
 @app.route("/problemtodo/list")
@@ -296,8 +280,6 @@ def wiki_edit(id=-1):
 @app.route("/wiki/versions/<int:id>")
 def wiki_versions(id=-1):
     return render_template("wiki/versions.html")
-
-
 
 
 @app.route("/submit_answer/<int:id>")
