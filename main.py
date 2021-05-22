@@ -88,8 +88,8 @@ def _import_routes():
     from routes.api_blog import router as blog
     from routes.api_log import router as log
     from routes.api_wiki import router as wiki
-    from routes.api_phoneutil import router as phoneutil
-    from routes.api_phoneuser import router as phoneuser
+    # from routes.api_phoneutil import router as phoneutil
+    # from routes.api_phoneuser import router as phoneuser
     web_app.register_blueprint(
         contest, url_prefix="/api/contest")
     web_app.register_blueprint(

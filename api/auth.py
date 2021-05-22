@@ -50,7 +50,7 @@ def send_sms_code(phone: str, code: str, expire_after: int):
     # user.phone_number = phone
     # db.session.commit()
     # print("db commited")
-    background_task_queue.send_task("qbxtoj.send_sms_code", [{
+    background_task_queue.send_task("hj2.send_sms_code", [{
         "access_key": config.ALIYUN_ACCESS_KEY_ID,
         "access_secret": config.ALIYUN_ACCESS_SECRET,
         "region": config.ALIYUN_REGION,
