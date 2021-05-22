@@ -69,3 +69,5 @@ MAX_PROBLEMTODO_COUNT = 50
 
 # Gravatar URL前缀
 GRAVATAR_URL_PREFIX = "https://www.gravatar.com/avatar/"
+# 禁止注册
+DISABLE_REGISTER = False

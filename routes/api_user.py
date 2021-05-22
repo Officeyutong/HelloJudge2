@@ -16,6 +16,7 @@ import sqlalchemy.sql.expression as expr
 import math
 import argon2
 
+
 @app.route("/api/this_should_be_the_first_request", methods=["POST"])
 @app.route("/api/query_login_state", methods=["POST"])
 def query_login_state():
@@ -66,7 +67,6 @@ def query_login_state():
                       backend_managable=permission_manager.has_permission(user.id, "backend.manage"))
         result.update(username=user.username, email=user.email)
     return make_response(0, **result)
-
 
 
 @app.route("/api/login", methods=["POST"])
@@ -172,6 +172,8 @@ def register():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
+    if config.DISABLE_REGISTER:
+        return make_response(-1, message="注册已停用")
     if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
         return make_response(-1, message="当前不使用邮箱注册")
     if session.get("uid") is not None:
@@ -226,7 +228,6 @@ def register():
         import time
         session["login_time"] = str(int(time.time()))
         return make_response(0)
-
 
 
 @app.route("/api/logout", methods=["POST"])
@@ -300,7 +301,6 @@ def require_reset_password():
         import traceback
         return make_response(-1, message=traceback.format_exc())
     return make_response(0, message="重置密码的邮件已经发送到您邮箱的垃圾箱，请注意查收")
-
 
 
 @app.route("/api/reset_password", methods=["POST"])
