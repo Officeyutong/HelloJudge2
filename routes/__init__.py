@@ -15,7 +15,6 @@ from .api_common import *
 from .api_problemset import *
 from .api_challenge import *
 from .api_card import *
-from .api_phoneauth import *
 from .api_feed import *
 from .api_problemtag import *
 from .api_wiki import *
