@@ -75,8 +75,12 @@ def extract_info(func: ast.FunctionDef) -> ExtractResult:
 
 
 def process_route(route: str) -> str:
-    expr = re.compile(r"<(.+):(.+)>")
-    return expr.sub("([^/]+)", route)
+    if "int" in route:
+        expr = re.compile(r"<int:(.+)>")
+        route = expr.sub("([0-9]+)", route)
+    if "string" in route:
+        route = re.compile(r"<string:(.+)>").sub("([^/]+)")
+    return route
 
 
 async def render_and_minify(template: jinja2.Template, info: ExtractResult, mixin: Dict[str, Any], config_buf: StringIO):
@@ -193,7 +197,8 @@ def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument(
         "--api-server", help="API服务器地址(默认为http://127.0.0.1:8095)", default="http://127.0.0.1:8095", required=False, type=str)
-    arg_parser.add_argument("--cache-static", help="缓存静态文件",action="store_true")
+    arg_parser.add_argument(
+        "--cache-static", help="缓存静态文件", action="store_true")
     arg_parse_result = arg_parser.parse_args()
     api_server = arg_parse_result.api_server
     cache_static = arg_parse_result.cache_static
