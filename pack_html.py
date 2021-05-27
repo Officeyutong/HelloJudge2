@@ -76,10 +76,10 @@ def extract_info(func: ast.FunctionDef) -> ExtractResult:
 
 def process_route(route: str) -> str:
     if "int" in route:
-        expr = re.compile(r"<int:(.+)>")
+        expr = re.compile(r"<int:([a-zA-Z0-9_]+)>")
         route = expr.sub("([0-9]+)", route)
     if "string" in route:
-        route = re.compile(r"<string:(.+)>").sub("([^/]+)", route)
+        route = re.compile(r"<string:([a-zA-Z0-9_]+)>").sub("([^/]+)", route)
     return route
 
 
