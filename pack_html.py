@@ -79,7 +79,7 @@ def process_route(route: str) -> str:
         expr = re.compile(r"<int:(.+)>")
         route = expr.sub("([0-9]+)", route)
     if "string" in route:
-        route = re.compile(r"<string:(.+)>").sub("([^/]+)")
+        route = re.compile(r"<string:(.+)>").sub("([^/]+)", route)
     return route
 
 
