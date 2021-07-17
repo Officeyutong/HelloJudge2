@@ -371,6 +371,7 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
                 for contest in db.session.query(Contest.id, Contest.private_contest).filter(Contest.closed == True).all()
                 if not contest.private_contest or permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}")
             }
+            print(visible_contests)
             # print("tested")
             result = result.union(
                 db.session.query(Submission).filter(expr.and_(
@@ -389,6 +390,15 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
             return make_response(-1, message=f"过滤器{key}={value}未知")
         if key == "problem":
             continue
+        if key in {"min_score", "max_score", "status"}:
+            if "contest" in filter:
+                curr_contest: Contest = db.session.query(
+                    Contest).filter_by(id=filter["contest"]).one_or_none()
+                if not curr_contest:
+                    continue
+                if (not permission_manager.has_permission(session.get("uid", -1), "contest.manage")) and curr_contest.running():
+                    return make_response(-1, message="比赛进行时不可筛选分数边界或提交状态")
+
         result = filters[key](result, value)
 
     result = result.order_by(Submission.id.desc())
