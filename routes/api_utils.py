@@ -1,3 +1,4 @@
+from typing import List
 from main import web_app as app
 from main import db, config, basedir, permission_manager
 from flask import session, request, send_file, send_from_directory
@@ -44,18 +45,36 @@ def api_home_page():
                 "name":"显示名",
                 "url":"跳转链接"
             }],
-            "swiperInterval":"轮播切换间隔(ms)"
+            "swiperInterval":"轮播切换间隔(ms)",
+            "ranklist":[
+                {
+                    "username":"用户名",
+                    "uid":"用户ID",
+                    "description":"描述",
+                    "rating":"Rating"
+                }
+            ]
         }
     }
     """
+
+    ranklist: List[User] = db.session.query(User.id, User.description, User.username, User.rating).order_by(
+        User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
     result = {
         "appName": config.APP_NAME,
         "friendLinks": config.FRIEND_LINKS,
         "swipers": config.HOMEPAGE_SWIPER,
         "toolbox": config.HOMEPAGE_TOOLBOX,
-        "swiperInterval": config.SWIPER_SWITCH_INTERVAL
+        "swiperInterval": config.SWIPER_SWITCH_INTERVAL,
+        "ranklist": [
+            {
+                "username": item.username,
+                "uid": item.id,
+                "description": item.description,
+                "rating": item.rating
+            } for item in ranklist
+        ]
     }
-
     return make_response(0, data=result)
 
 
