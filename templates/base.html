@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <title>{%block title %}{%endblock%} - {{APP_NAME}}</title>
-    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
+
     {%if DEBUG%}
     <script src="/static/clipboard.js"></script>
     <script src="/static/jquery-3.3.1.js"></script>
@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/static/semantic.css">
     <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
     {%else%}
+
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"
         integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"
@@ -21,8 +22,8 @@
     <script src="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"
         integrity="sha256-CgSoWC9w5wNmI1aN8dIMK+6DPelUEtvDr+Bc2m/0Nx8=" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery.cookie@1.4.1/jquery.cookie.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css" integrity="sha256-UXesixbeLkB/UYxVTzuj/gg3+LMzgwAmg3zD+C4ZASQ=" crossorigin="anonymous">
-    <!-- <link rel="stylesheet" href="/static/semantic.min.css"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
+        integrity="sha256-UXesixbeLkB/UYxVTzuj/gg3+LMzgwAmg3zD+C4ZASQ=" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.0/dist/axios.min.js"
         integrity="sha256-OPn1YfcEh9W2pwF1iSS+yDk099tYj+plSrCS6Esa9NA=" crossorigin="anonymous"></script>
     {%endif%}
@@ -46,8 +47,12 @@
     <script>
         const debug_post = function (url, data) {
             $.post(url, data).done(ctx => console.log(JSON.parse(ctx)));
+            // axios.post(url, data).then((ret) => {
+            //     console.log(JSON.parse(ret));
+            // });
         }
         const debugPostX = function (url, data) {
+            // $.post(url, data).done(ctx => console.log(JSON.parse(ctx)));
             axios.post(url, data).then((ret) => {
                 console.log(ret.data);
             });
@@ -346,7 +351,17 @@
                 baseMixin.data.base.loaded = true;
 
             });
-
+            const ensurWidth = () => {
+                const elem = document.getElementById("main-base-block");
+                if (document.documentElement.clientWidth <= 1200) {
+                    elem.style.setProperty("margin-left", "150px", "important");
+                } else {
+                    elem.style.setProperty("margin-left", null);
+                    // document.getElementById("main-base-block").style.marginLeft = undefined;
+                }
+            };
+            ensurWidth();
+            window.addEventListener("resize", ensurWidth);
         });
         Vue.component("editor", {
             delimiters: ['{[', ']}'],
@@ -419,6 +434,9 @@
                 var vm = this;
                 var lang = this.lang || 'text';
                 var theme = this.theme || 'chrome';
+
+                // require('brace/ext/emmet');
+
                 var editor = vm.editor = ace.edit(this.$el);
                 this.$emit('init', editor);
 
@@ -522,12 +540,12 @@
             </div>
         </div>
         <div class="ui column" style="width: max-content;margin: 0 auto;">
-            <div class="ui main container" style="margin-top:70px;margin-bottom:70px">
+            <div class="ui main container" id="main-base-block" style="margin-top:70px;margin-bottom:70px">
                 {%block body%}{%endblock%}
             </div>
             <div class="ui center aligned  container" id="bottom-banner">
                 <div style="color: darkgrey">
-                    {{APP_NAME}} by <a href="https://github.com/Officeyutong/HelloJudge2">HelloJudge2</a>
+                    {{APP_NAME}} by <a href="https://github.com/Officeyutong">MikuNotFoundException</a>
                 </div>
             </div>
         </div>

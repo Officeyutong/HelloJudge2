@@ -24,7 +24,7 @@
         integrity="sha256-UXesixbeLkB/UYxVTzuj/gg3+LMzgwAmg3zD+C4ZASQ=" crossorigin="anonymous">
     <!-- <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.min.js"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/axios@0.21.0/dist/axios.min.js"
-    integrity="sha256-OPn1YfcEh9W2pwF1iSS+yDk099tYj+plSrCS6Esa9NA=" crossorigin="anonymous"></script>
+        integrity="sha256-OPn1YfcEh9W2pwF1iSS+yDk099tYj+plSrCS6Esa9NA=" crossorigin="anonymous"></script>
     {%endif%}
     <script>
         const CSRF_TOKEN = "{%if USING_CSRF_TOKEN %} {{csrf_token() }} {%else%}{%endif%}";

@@ -1,79 +1,54 @@
 {%extends "card/base.html"%}
 {%block head%}
-<script type="text/javascript" charset="utf-8" src="//g.alicdn.com/sd/ncpc/nc.js?t=2015052012"></script>
+
 {%endblock%}
 {%block body%}
 <script>
     const request = getRequest();
     let phone = request.phone;
     let mustNotUse = request.must_not_used || false;
-    console.log("phone=", phone);
-    let nc;
+    console.log("phone", "=", phone);
+    let vueObj = null;
+    var reCaptchaLoadOK = () => {
+        vueObj.init();
+    };
     $(document).ready(() => {
-        new Vue({
+        vueObj = new Vue({
             delimiters: ['{[', ']}'],
             el: "#sms-card",
             data: {
                 phone: phone,
                 done: false,
-                blockAuthed: false,
                 errorMessage: "",
                 successMessage: "",
-                nc_token: "",
-                csessionid: "",
-                sig: "",
                 loading: false,
-                sended: false
-            },
-            mounted() {
-                axios.post("/api/phoneutil/preparation").then(resp => {
-                    let data = resp.data.data;
-                    this.nc_token = [data.appKey, (new Date()).getTime(), Math.random()].join(':');
-                    this.done = true;
-                    let NC_Opt = {
-                        renderTo: "#aliyun-captcha",
-                        appkey: data.appKey,
-                        scene: "nc_message",
-                        token: this.nc_token,
-                        customWidth: 300,
-                        trans: { "key1": "code0" },
-                        elementID: ["usernameID"],
-                        is_Opt: 0,
-                        language: "cn",
-                        isEnabled: true,
-                        timeout: 3000,
-                        times: 5,
-                        apimap: {
-                        },
-                        callback: (data) => {
-                            this.blockAuthed = true;
-                            this.csessionid = data.csessionid;
-                            this.sig = data.sig;
-                            console.log(this.nc_token)
-                            console.log(data.csessionid)
-                            console.log(data.sig)
-                        }
-                    };
-
-                    this.$nextTick(() => {
-                        console.log("Loading noCaptcha");
-                        nc = new noCaptcha(NC_Opt);
-                        console.log(nc);
-                        nc.upLang('cn', {
-                            _startTEXT: "请按住滑块，拖动到最右边",
-                            _yesTEXT: "验证通过",
-                            _error300: "哎呀，出错了，点击<a href=\"javascript:__nc.reset()\">刷新</a>再来一次",
-                            _errorNetwork: "网络不给力，请<a href=\"javascript:__nc.reset()\">点击刷新</a>",
-                        });
-                    });
-
-
-                });
+                sended: false,
+                site_key: "",
+                response: {},
+                reCaptchaLoading: true,
+                blockAuthed: false
             },
             methods: {
+                init() {
+                    axios.post("/api/phoneutil/preparation").then(resp => {
+                        let data = resp.data.data;
+                        this.site_key = data.site_key;
+                        this.done = true;
+                        this.$nextTick(() => {
+                            console.log("Rendering reCaptcha..");
+                            vueObj.reCaptchaLoading = false;
+                            grecaptcha.render('recaptcha', {
+                                sitekey: this.site_key,
+                                callback: () => {
+                                    this.blockAuthed = true;
+                                    this.response = grecaptcha.getResponse();
+                                }
+                            });
+                        });
+                    });
+                },
                 close() {
                     try {
-                        // window.parent.closeModal();
                         parent.window.closeModal(this.sended);
                     } catch (e) {
                         console.error(e);
@@ -86,15 +61,11 @@
                     this.errorMessage = this.successMessage = "";
                     axios.post("/api/phoneutil/sendcode", {
                         phone: this.phone,
-                        noCaptcha: {
-                            nc_token: this.nc_token,
-                            csessionid: this.csessionid,
-                            sig: this.sig
-                        },
+                        client_response: this.response,
                         must_not_use: mustNotUse
                     }).then(resp => {
                         this.loading = false;
-                        nc.reload();
+                        grecaptcha.reset();
                         let data = resp.data;
                         if (data.code) {
                             this.errorMessage = data.message;
@@ -102,27 +73,32 @@
                         } else {
                             this.sended = true;
                             this.successMessage = data.message;
-                            // this.close();
                         }
                     });
                 },
             }
         });
     });
+
 </script>
 <div id="sms-card" v-if="done">
     <div class="ui center aligned container">
-
         <div class="ui stacked segment" style="top:50%">
             <div class="ui active dimmer" v-if="!done">
                 <div class="ui loader"></div>
             </div>
             <div class="ui form" v-bind:class="{error:errorMessage!='',success:successMessage!=''}">
-
-                <div v-once style="margin-bottom: 30px;" class="center aligned">
-                    <div id="aliyun-captcha" class="nc-container"></div>
+                <div class="ui dimmer" v-if="reCaptchaLoading">
+                    <div class="ui loader"></div>
                 </div>
+                <div v-once style="margin-bottom: 30px;">
+                    <div class="ui three column center aligned grid">
+                        <div class="ui column">
+                            <div id="recaptcha" data-callback="reCaptchaAuthOK"></div>
 
+                        </div>
+                    </div>
+                </div>
                 <div class="ui error message">
                     <div class="header">错误</div>
                     <p>{[errorMessage]}</p>
@@ -141,4 +117,6 @@
         </div>
     </div>
 </div>
+<script src="https://www.recaptcha.net/recaptcha/api.js?onload=reCaptchaLoadOK&render=explicit" async defer></script>
+
 {%endblock%}
