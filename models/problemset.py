@@ -18,7 +18,7 @@ class ProblemSet(db.Model):
     # 是否私有
     # 如果私有,那么则必须输入正确的邀请码才能使用
     private = Column(mysql.TINYINT(display_width=1),
-                     nullable=False, default=False)
+                     nullable=False, default=True)
     # 邀请码
     invitation_code = Column(mysql.LONGTEXT, nullable=True,
                              default=lambda: str(uuid.uuid1()))
@@ -31,3 +31,6 @@ class ProblemSet(db.Model):
     create_time = Column(DateTime, nullable=False)
     # 说明
     description = Column(mysql.LONGTEXT, default="")
+    # 外部题目
+    # [{"name":"名称","url":"链接"}]
+    foreign_problems = Column(JsonPickle, nullable=False, default=[])

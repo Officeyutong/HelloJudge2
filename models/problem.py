@@ -52,7 +52,7 @@ class Problem(db.Model):
     public = Column(mysql.TINYINT(display_width=1), default=0, index=True)
     # （如果这是个私有题）是否允许用户查看其他人得提交
     submission_visible = Column(mysql.TINYINT(
-        display_width=1), default=False, index=True, nullable=False)
+        display_width=1), default=True, index=True, nullable=False)
     # 题目邀请码
     invite_code = Column(mysql.LONGTEXT,  nullable=True,
                          default=lambda: str(uuid.uuid1()))

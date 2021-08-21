@@ -114,6 +114,8 @@ def regenerate_filelist():
     file_list = generate_file_list(problem.id)
     file_list.sort(key=lambda x: x["name"])
     problem.files = file_list
+    problem.downloads = []
+    problem.provides = []
     db.session.commit()
     return make_response(0, data=file_list)
 
@@ -124,6 +126,7 @@ def get_problem_info():
     获取题目信息
     参数:
         id:int 题目ID
+        edit:int 是否为编辑模式
     返回:
         {
             "code":0,//非0表示调用成功
@@ -231,6 +234,8 @@ def get_problem_info():
         USING_KEYS.append("invite_code")
     for item in USING_KEYS:
         result[item] = getattr(problem, item)
+    result["public"] = bool(result["public"])
+    result["using_file_io"] = bool(result["using_file_io"])
     result["hasPermission"] = has_permission
     if has_permission:
         last_submission: Submission = db.session.query(Submission).filter(and_(
@@ -296,7 +301,7 @@ def get_problem_info():
             })
         result["inTodoList"] = bool(db.session.query(ProblemTodo).filter_by(
             uid=session.get("uid", -1), problem_id=problem.id).limit(1).count())
-        result["submissionVisible"] = problem.submission_visible
+        result["submissionVisible"] = bool(problem.submission_visible)
     return make_response(0, data=result)
 
 
@@ -314,6 +319,8 @@ def upload_file(id):
             "file_list":[{"name":"a.in","size":123456}]//现有的文件列表
         }
     """
+    decompress_zip = bool(request.form.get("decompress_zip","0")=="1")
+    print(f"{decompress_zip=}")
     problem = db.session.query(Problem).filter(
         Problem.id == id)
     if problem.count() == 0:
@@ -346,7 +353,7 @@ def upload_file(id):
                     import time
                     file.write(f"{time.time()}")
     for file in request.files:
-        if request.files[file].filename.endswith(".zip"):
+        if decompress_zip and request.files[file].filename.endswith(".zip"):
             handle_zipfile(request.files[file])
             continue
         request.files[file].save(os.path.join(
@@ -369,7 +376,6 @@ def download_file(id: int, filename: str):
     返回:
         无
     """
-    # print(id,filename)
     problem = db.session.query(Problem).filter(
         Problem.id == id)
     import flask
@@ -461,15 +467,19 @@ def remove_file():
         pass
     problem.files = generate_file_list(request.form["id"])
 
-    def remove_and_return(seq, val):
-        seq = seq.copy()
-        if val in seq:
-            seq.remove(val)
-        return seq
-    problem.downloads = remove_and_return(
-        problem.downloads, request.form["file"])
-    problem.provides = remove_and_return(
-        problem.provides, request.form["file"])
+    # def remove_and_return(seq, val):
+    #     seq = seq.copy()
+    #     if val in seq:
+    #         seq.remove(val)
+    #     return seq
+    filename = request.form["file"]
+
+    # problem.downloads = remove_and_return(
+    #     problem.downloads, request.form["file"])
+    # problem.provides = remove_and_return(
+    #     problem.provides, request.form["file"])
+    problem.downloads = [x for x in problem.downloads if x != filename]
+    problem.provides = [x for x in problem.provides if x != filename]
 
     db.session.commit()
     return make_response(0, file_list=generate_file_list(request.form["id"]))
@@ -482,6 +492,7 @@ def update_problem():
     参数:
         id:int 题目ID
         data:dict 题目数据
+        submitAnswer: "true"|"false" 是否提交答案
     返回:
         {
             "code":0,//非0表示调用成功
@@ -508,8 +519,8 @@ def update_problem():
     for subtask in data["subtasks"]:
         if len(subtask["testcases"]) == 0:
             return make_response(-1, message=f"子任务{subtask['name']}的测试点个数为0！")
-        if subtask["score"] < len(subtask["testcases"]):
-            return make_response(-1, message="测试点个数不得多于分数")
+        if subtask["score"] < len(subtask["testcases"]) and subtask["method"] != "min":
+            return make_response(-1, message="非捆绑测试时，测试点个数不得多于分数")
         if subtask["method"] == "min":
             list(map(lambda x: x.__setitem__(
                 "full_score", 1), subtask["testcases"]))
@@ -768,6 +779,7 @@ def refresh_cached_count(problem_id: int):
     problem.cached_submit_count = submit_count
     print(f"Refreshed: {accepted_count=} {submit_count=}")
     db.session.commit()
+
 
 @app.route("/api/problem/rejudge_all", methods=["POST"])
 @unpack_argument

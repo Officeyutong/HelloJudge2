@@ -1,3 +1,5 @@
+import typing
+
 from config_default.display import CLARIFICATION_PER_PAGE
 from main import web_app as app, permission_manager
 from main import db, config, basedir
@@ -11,7 +13,7 @@ import math
 import re
 from typing import Iterable
 from main import permission_manager
-from common.utils import unpack_argument
+from common.utils import make_json_response, unpack_argument, get_uid
 from common.permission import require_permission
 import sqlalchemy.sql.expression as expr
 from sqlalchemy import distinct, alias
@@ -30,14 +32,16 @@ def contest_clarification_detail(clarification_id: int):
     {
             "sender":{
                 "uid":"发送者ID",
-                "username":"发送者用户名"
+                "username":"发送者用户名",
+                "email":"xxx"
             },
             "send_time":"发送时间",
             "content":"内容",
             "replied":"是否已回复",
             "replier":{
                 "uid":"回复者ID",
-                "username":"回复者用户名"
+                "username":"回复者用户名",
+                "email":"xxx"
             },
             reply_time:"回复时间",
             "reply_content":"回复内容"
@@ -330,10 +334,11 @@ def create_contest():
 
 @ app.route("/api/contest/list", methods=["POST"])
 @ unpack_argument
-def contest_list(page: int = 1):
+def contest_list(page: int = 1, order_by: typing.Union[typing.Literal["id"], typing.Literal["start_time"]] = "start_time"):
     """
     {
         "page":"切换到的页面",
+        "order_by":"id"|"start_time"
     }
     {
         "code":0,
@@ -345,8 +350,8 @@ def contest_list(page: int = 1):
                     "name":"比赛名",
                     "owner_id":"所有者用户ID",
                     "owner_username":"所有者用户名",
-                    "begin_time":"开始毫秒数",
-                    "end_time":"结束毫秒数",
+                    "start_time":"开始秒数",
+                    "end_time":"结束秒数",
                     "privateContest":"该比赛是否私有",
                     "hasPermission":"是否有权限访问该比赛"
                 }
@@ -354,18 +359,30 @@ def contest_list(page: int = 1):
         }
     }
     """
-    result = db.session.query(Contest).order_by(Contest.id.desc())
     subquery = db.session.query(
         Submission.contest_id).filter(expr.and_(
             Submission.contest_id != -1,
             Submission.uid == session.get("uid", -1)
         )).distinct()
-    result = db.session.query(Contest).order_by(Contest.id.desc())
+    result = db.session.query(Contest)
+    if order_by == "id":
+        result = result.order_by(Contest.id.desc())
+    elif order_by == "start_time":
+        result = result.order_by(Contest.start_time.desc())
+    else:
+        return make_json_response(-1, message="非法排序方式")
+    last_team: Team = db.session.query(Team.team_contests, TeamMember.team_id, Team.id, TeamMember.uid).join(Team, Team.id == TeamMember.team_id).filter(
+        TeamMember.uid == get_uid()).order_by(TeamMember.team_id.desc()).limit(1).one_or_none()
+    # print(last_team)
+    team_contests = []
+    if last_team:
+        team_contests = last_team.team_contests
     if not permission_manager.has_permission(session.get("uid", None), "contest.manage"):
         result = result.filter(expr.or_(
             Contest.owner_id == session.get("uid", -1),
             Contest.private_contest == False,
-            Contest.id.in_(subquery)
+            Contest.id.in_(subquery),
+            Contest.id.in_(team_contests)
         ))
     count = result.count()
     import math
@@ -384,7 +401,7 @@ def contest_list(page: int = 1):
             "owner_username": user.username,
             "start_time": int(time.mktime(contest.start_time.timetuple())),
             "end_time": int(time.mktime(contest.end_time.timetuple())),
-            "privateContest": contest.private_contest,
+            "privateContest": bool(contest.private_contest),
             "hasPermission": permission_manager.has_permission(session.get("uid", None), f"contest.use.{contest.id}")
 
         })
@@ -416,7 +433,6 @@ def show_contest(contestID: int, virtualID: int = -1):
             "judge_result_visible":false,
             "rank_criterion":"",
             "private_contest":"是否为私有比赛",
-            "invite_code":"邀请码",
             "problems":[
                 {
                     "weight":"题目权值,
@@ -479,14 +495,14 @@ def show_contest(contestID: int, virtualID: int = -1):
             "start_time": virtual_contest.start_time.timestamp() if using_virtual else int(time.mktime(contest.start_time.timetuple())),
             "end_time": virtual_contest.end_time.timestamp() if using_virtual else int(time.mktime(contest.end_time.timetuple())),
             "problems": [],
-            "ranklist_visible": contest.ranklist_visible,
-            "judge_result_visible": contest.judge_result_visible,
+            "ranklist_visible": bool(contest.ranklist_visible),
+            "judge_result_visible": bool(contest.judge_result_visible),
             "rank_criterion": contest.rank_criterion,
-            "private_contest": contest.private_contest,
-            "invite_code": contest.invite_code,
+            "private_contest": bool(contest.private_contest),
+            # "invite_code": contest.invite_code,
             "managable": permission_manager.has_permission(session.get("uid", None), "contest.manage") or contest.owner_id == session.get("uid", -1),
             "hasPermission": has_permission,
-            "closed": contest.closed,
+            "closed": bool(contest.closed),
             "virtual": using_virtual
         }
         problems = result["problems"]
@@ -554,7 +570,8 @@ def contest_raw_data(contestID):
         "judge_result_visible": contest.judge_result_visible,
         "rank_criterion": contest.rank_criterion,
         "private_contest": contest.private,
-        "invite_code":"邀请码"
+        "invite_code":"邀请码",
+        "closed":true
     }
     """
     if not session.get("uid"):
@@ -562,8 +579,8 @@ def contest_raw_data(contestID):
 
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
-    if contest.closed:
-        return "此比赛已关闭", 403
+    # if contest.closed:
+    #     return "此比赛已关闭", 403
     if contest.private_contest and not permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}"):
         return "你没有权限查看该比赛", 403
     if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
@@ -576,11 +593,12 @@ def contest_raw_data(contestID):
         "start_time": int(time.mktime(contest.start_time.timetuple())),
         "end_time": int(time.mktime(contest.end_time.timetuple())),
         "problems": contest.problems,
-        "ranklist_visible": contest.ranklist_visible,
-        "judge_result_visible": contest.judge_result_visible,
+        "ranklist_visible": bool(contest.ranklist_visible),
+        "judge_result_visible": bool(contest.judge_result_visible),
         "rank_criterion": contest.rank_criterion,
-        "private_contest": contest.private_contest,
-        "invite_code": contest.invite_code
+        "private_contest": bool(contest.private_contest),
+        "invite_code": contest.invite_code,
+        "closed": bool(contest.closed)
     }
     return make_response(0, data=result)
 
@@ -600,7 +618,18 @@ def contest_update(contestID: int, data: dict):
     user: User = User.by_id(session.get("uid"))
     contest: Contest = Contest.by_id(contestID)
     if contest.closed:
-        return make_response(-1, message="比赛已关闭")
+        import datetime
+
+        if (
+            contest.name != data["name"] or
+            contest.start_time != datetime.datetime.fromtimestamp(data["start_time"]) or
+            contest.end_time != datetime.datetime.fromtimestamp(data["end_time"]) or
+            contest.problems != data["problems"] or
+            contest.ranklist_visible != data["ranklist_visible"] or
+            contest.judge_result_visible != data["judge_result_visible"] or
+            contest.rank_criterion != data["rank_criterion"]
+        ):
+            return make_response(-1, message="关闭后的比赛只能修改描述、是否公开和邀请码")
     if not permission_manager.has_permission(user.id, "contest.manage") and user.id != contest.owner_id:
         return make_response(-1, message="你没有权限这么做")
     # 修改比赛的人必须能够访问其所设定的题目
@@ -754,7 +783,9 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
         "using_file_io": problem.using_file_io,
         "input_file_name": problem.input_file_name,
         "output_file_name": problem.output_file_name,
-        "problem_type": problem.problem_type
+        "problem_type": problem.problem_type,
+        "last_code": "",
+        "last_lang": ""
     }
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())
@@ -767,10 +798,6 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
         result["last_lang"] = submit.language
     else:
         result["last_lang"] = result["last_code"] = ""
-    # result["id"] = problemID
-    # del result["uploader_id"]
-    # del result["invite_code"]
-    # result["score"] = problem.get_total_score()
     return make_response(0, data=result)
 
 
@@ -941,7 +968,7 @@ def get_contest_rank_list(contest: Contest, virtual_id: int = -1) -> dict:
         # 处理用户的total
         total = {
             "score": sum((item["score"] for item in scores)),
-            "penalty": sum((item["penalty"] for item in scores)),
+            "penalty": sum((item["penalty"] for item in scores if (item["status"] == "accepted"))),
             "ac_count": sum((1 for item in scores if (item["status"] == "accepted"))),
             "submit_time_sum": sum((item["submit_time"] for item in scores if (item["submit_time"] != -1) and item["score"] > 0))
         }
@@ -999,6 +1026,7 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
             "using_penalty":"使用罚时(True或False)",
             "ranklist":[
                 {
+                    "rank":"排名",
                     "uid":"用户ID",
                     "username":"用户名",
                     "virtual":"是否为虚拟参赛",

@@ -297,15 +297,10 @@ def upgrade():
     # 初始化表中数据
     session = orm.Session(bind=op.get_bind())
     import datetime
-    session.execute("SET NAMES utf8mb4")
-    session.execute(f"""
-    INSERT INTO user (banned,username,password,email,register_time,rating_history,joined_teams,rating,permission_group,permissions,force_logout_before,phone_number,phone_verified,last_send_time) 
-    VALUES (0,"!System","{"a"*32}","not_available@email.com",now(),"[]","[]",1500,"admin","[]",0,"12312345678",0,now())
+    op.execute(f"""
+    INSERT INTO user (id,banned,username,password,email,register_time,rating_history,joined_teams,rating,permission_group,permissions,force_logout_before,phone_number,phone_verified,last_send_time) 
+    VALUES ({SYSTEM_NOTIFICATION_USERID},0,"系统通知","{"a"*32}","not_available@email.com",now(),"[]","[]",1500,"admin","[]",0,"12312345678",0,now())
     """)
-    session.execute("""
-    UPDATE user SET id = 0 WHERE username = "!System"
-    """)
-    session.commit()
     # session.add(models.User(
     #     id=SYSTEM_NOTIFICATION_USERID,
     #     banned=False,

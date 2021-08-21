@@ -19,7 +19,8 @@ import argon2
 
 @app.route("/api/this_should_be_the_first_request", methods=["POST"])
 @app.route("/api/query_login_state", methods=["POST"])
-def query_login_state():
+@unpack_argument
+def query_login_state(withPermission: bool = False):
     """
     查询登录状态。
     参数:
@@ -42,7 +43,7 @@ def query_login_state():
             "usePolling":"是否使用轮询",
             "registerURL":"注册页面的URL",
             "gravatarURL":"gravatarURL前缀"
-
+            "permissions":["用户权限列表"]
         }
 
     """
@@ -55,7 +56,7 @@ def query_login_state():
         "usePolling": config.USE_POLLING,
         "usePhoneAuth": use_phone_auth,
         "registerURL": "/phone/register" if use_phone_auth else "/register",
-        "gravatarURL": config.GRAVATAR_URL_PREFIX
+        "gravatarURL": config.GRAVATAR_URL_PREFIX,
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(
@@ -66,6 +67,9 @@ def query_login_state():
         result.update(group=user.permission_group, group_name=group.name,
                       backend_managable=permission_manager.has_permission(user.id, "backend.manage"))
         result.update(username=user.username, email=user.email)
+        if withPermission:
+            result.update(
+                permissions=permission_manager.get_all_permissions(user.id))
     return make_response(0, **result)
 
 
@@ -172,8 +176,6 @@ def register():
             "message":"qwq"//code非0的时候表示错误信息
         }
     """
-    if config.DISABLE_REGISTER:
-        return make_response(-1, message="注册已停用")
     if config.USE_PHONE_WHEN_REGISTER_AND_RESETPASSWD:
         return make_response(-1, message="当前不使用邮箱注册")
     if session.get("uid") is not None:
@@ -504,15 +506,9 @@ def get_user_profile():
     if user.phone_verified:
         ret["phone_number"] = "*" * \
             (len(user.phone_number)-4)+user.phone_number[-4:]
-    # del ret["password"]
-    # del ret["reset_token"]
-    # del ret["auth_token"]
     problems = db.session.query(Submission.problem_id).filter(and_(Submission.uid == user.id, Submission.status == "accepted")
                                                               ).distinct().all()
     ret["ac_problems"] = [x[0] for x in problems]
-    # for item in user.joined_teams:
-    #     team = Team.by_id(item)
-    #     joined_teams.append({"id": team.id, "name": team.name})
     ret["joined_teams"] = [
         {
             "id": x.team_id,
@@ -528,11 +524,8 @@ def get_user_profile():
             Contest.id == item["contest_id"]).one_or_none()
         if not contest_name:
             item["contest_name"] = "比赛不存在"
-            # contest_name = "比赛不存在"
         else:
-            # print(contest_name)
             item["contest_name"] = contest_name.name
-    # ret["hasEmailAuth"] = user.auth_token == ""
     group: PermissionGroup = db.session.query(PermissionGroup).filter(
         PermissionGroup.id == user.permission_group).one()
     ret["group_name"] = group.name
@@ -550,8 +543,6 @@ def get_user_profile():
             break
 
     ret["group_permissions"] = list(group_perms)
-    # ret["permissions"] = list(set(db.session.query(PermissionGroup.name).filter(
-    #     PermissionGroup.id == user.permission_group).one().permissions).union(ret["permissions"]))
     ret["managable"] = permission_manager.has_permission(
         session.get("uid"), "user.manage")
     ret["canSetAdmin"] = permission_manager.has_permission(

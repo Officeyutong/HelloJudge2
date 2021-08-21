@@ -15,13 +15,13 @@ class Submission(db.Model):
     # 用户ID
     uid = Column(Integer, ForeignKey(
         "user.id", ondelete="CASCADE"), index=True)
-    user = relationship("User", backref="user")
+    user = relationship("User", backref="submissions")
     # 语言ID
     language = Column(String(20))
     # 题目ID
     problem_id = Column(Integer, ForeignKey(
         "problem.id", ondelete="CASCADE"), index=True)
-    problem = relationship("Problem", backref="problem")
+    problem = relationship("Problem", backref="submissions")
     # 提交时间
     submit_time = Column(DateTime)
     # 是否公开

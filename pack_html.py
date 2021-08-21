@@ -199,9 +199,22 @@ def main():
         "--api-server", help="API服务器地址(默认为http://127.0.0.1:8095)", default="http://127.0.0.1:8095", required=False, type=str)
     arg_parser.add_argument(
         "--cache-static", help="缓存静态文件", action="store_true")
+    arg_parser.add_argument(
+        "--react-site-dev", help="react-site 使用开发模式", action="store_true")
+    arg_parser.add_argument(
+        "--react-site-dev-server", help="react-site 开发服务器地址", default="http://127.0.0.1:3000", required=False, type=str)
+    arg_parser.add_argument(
+        "--react-site-build", help="react-site 打包发布的文件夹(public)", default="react-site/build", required=False, type=str)
+    arg_parser.add_argument(
+        "--use-flask-route", help="不打包前端", action="store_true")
     arg_parse_result = arg_parser.parse_args()
     api_server = arg_parse_result.api_server
     cache_static = arg_parse_result.cache_static
+    react_site_dev = arg_parse_result.react_site_dev
+    react_site_dev_server = arg_parse_result.react_site_dev_server
+    react_site_build = os.path.join(
+        os.getcwd(), arg_parse_result.react_site_build)
+    use_flask_route = arg_parse_result.use_flask_route
     print(api_server, cache_static)
     # return
     with open(view_file_name, "r", encoding="utf-8") as f:
@@ -230,17 +243,28 @@ def main():
         shutil.rmtree(output_dir)
     os.mkdir(output_dir)
     config_buf = StringIO()
-    asyncio.get_event_loop().run_until_complete(asyncio.wait(
-        [render_and_minify(env.get_template(item.template_name),
-                           item, mixin, config_buf) for item in items]
-    ))
-    if cache_static:
-        save_static_files(html_list)
-    # return
-    asyncio.get_event_loop().run_until_complete(asyncio.wait(
-        [minify(output_dir/"pages"/item) for item in html_list]
-    ))
-
+    if use_flask_route:
+        for item in items:
+            for route in item.routes:
+                config_buf.write(f"""
+                location ~ ^{process_route(route)}$ {{
+                    proxy_pass {api_server};
+                }}    
+                """)                
+    else:
+        asyncio.get_event_loop().run_until_complete(asyncio.wait(
+            [render_and_minify(env.get_template(item.template_name),
+                            item, mixin, config_buf) for item in items]
+        ))
+        if cache_static:
+            save_static_files(html_list)
+        # return
+        asyncio.get_event_loop().run_until_complete(asyncio.wait(
+            [minify(output_dir/"pages"/item) for item in html_list]
+        ))
+    if not react_site_dev:
+        print("Copying release frontend...")
+        shutil.copytree(react_site_build, output_dir/"react-site")
     config_buf.write(f"""
     location ^~ /static {{
         try_files $uri = 404;
@@ -258,14 +282,35 @@ def main():
         proxy_pass {api_server};
     }}
     """)
+    if react_site_dev:
+        config_buf.write(f"""
+        location ^~ /sockjs-node {{
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "Upgrade";
+            proxy_pass {react_site_dev_server};
+        }}
+        """)
+        react_site_route_str = f"""
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_pass {react_site_dev_server};
+        """
+    else:
+        react_site_route_str = f"""
+        try_files /react-site$1 /react-site/index.html $uri;
+        """
     config_buf.write(f"""
-    location / {{
+    location ~ ^/rs(.*)$ {{
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_pass {api_server};
+        {react_site_route_str}
+    }}
+    location / {{
+        rewrite ^(.*)$ /rs$1 permanent;
     }}
     """)
-
     shutil.rmtree(output_dir/"static", True)
     shutil.copytree("static", output_dir/"static")
     with open(output_dir/"nginx.conf", "w", encoding="utf-8") as f:

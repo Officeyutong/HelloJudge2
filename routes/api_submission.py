@@ -188,6 +188,7 @@ def get_submission_info():
             "judger":"评测机名，非UUID",
             "score":"总分",
             "ace_mode":"ACE.js语言ID",
+            "hljs_mode":"hljs语言ID",
             "time_cost":"时间开销",
             "memory_cost":"内存开销",
             "extra_compile_parameter":"附加编译参数",
@@ -229,7 +230,7 @@ def get_submission_info():
                     Contest.id == submit.contest_id, Contest.closed == True).count() > 0
             )
     )
-    # print("cansee = ",have_permission_to_use_problem)
+    # print("cansee = ", have_permission_to_use_problem)
     if session.get("uid"):
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
@@ -285,6 +286,7 @@ def get_submission_info():
                 "langs."+submit.language)
             ret["ace_mode"] = lang_module.ACE_MODE
             ret["language_name"] = lang_module.DISPLAY
+            ret["hljs_mode"] = lang_module.HLJS_MODE
         except Exception as ex:
             pass
 

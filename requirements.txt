@@ -1,4 +1,4 @@
-flask
+flask<2.0
 flask-migrate
 flask-sqlalchemy
 flask-script
@@ -16,9 +16,11 @@ flask-cors
 aliyun-python-sdk-core-v3
 eventlet
 openpyxl
-pymysql
 argon2-cffi
-jinja2
+marshmallow
+marshmallow-dataclass
+ujson
 aiofiles
 bs4
 aiohttp
+lxml

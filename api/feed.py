@@ -55,8 +55,6 @@ def rebuild_feed_cache(uid: int):
     print(f"Refreshing feed for {uid=}")
     client = redis.Redis(connection_pool=redis_connection_pool)
     key = f"hj2-feed-cache-{uid}"
-    if client.exists(key):
-        client.delete(key)
     subquery = db.session.query(
         Follower.target).filter_by(source=uid)
     feeds_query = db.session.query(Feed.id, Feed.uid, Feed.time, Feed.top, Feed.content, User.username, User.email).join(User, User.id == Feed.uid).filter(expr.or_(
@@ -64,6 +62,8 @@ def rebuild_feed_cache(uid: int):
         Feed.uid.in_(subquery)
     )).order_by(Feed.top.desc()).order_by(Feed.time.desc()).limit(config.FEED_STREAM_COUNT_LIMIT)
     feeds = feeds_query.all()
+    if client.exists(key):
+        client.delete(key)
     for item in feeds:
         # print(item)
         client.rpush(key, json.dumps(

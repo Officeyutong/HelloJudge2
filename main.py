@@ -10,13 +10,15 @@ from datetime import timedelta
 from flask_wtf.csrf import CSRFProtect
 from flask_socketio import SocketIO
 # from concurrent.futures import ThreadPoolExecutor
-from common.log import LogManager
 from common.permission import PermissionManager
+from common.log import LogManager
 from redis import ConnectionPool
-from typing import Set, NoReturn
+from typing import Set, NoReturn, Union
 import os
 import celery
 from flask_cors import CORS
+from flask_migrate import Migrate
+from api.model_api import ModelAPI
 web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
@@ -33,6 +35,9 @@ if config.DEBUG:
     logging.getLogger('flask_cors').level = logging.DEBUG
 db = SQLAlchemy(web_app)
 db.session.execute("SET NAMES utf8mb4")
+model_api = ModelAPI(db)
+migrate = Migrate(web_app, db)
+
 CORS(web_app, supports_credentials=True, resources={
     ".*": {"origins": "*", "supports_credentials": True}
 })
@@ -48,7 +53,7 @@ background_task_queue = celery.Celery(
 redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 
-def get_permissions(uid: int) -> Set[str]:
+def get_permissions(uid: Union[int, str]) -> Set[str]:
     from models import User, PermissionGroup
     user: User = db.session.query(
         User.permissions, User.permission_group).filter(User.id == uid).one_or_none()
@@ -63,7 +68,7 @@ def get_permissions(uid: int) -> Set[str]:
     return permissions.union(group.permissions)
 
 
-def add_permission(uid: int, perm: str):
+def add_permission(uid: Union[int, str], perm: str):
     from models import User
     user: User = db.session.query(User).filter(User.id == uid).one()
     user.permissions = [*user.permissions, perm]
@@ -73,7 +78,7 @@ def add_permission(uid: int, perm: str):
 
 
 permission_manager: PermissionManager = PermissionManager(
-    redis_connection_pool, db, get_permissions, add_permission)
+    redis_connection_pool, db, get_permissions, add_permission, set())
 
 log_manager: LogManager = LogManager(
     redis_connection_pool, config.DEFAULT_LOG_EXPIRE)
@@ -82,18 +87,23 @@ log_manager: LogManager = LogManager(
 def _import_routes():
     import routes
     from routes.api_contest import router as contest
-    # from routes.api_permissionpack import router as permissionpack
+    from routes.api_permissionpack import router as permissionpack
     from routes.api_problemtodo import router as problemtodo
     from routes.api_virtualcontest import router as virtualcontest
     from routes.api_blog import router as blog
     from routes.api_log import router as log
     from routes.api_wiki import router as wiki
-    # from routes.api_phoneutil import router as phoneutil
-    # from routes.api_phoneuser import router as phoneuser
+    from routes.api_preliminary import router as preliminary
+    from routes.api_phoneutil import router as phoneutil
+    from routes.api_phoneuser import router as phoneuser
+    from routes.api_misc import router as misc
+    from routes.api_permission import router as permission
     web_app.register_blueprint(
         contest, url_prefix="/api/contest")
     web_app.register_blueprint(
         problemtodo, url_prefix="/api/problemtodo")
+    web_app.register_blueprint(
+        permissionpack, url_prefix="/api/permissionpack")
     web_app.register_blueprint(
         virtualcontest, url_prefix="/api/virtualcontest")
     web_app.register_blueprint(
@@ -102,6 +112,29 @@ def _import_routes():
         log, url_prefix="/api/log")
     web_app.register_blueprint(
         wiki, url_prefix="/api/wiki")
-    # print(web_app.url_map)
+    web_app.register_blueprint(
+        preliminary, url_prefix="/api/preliminary")
+    web_app.register_blueprint(
+        phoneutil, url_prefix="/api/phoneutil")
+    web_app.register_blueprint(
+        phoneuser, url_prefix="/api/phoneuser")
+    web_app.register_blueprint(
+        misc, url_prefix="/api/misc")
+    web_app.register_blueprint(
+        permission, url_prefix="/api/permission")
 
-_import_routes()
+
+def _init_web_app():
+    _import_routes()
+    from common.permission_provider import DefaultPermissionProvider
+    provider = DefaultPermissionProvider(db)
+    permission_manager.add_provider("team", provider.get_team_permissions)
+    permission_manager.add_provider(
+        "problemset", provider.get_problemset_permissions)
+    permission_manager.add_provider(
+        "permissionpack", provider.get_permissionpack_permissions)
+    permission_manager.add_provider(
+        "contest", provider.get_contest_permissions)
+
+
+_init_web_app()

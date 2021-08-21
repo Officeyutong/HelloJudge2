@@ -29,7 +29,7 @@ def api_problemset_unlock_permissions(problemset: int):
     if problemset_inst.private and int(session.get("uid", -1)) != problemset_inst.owner_uid and not permission_manager.has_permission(int(session.get("uid")), f"problemset.use.{problemset}"):
         return make_response(-1, message="你没有权限使用该权限包")
     user: User = db.session.query(User).filter_by(id=session.get("uid")).one()
-    to_add = {f"problem.use.{x}" for x in problemset_inst.problems}
+    to_add = {f"[provider:problemset.{problemset}]"}
     user.permissions = [
         x for x in user.permissions if x not in to_add] + list(to_add)
     db.session.commit()
@@ -67,7 +67,8 @@ def api_problemset_list(page: int):
                                                ProblemSet.owner_uid,
                                                ProblemSet.problems,
                                                ProblemSet.private,
-                                               ProblemSet.create_time).order_by(ProblemSet.id.desc())
+                                               ProblemSet.create_time,
+                                               ProblemSet.foreign_problems).order_by(ProblemSet.id.desc())
     pages = int(math.ceil(query_object.count()/config.PROBLEMSETS_PER_PAGE))
     query_object = query_object.slice(
         (page-1)*config.PROBLEMSETS_PER_PAGE, (page)*config.PROBLEMSETS_PER_PAGE)
@@ -85,7 +86,7 @@ def api_problemset_list(page: int):
                 "uid": owner.id,
                 "username": owner.username
             },
-            "problemCount": len(item.problems) if accessible else -1,
+            "problemCount": (len(item.problems)+len(item.foreign_problems)) if accessible else -1,
             "private": item.private,
             "accessible": accessible,
             "createTime": str(item.create_time)
@@ -137,6 +138,7 @@ def api_problemset_get(id: int):
             "invitationCode":"邀请码",
             "showRanklist":"是否显示排行榜",
             "problems":["题目ID"  ],
+            foreignProblems:[{"name":"xx","url":"xxx"}],
             "createTime":"qwq",
             "dscription":"说明"
         }
@@ -162,7 +164,8 @@ def api_problemset_get(id: int):
         "createTime": str(problemset.create_time),
         "description": problemset.description,
         "name": problemset.name,
-        "id": problemset.id
+        "id": problemset.id,
+        "foreignProblems": problemset.foreign_problems
     })
 
 
@@ -179,6 +182,7 @@ def api_problemset_update(data: dict):
             "showRanklist":"是否显示排行榜",
             "problems":["题目ID"  ],
             "description":"说明",
+            foreignProblems:[{"name":"xx","url":"xxx"}],
 
         }
     }
@@ -193,6 +197,7 @@ def api_problemset_update(data: dict):
     problemset.private = data["private"]
     problemset.show_ranklist = data["showRanklist"]
     problemset.invitation_code = data["invitationCode"]
+    problemset.foreign_problems = data["foreignProblems"]
     # 用户所创建的习题集中的题目，则用户要么是该题目的创建者，要么有problem.manage权限，要么该题目是公开题目
     for prob in data["problems"]:
         curr: Problem = db.session.query(Problem.public, Problem.uploader_id).filter_by(
@@ -288,7 +293,8 @@ def api_problemset_get_public(id: int):
         # "ranklist": [],
         "problems": [],
         "description": problemset.description,
-        "managable": permission_manager.has_permission(session.get("uid"), "problemset.manage") or int(session.get("uid")) == problemset.owner_uid
+        "managable": permission_manager.has_permission(session.get("uid"), "problemset.manage") or int(session.get("uid")) == problemset.owner_uid,
+        "foreignProblems": problemset.foreign_problems
     }
     # problems: typing.List[typing.Dict[str, typing.Any]] = result["problems"]
     # new_problems:  = []

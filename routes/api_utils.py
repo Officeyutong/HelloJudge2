@@ -21,6 +21,7 @@ import os
 import time
 import datetime
 
+
 @app.route("/api/home_page", methods=["POST"])
 def api_home_page():
     """
@@ -43,37 +44,20 @@ def api_home_page():
                 "name":"显示名",
                 "url":"跳转链接"
             }],
-            "swiperInterval":"轮播切换间隔(ms)",
-            "ranklist":[
-                {
-                    "username":"用户名",
-                    "uid":"用户ID",
-                    "description":"描述",
-                    "rating":"Rating"
-                }
-            ]
+            "swiperInterval":"轮播切换间隔(ms)"
         }
     }
     """
-
-    ranklist: List[User] = db.session.query(User.id, User.description, User.username, User.rating).order_by(
-        User.rating.desc()).order_by(User.id.asc()).limit(config.HOMEPAGE_RANKLIST).all()
     result = {
         "appName": config.APP_NAME,
         "friendLinks": config.FRIEND_LINKS,
         "swipers": config.HOMEPAGE_SWIPER,
         "toolbox": config.HOMEPAGE_TOOLBOX,
-        "swiperInterval": config.SWIPER_SWITCH_INTERVAL,
-        "ranklist": [
-            {
-                "username": item.username,
-                "uid": item.id,
-                "description": item.description,
-                "rating": item.rating
-            } for item in ranklist
-        ]
+        "swiperInterval": config.SWIPER_SWITCH_INTERVAL
     }
+
     return make_response(0, data=result)
+
 
 @app.route("/api/get_judge_status", methods=["POST", "GET"])
 def get_judge_status():
@@ -118,6 +102,7 @@ def get_supported_lang():
     result.sort(key=lambda x: x["id"])
     return make_response(0, list=result)
 
+
 @app.route("/api/utils/import_from_syzoj_ng", methods=["POST"])
 @unpack_argument
 @require_permission(permission_manager, "problem.manage")
@@ -147,6 +132,7 @@ def api_utils_import_from_syzoj_ng(api_server: str, problem_id: str, public: boo
                 "output": curr[id]["outputData"],
             })
     judge_info = problem_data["judgeInfo"]
+    print(judge_info)
     time_limit = judge_info["timeLimit"]
     memory_limit = judge_info["memoryLimit"]
     score = 100//(len(judge_info["subtasks"]))
@@ -406,7 +392,7 @@ def export_problem(id):
             "description": problem.background+"\n"+problem.content,
             "input_format": problem.input_format,
             "output_format": problem.output_format,
-            "example": "\n\n".join((f"#### 样例{index} 输入\n{item['input']}\n\n#### 样例{index} 输出\n{item['output']}" for item, index in enumerate(problem.example))),
+            "example": "\n\n".join((f"#### 样例{index} 输入\n{item['input']}\n\n#### 样例{index} 输出\n{item['output']}" for index, item in enumerate(problem.example))),
             "limit_and_hint": problem.hint,
             "time_limit": max((item["time_limit"] for item in problem.subtasks)),
             "memory_limit": max((item["memory_limit"] for item in problem.subtasks)),

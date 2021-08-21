@@ -40,7 +40,8 @@
                 virtualID: virtualID,
                 usedParameters: []
             }, methods: {
-                submit: function () {
+                submit(evt) {
+                    console.log(evt);
                     $.post("/api/submit", {
                         contest_id: contestID,
                         problem_id: problemID,

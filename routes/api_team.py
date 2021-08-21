@@ -39,8 +39,8 @@ def api_team_unlock_problems_and_contests(teamID: int):
     permissions = set((f"problem.use.{id}" for id in team.team_problems)) | set(
         (f"contest.use.{id}" for id in team.team_contests)) | set(f"problemset.use.{id}" for id in team.team_problemsets)
 
-    user.permissions = [
-        item for item in user.permissions if item not in permissions] + list(permissions)
+    # user.permissions = [
+    #     item for item in user.permissions if item not in permissions] + list(permissions)
     db.session.commit()
     permission_manager.refresh_user(user.id)
 

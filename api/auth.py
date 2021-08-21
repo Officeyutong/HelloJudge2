@@ -1,6 +1,7 @@
 from main import config, redis_connection_pool, background_task_queue
 import redis
-
+import time
+import json
 
 """
 
@@ -41,7 +42,6 @@ def send_sms_code(phone: str, code: str, expire_after: int):
 
     client = redis.Redis(connection_pool=redis_connection_pool)
     client.set(redis_key, code, ex=config.CODE_VALIDITY)
-    import time
     client.set(make_time_key(phone), str(
         int(time.time())), ex=config.CODE_VALIDITY)
     # print(f"Sending {code=} to {phone=}")
@@ -50,16 +50,35 @@ def send_sms_code(phone: str, code: str, expire_after: int):
     # user.phone_number = phone
     # db.session.commit()
     # print("db commited")
-    background_task_queue.send_task("hj2.send_sms_code", [{
-        "access_key": config.ALIYUN_ACCESS_KEY_ID,
-        "access_secret": config.ALIYUN_ACCESS_SECRET,
-        "region": config.ALIYUN_REGION,
-        "sign_name": config.ALIYUN_SIGN_NAME,
-        "template_code": config.ALIYUN_TEMPLATE_CODE,
-        "target_phone": phone,
+    # background_task_queue.send_task("qbxtoj.send_sms_code", [{
+    #     "access_key": config.ALIYUN_ACCESS_KEY_ID,
+    #     "access_secret": config.ALIYUN_ACCESS_SECRET,
+    #     "region": config.ALIYUN_REGION,
+    #     "sign_name": config.ALIYUN_SIGN_NAME,
+    #     "template_code": config.ALIYUN_TEMPLATE_CODE,
+    #     "target_phone": phone,
+    #     "code": code
+    # }])
+    from aliyunsdkcore.client import AcsClient
+    from aliyunsdkcore.request import CommonRequest
+    client = AcsClient(config.ALIYUN_ACCESS_KEY_ID,
+                       config.ALIYUN_ACCESS_SECRET, config.ALIYUN_REGION)
+    request = CommonRequest()
+    request.set_accept_format('json')
+    request.set_domain('dysmsapi.aliyuncs.com')
+    request.set_method('POST')
+    request.set_protocol_type('https')
+    request.set_version('2017-05-25')
+    request.set_action_name('SendSms')
+    request.add_query_param("RegionId", config.ALIYUN_REGION)
+    request.add_query_param("PhoneNumbers", phone)
+    request.add_query_param("SignName", config.ALIYUN_SIGN_NAME)
+    request.add_query_param("TemplateCode", config.ALIYUN_TEMPLATE_CODE)
+    request.add_query_param("TemplateParam", json.dumps({
         "code": code
-    }])
-
+    }))
+    response = client.do_action(request).decode()
+    return response
 
 def validate_sms_code(phone: str, code: str) -> bool:
     """

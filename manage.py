@@ -1,12 +1,17 @@
 from routes.api_problem import refresh_cached_count
 from flask_script import Manager
 from main import web_app, db, redis_connection_pool
-from flask_migrate import Migrate, MigrateCommand
 import models
 from models import User, Problem
 manager = Manager(web_app)
-migrate = Migrate(web_app, db)
-manager.add_command('db', MigrateCommand)
+
+
+@manager.command
+def db():
+    print("Use `flask db` instead!")
+# manager.add_command('db', MigrateCommand)
+
+
 @manager.command
 def setadmin(userid):
     """设置管理员"""
