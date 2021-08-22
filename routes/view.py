@@ -233,9 +233,9 @@ def view_sendsms_card():
     return render_template("card/send_smscode.html")
 
 
-@app.route("/phoneauth")
-def view_phoneauth():
-    return render_template("phoneauth.html")
+# @app.route("/phoneauth")
+# def view_phoneauth():
+#     return render_template("phoneauth.html")
 
 
 # @app.route("/tags/edit")
