@@ -298,7 +298,7 @@ def blog_edit(id: int = 1):
 def wiki_config():
     return render_template("wiki/config.html")
 
-@app.route("/wiki/")
+@app.route("/wiki")
 def wiki_page_empty(id=-1):
     return render_template("wiki/page0.html")
 
