@@ -300,7 +300,7 @@ def wiki_config():
 
 @app.route("/wiki/")
 def wiki_page_empty(id=-1):
-    return render_template("wiki/page.html")
+    return render_template("wiki/page0.html")
 
 
 @app.route("/wiki/<int:id>")

@@ -1,0 +1,153 @@
+{%extends "base.html"%}
+{%block title%}
+PLACEHOLDER
+{%endblock%}
+{%block body%}
+<template id="tree-menu-template">
+    <div class="ui vertical menu">
+        <div class="item" v-for="item in myMenu">
+            <div class="header">
+                <i style="cursor: pointer;" v-on:click="item.expanded=!item.expanded"
+                    v-bind:class="[item.expanded?'angle down icon':'angle right icon']"></i>
+                <a :href="item.url" target="_blank"> {[item.title]}</a>
+            </div>
+            <div class="menu" v-if="item.expanded">
+                <a class="item" :href="secondMenu.url" target="_blank"
+                    v-for="secondMenu in item.children">{[secondMenu.title]}</a>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+    let page = parseInt(window.location.pathname.split("/").pop());
+    if (isNaN(page)) page = -1;
+    let version = getRequest().version;
+
+    Vue.component("tree-menu", {
+        delimiters: ["{[", "]}"],
+        props: {
+            menu: Array
+            /*
+            menu形如
+            [
+                {
+                    "title":"一级菜单标题",
+                    "url":"一级菜单目标页面",
+                    "children":[
+                        {
+                            "title":"二级菜单标题",
+                            "url":"二级菜单指向页面"
+                        }
+                    ]
+                }
+            ]
+            */
+        }, data() {
+            return {
+                myMenu: {}
+            }
+        }, mounted() {
+            this.myMenu = JSON.parse(JSON.stringify(this.menu));
+            for (let item of this.myMenu) {
+                this.$set(item, "expanded", false);
+            }
+
+        },
+        template: document.getElementById("tree-menu-template").innerHTML
+    });
+    $(document).ready(() => {
+        new Vue({
+            mixins: [baseMixin],
+            el: "#page",
+            data: {
+                done: false,
+                navigations: [],
+                sidemenu: [],
+                data: {}
+            },
+
+            methods: {
+                makeLink(item) {
+                    if (!item.menu) {
+                        return null;
+                    } else {
+                        return `/wiki/${item.menu[0].target}`;
+                    }
+                },
+                processMenu(menu) {
+                    let menux = JSON.parse(JSON.stringify(menu));
+                    for (let item of menux) {
+                        item.url = "/wiki/" + item.target;
+                        for (let item2 of item.children) {
+                            item2.url = "/wiki/" + item2.target;
+                        }
+                    }
+                    console.log(menux);
+                    return menux;
+
+                }
+            },
+            mounted() {
+                axios.all([
+                    axios.post("/api/wiki/page", {
+                        page: page,
+                        version: version || -1
+                    }),
+                    axios.post("/api/wiki/config/get", { menu_as_text: false })
+                ]).then(axios.spread((page, config) => {
+                    this.navigations = config.data.data.navigations;
+                    this.sidemenu = page.data.data.menu;
+                    this.data = page.data.data;
+                    document.title = document.title.replace("PLACEHOLDER", `${this.data.title} - 百科`);
+                    this.done = true;
+                    this.$nextTick(() => {
+                        $(".ui.sticky").sticky({
+                            context: "#wiki-content"
+                        });
+                    });
+                }));
+
+            }
+        });
+    });
+</script>
+
+
+<div v-if="done" id="page">
+    <div class="ui fixed menu" style="top: 0;width: auto;left: auto;">
+        <div class="ui center aligned container">
+            <a class="item" v-for="menu in navigations" :href="makeLink(menu)">
+                {[menu.title]}
+            </a>
+        </div>
+    </div>
+    <div class="ui header">
+        <h1>{[data.title]}</h1>
+    </div>
+
+    <div class="ui segment" style="min-height: 500px;max-width: 70%;" id="wiki-content">
+        <div class="ui left rail">
+
+        </div>
+        <div class="ui right rail">
+            <!-- <div class="ui segment" style="margin-top: 100px;" class="ui sticky">
+                Right Rail Content
+            </div> -->
+            <div v-if="sidemenu.length!==0" class="ui sticky">
+                <tree-menu style="margin-left: 70px;margin-top: 100px;" :menu="processMenu(sidemenu)"></tree-menu>
+            </div>
+        </div>
+        <div v-html="makeHTML(data.content)"></div>
+        <div class="ui divider" v-if="data.comment"></div>
+        <div class="ui header">
+            <h4>版本注释</h4>
+        </div>
+        <div v-if="data.comment">{[data.comment]}</div>
+    </div>
+    <div class="ui left aligned container">
+        <a class="ui green button" :href="'/wiki/versions/'+data.pageID" target="_blank">
+            查看所有版本
+        </a>
+    </div>
+</div>
+{%endblock%}
