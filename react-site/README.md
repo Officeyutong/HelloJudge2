@@ -1,4 +1,4 @@
-# tqb-frontend 退群杯前端
+# HJ2X前端
 
 ## 如何部署？
 - clone本项目
