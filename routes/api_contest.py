@@ -441,7 +441,8 @@ def show_contest(contestID: int, virtualID: int = -1):
                     "total_submit":"总提交数",//-1表示不可见
                     "accepted_submit":"通过提交数",//-1表示不可见
                     "my_submit":"我的提交最高分提交",
-                    "status":"我的状态"
+                    "status":"我的状态",
+                    "rawID":"原始ID"
                 }
             ],
             "accessible":"是否有权访问",
@@ -505,9 +506,17 @@ def show_contest(contestID: int, virtualID: int = -1):
             "closed": bool(contest.closed),
             "virtual": using_virtual
         }
+        problem_raw_ids = [item["id"] for item in contest.problems] + [-1]
         problems = result["problems"]
-        for i, problem_data in enumerate(contest.problems):
-            problem: Problem = Problem.by_id(problem_data["id"])
+        for (i, problem), problem_data in zip(
+            enumerate(
+                db.session.query(Problem).filter(
+                    Problem.id.in_(problem_raw_ids)
+                ).order_by(func.field(Problem.id, *problem_raw_ids))
+            ),
+                contest.problems):
+            print(problem)
+            # problem: Problem = Problem.by_id(problem_data["id"])
             current = {
                 "title": problem.title,
                 "id": i,
@@ -515,7 +524,8 @@ def show_contest(contestID: int, virtualID: int = -1):
                 "accepted_submit": -1,
                 "my_submit": -1,
                 "status": "unsubmitted",
-                "weight": problem_data["weight"]
+                "weight": problem_data["weight"],
+                "rawID": problem_data["id"]
             }
             if can_see_ranklist:
                 submit_query = db.session.query(Submission).filter(
@@ -763,6 +773,7 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
         return make_response(-1, message="你没有权限查看该比赛")
     problem: Problem = Problem.by_id(
         contest.problems[int(problemID)]["id"])
+    print("loaded contest problem", contest.problems, problem.title)
     if problem.problem_type == "remote_judge":
         return make_response(-1, message="远程评测题目", is_remote=True)
     result = {
@@ -776,16 +787,17 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
         "example": problem.example,
         "files": problem.files,
         "subtasks": problem.subtasks,
-        "score": problem.get_total_score(),
+        "score": Problem.get_total_score(problem),
         "extra_parameter": problem.extra_parameter,
         "virtual": using_virtual,
         "downloads": problem.downloads,
-        "using_file_io": problem.using_file_io,
+        "using_file_io": bool(problem.using_file_io),
         "input_file_name": problem.input_file_name,
         "output_file_name": problem.output_file_name,
         "problem_type": problem.problem_type,
         "last_code": "",
-        "last_lang": ""
+        "last_lang": "",
+        "usedParameters": []
     }
     last_submission = db.session.query(Submission).filter(and_(
         Submission.problem_id == problem.id, Submission.uid == session.get("uid"))).filter(Submission.contest_id == contest.id).order_by(Submission.submit_time.desc())
@@ -796,6 +808,7 @@ def contest_show_problem(problemID: int, contestID: int, virtualID: int = -1):
         else:
             result["last_code"] = "提交答案题不提供源代码"
         result["last_lang"] = submit.language
+        result["usedParameters"] = submit.selected_compile_parameters
     else:
         result["last_lang"] = result["last_code"] = ""
     return make_response(0, data=result)
@@ -1021,6 +1034,8 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
     {
         "code":0,
         "data":{
+            "refresh_interval":"刷新间隔",
+            "closed":"比赛是否已关闭",
             "name":'比赛名',
             "contest_id":"比赛ID",
             "using_penalty":"使用罚时(True或False)",
@@ -1097,9 +1112,14 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
 
         #     ranklist_data = get_contest_rank_list(contest, -1)
         # else:
-        ranklist_data = get_contest_rank_list(contest, virtualID)
+        refresh_interval = config.RANKLIST_UPDATE_INTERVAL if not contest.closed else config.RANKLIST_UPDATE_INTERVAL_CLOSED_CONTESTS
+        ranklist_data = {
+            **get_contest_rank_list(contest, virtualID),
+            "refresh_interval": refresh_interval,
+            "closed": bool(contest.closed)
+        }
         client.set(key, JSONEncoder().encode(ranklist_data),
-                   ex=config.RANKLIST_UPDATE_INTEVAL)
+                   ex=refresh_interval)
         # print(ranklist_data)
     else:
         ranklist_data = json.loads(client.get(key).decode())

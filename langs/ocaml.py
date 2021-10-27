@@ -12,3 +12,5 @@ DISPLAY = "OCaml"
 VERSION = "OCamlc 4.05.0"
 # Ace.js模式
 ACE_MODE = "ocaml"
+# HighlightJS高亮模式
+HLJS_MODE = "ocaml"

@@ -41,11 +41,18 @@ interface FollowerItem extends GeneralUserEntry {
 interface FolloweeItem extends GeneralUserEntry {
     time: string;
     followedByMe: boolean;
-
 }
+
+interface GlobalRanklistItem {
+    username: string;
+    uid: number;
+    rating: number;
+};
+
 export type {
     UserProfileResponse,
     UserProfileUpdateRequest,
     FolloweeItem,
-    FollowerItem
+    FollowerItem,
+    GlobalRanklistItem
 };

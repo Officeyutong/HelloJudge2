@@ -20,7 +20,6 @@
 
     $(document).ready(() => {
         let splits = window.location.pathname.split("/");
-        console.log(splits);
         let problemID = splits.pop();
         splits.pop();
         let contestID = splits.pop();
@@ -40,10 +39,7 @@
                 virtualID: virtualID,
                 usedParameters: []
             }, methods: {
-                submit(evt) {
-                    console.log(evt);
-                    const target = evt.target;
-                    target.classList.add("loading");
+                submit: function () {
                     $.post("/api/submit", {
                         contest_id: contestID,
                         problem_id: problemID,
@@ -53,7 +49,6 @@
                         virtualID: (this.virtualID != -1) ? this.virtualID : undefined
                     }).done(ctx => {
                         ctx = JSON.parse(ctx);
-                        target.classList.remove("loading");
                         if (ctx.code) {
                             showErrorModal(ctx.message);
                             return;
@@ -104,7 +99,7 @@
                 else {
                     this.html_content = this.value;
                 }
-                $(".ui.sticky").sticky({ context: "#target" })
+                $(".ui.sticky").sticky({ context: "#target" });
             }
         });
 
@@ -146,7 +141,7 @@
     });
 
 </script>
-<div style="top:10%;">
+<div style="top:10%">
 
     <div id="show-problem" v-if="done">
 
@@ -183,10 +178,8 @@
                             <!-- <a v-for="file in data.downloads"
                                 ><span>{[file]}
                                 </span></a> -->
-                            <!-- <div class="ui right aligned container">
-                                <a :href="'/problem_edit/'+data.id+'?show_files'">查看全部..</a>
-                            </div> -->
                         </div>
+
                         <!-- <div class="ui header" v-if="data.downloads.length!=0">
                             <h4>文件下载</h4>
                         </div>
@@ -321,12 +314,12 @@
                     </a>
                 </div>
             </div>
+            <!-- <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
+            
+        </div> -->
         </div>
 
 
-        <!-- <div class="ui " style="position: fixed;margin-left:750px;margin-top:100px;top:50px;">
-            
-        </div> -->
     </div>
     <div class="ui basic modal" id="no-perm-modal">
         <div class="ui icon header">

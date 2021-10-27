@@ -20,7 +20,7 @@ const PermissionGroupItemEdit: React.FC<{
         <Form>
             <Form.Field>
                 <label>权限组ID</label>
-                <Input value={data.id} onChange={(_, d) => onUpdate({ ...data, id: d.value })}></Input>
+                <Input value={data.id} onChange={(_, d) => onUpdate(({ ...data, id: d.value }))}></Input>
             </Form.Field>
             <Form.Field>
                 <label>权限组名</label>

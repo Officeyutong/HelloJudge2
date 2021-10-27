@@ -1,3 +1,4 @@
+from sqlalchemy.sql.schema import ForeignKey
 from main import db
 
 from ormtypes.json_pickle import JsonPickle
@@ -6,7 +7,7 @@ from sqlalchemy.dialects import mysql
 
 from sqlalchemy import Column, Integer,  String, Text, DateTime
 
-from sqlalchemy.sql.expression import text
+from sqlalchemy.sql.expression import null, text
 from sqlalchemy.orm import relationship
 
 
@@ -55,10 +56,13 @@ class User(db.Model):
     # 用户手机号码是否经过验证
     phone_verified = Column(mysql.TINYINT(
         display_width=1), nullable=False, default=False)
-    # 最后一次有效的短信验证码
-    last_auth_code = Column(String(10), nullable=True)
-    # 最后一次发送验证码的时间
-    last_send_time = Column(DateTime, nullable=True)
+    # # 最后一次有效的短信验证码
+    # last_auth_code = Column(String(10), nullable=True)
+    # # 最后一次发送验证码的时间
+    # last_send_time = Column(DateTime, nullable=True)
+    # 最后一次刷新通过题目列表的时间
+    last_refreshed_cached_accepted_problems = Column(
+        DateTime, nullable=True, default=None)
 
     @staticmethod
     def by_id(id):
@@ -74,3 +78,11 @@ class User(db.Model):
         ret = dict(filter(lambda x: not x[0].startswith(
             "_"), self.__dict__.items()))
         return ret
+
+
+class CachedAcceptedProblems(db.Model):
+    __tablename__ = "cached_accepted_problems"
+    uid = Column(Integer, ForeignKey(
+        "user.id", ondelete="CASCADE"), primary_key=True, nullable=False)
+    problem_id = Column(Integer, ForeignKey(
+        "problem.id", ondelete="CASCADE"), primary_key=True, nullable=False)

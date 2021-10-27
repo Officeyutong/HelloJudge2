@@ -2,3 +2,8 @@
     padding-bottom: 30px;
     overflow-wrap: break-word;
 }
+
+img {
+    height: auto;
+    width: 100%;
+}

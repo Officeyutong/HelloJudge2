@@ -6,7 +6,7 @@
 import md5 from "md5";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { Button, Dimmer, Form, Header, Input, Loader, Segment } from "semantic-ui-react";
+import { Button, Container, Dimmer, Form, Grid, Header, Input, Loader, Segment } from "semantic-ui-react";
 import { useDocumentTitle } from "../../common/Utils";
 import { showErrorModal, showSuccessModal } from "../../dialogs/Dialog";
 import { StateType } from "../../states/Manager";
@@ -53,7 +53,7 @@ const LoginView: React.FC<{}> = () => {
         <Header as="h1">
             登录
         </Header>
-        <Segment stacked style={{ maxWidth: "70%" }}>
+        <Segment stacked style={{ maxWidth: "60%" }}>
             {loading && <Dimmer active>
                 <Loader>加载中</Loader></Dimmer>}
             <Form>
@@ -65,18 +65,27 @@ const LoginView: React.FC<{}> = () => {
                     <label>密码</label>
                     <Input value={password} onChange={(_, d) => setPassword(d.value)} type="password"></Input>
                 </Form.Field>
-                <Button.Group>
-                    <Button color="green" size="tiny" onClick={doLogin}>
-                        提交
-                    </Button>
-                    <Button color="blue" size="tiny" onClick={doResetPassword}>重置密码</Button>
-                    <Button color="red" size="tiny" onClick={() => {
-                        if (phoneAuth) { window.location.href = ("/phone/register"); } else { window.location.href = ("/register") }
-                    }}>注册</Button>
-                    <Button color="red" size="tiny" as="a" href="/user/forget_username">
-                        忘记用户名
-                    </Button>
-                </Button.Group>
+                <Grid columns="2">
+                    <Grid.Column>
+                        <Button size="small" color="green" onClick={doLogin}>
+                            登录
+                        </Button>
+                        <Button size="small" color="blue" onClick={() => {
+                            if (phoneAuth) { window.location.href = ("/phone/register"); } else { window.location.href = ("/register") }
+                        }}>注册</Button>
+                    </Grid.Column>
+                    <Grid.Column>
+                        <Container textAlign="right">
+                            <Button.Group size="small">
+                                <Button color="blue" size="tiny" onClick={doResetPassword}>重置密码</Button>
+
+                                <Button color="red" size="tiny" as="a" href="/user/forget_username">
+                                    忘记用户名
+                                </Button>
+                            </Button.Group>
+                        </Container>
+                    </Grid.Column>
+                </Grid>
             </Form>
         </Segment>
     </div>;

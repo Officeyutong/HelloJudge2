@@ -9,7 +9,6 @@ const PermissionPackRouter: React.FC<{}> = () => {
     return <>
         <Route exact path={`${match.path}/user_packs`} component={UserPacks}></Route>
         <Route exact path={`${match.path}/edit/:id`} component={PermissionPackEdit}></Route>
-        
     </>
 };
 

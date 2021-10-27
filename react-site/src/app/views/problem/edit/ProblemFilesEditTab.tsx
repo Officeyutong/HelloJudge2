@@ -2,8 +2,7 @@ import { DateTime } from "luxon";
 import React, { useEffect, useRef, useState } from "react";
 import { Button, Checkbox, Dimmer, Divider, Form, Grid, Header, Input, Loader, Message, Modal, Progress, Table } from "semantic-ui-react";
 import { ButtonClickEvent } from "../../../common/types";
-import { showErrorModal } from "../../../dialogs/Dialog";
-import { showSuccessPopup } from "../../../dialogs/Utils";
+import { showErrorModal, showSuccessModal } from "../../../dialogs/Dialog";
 import problemClient from "../client/ProblemClient";
 import { ProblemEditReceiveInfo } from "../client/types";
 
@@ -17,7 +16,6 @@ function transformTime(timestamp: number): string {
     return DateTime.fromSeconds(timestamp).toJSDate().toLocaleString();
 }
 const ProblemFilesEditTab: React.FC<ProblemFilesEditProps> = (props) => {
-    console.debug("Files rendered.");
     const {
         downloads,
         files,
@@ -27,7 +25,13 @@ const ProblemFilesEditTab: React.FC<ProblemFilesEditProps> = (props) => {
     const data: ProblemFilesEntry = {
         downloads, files, provides
     };
-    const update = props.onUpdate;
+    const update = (idata: ProblemFilesEntry) => {
+        props.onUpdate({
+            downloads: idata.downloads,
+            files: idata.files,
+            provides: idata.provides
+        });
+    };
     const [downloadsSet, setDownloadsSet] = useState<Set<string>>(new Set());
     const [providesSet, setProvidesSet] = useState<Set<string>>(new Set());
     const [loading, setLoading] = useState(false);
@@ -86,7 +90,7 @@ const ProblemFilesEditTab: React.FC<ProblemFilesEditProps> = (props) => {
                 setProgress(Math.floor(evt.loaded / evt.total * 100));
             });
             update({ ...data, files: resp.file_list });
-            showSuccessPopup("上传成功");
+            showSuccessModal("上传成功!");
             inputRef.inputRef.current.files = null;
         } catch { } finally {
             setShowProgressModal(false);

@@ -23,8 +23,18 @@ const StatementEditTab: React.FC<StatementEditProps> = (props) => {
         input_format: props.input_format,
         output_format: props.output_format,
         title: props.title
-    };;
-    const update = onUpdate;
+    };
+    const update = (idata: ProblemEditStatement) => {
+        onUpdate({
+            background: idata.background,
+            content: idata.content,
+            example: idata.example,
+            hint: idata.hint,
+            input_format: idata.input_format,
+            output_format: idata.output_format,
+            title: idata.title
+        });
+    };
     return <div style={{ width: "100%" }}>
         <Grid columns="2">
             <Grid.Column width="8">

@@ -1,6 +1,8 @@
-import React, { lazy, Suspense, useEffect, useState } from "react";
+import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
+import { Link } from "react-router-dom";
 import { Button, Dimmer, Header, Loader, Modal, Segment, Tab } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../../App";
 import { useDocumentTitle } from "../../../common/Utils";
 import { showSuccessModal } from "../../../dialogs/Dialog";
 import GeneralDimmedLoader from "../../utils/GeneralDimmedLoader";
@@ -18,6 +20,7 @@ const ProblemEdit: React.FC<{}> = () => {
     const [data, setData] = useState<ProblemEditReceiveInfo | null>(null);
     const [submitAnswer, setSubmitAnswer] = useState(false);
     const [saving, setSaving] = useState(false);
+    const savingRef = useRef<boolean>(false);
     useEffect(() => {
         if (!loaded) {
             (async () => {
@@ -42,8 +45,10 @@ const ProblemEdit: React.FC<{}> = () => {
     useDocumentTitle(data !== null ? `${data.title} - 题目编辑` : "加载中...");
     const handleSave = async () => {
         if (data === null) return;
+        if (savingRef.current) return;
         try {
             setSaving(true);
+            savingRef.current = true;
             await problemClient.updateProblemInfo(numberID, {
                 background: data!.background,
                 can_see_results: data!.can_see_results,
@@ -70,8 +75,10 @@ const ProblemEdit: React.FC<{}> = () => {
             showSuccessModal("保存成功!");
         } catch { } finally {
             setSaving(false);
+            savingRef.current = false;
         }
     };
+    const onProblemDataUpdate = (d: any) => setData(c => ({ ...c, ...d }));
     return <div>
 
         {loaded && data !== null ? <>
@@ -89,7 +96,7 @@ const ProblemEdit: React.FC<{}> = () => {
                             >
                                 <StatementEditTab
                                     {...data}
-                                    onUpdate={d => setData({ ...data, ...d })}
+                                    onUpdate={onProblemDataUpdate}
                                 ></StatementEditTab>
                             </Suspense>
                         </Tab.Pane>
@@ -100,7 +107,7 @@ const ProblemEdit: React.FC<{}> = () => {
                             <Suspense fallback={<GeneralDimmedLoader />}>
                                 <PermissionEdit
                                     {...data}
-                                    onUpdate={d => setData({ ...data, ...d })}
+                                    onUpdate={onProblemDataUpdate}
                                 ></PermissionEdit>
                             </Suspense>
                         </Tab.Pane>
@@ -122,7 +129,7 @@ const ProblemEdit: React.FC<{}> = () => {
                             <Suspense fallback={<GeneralDimmedLoader />}>
                                 <ProblemFilesEditTab
                                     {...data}
-                                    onUpdate={d => setData({ ...data, ...d })}
+                                    onUpdate={onProblemDataUpdate}
                                 ></ProblemFilesEditTab>
                             </Suspense>
                         </Tab.Pane>
@@ -135,16 +142,18 @@ const ProblemEdit: React.FC<{}> = () => {
                                     {...data}
                                     submitAnswer={submitAnswer}
                                     onUpdateSubmitAnswer={setSubmitAnswer}
-                                    onUpdate={d => setData({ ...data, ...d })}
+                                    onUpdate={onProblemDataUpdate}
                                 ></ProblemJudgeTab>
                             </Suspense>
                         </Tab.Pane>
                     },
-
                 ]}
             ></Tab>
-            <Button style={{ marginTop: "10px" }} color="green" onClick={handleSave}>
+            <Button style={{ marginTop: "10px" }} color="green" onKeyDown={() => { }} onClick={handleSave}>
                 保存
+            </Button>
+            <Button style={{ marginTop: "10px" }} color="green" as={Link} to={`${PUBLIC_URL}/show_problem/${data.id}`}>
+                返回题目
             </Button>
         </> : <Segment>
             <div style={{ height: "400px" }}>

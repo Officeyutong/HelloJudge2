@@ -4,9 +4,10 @@ import md5 from "md5";
 import { useSelector } from "react-redux";
 import { StateType } from "../states/Manager";
 import { sprintf } from "sprintf-js";
-const wrapDocumentTitle = (title: string) => {
-    return `${title} - 退群杯`;
-};
+import createPersistedState from "use-persisted-state";
+
+export const usePreferredMemoryUnit = createPersistedState("hj2-preferred-memory-unit");
+
 
 const useDocumentTitle: (title: string) => void = (title: string) => {
     const appName = useSelector((s: StateType) => s.userState.userData.appName);
@@ -61,7 +62,6 @@ export function secondsToString(totSecond: number): string {
 export {
     useDocumentTitle,
     useInputValue,
-    wrapDocumentTitle,
     useProfileImageMaker
 };
 

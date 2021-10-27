@@ -25,6 +25,9 @@
                 }
             },
             methods: {
+                openPage(x) {
+                    window.location.href = x;
+                },
                 login: function () {
                     console.log("Logining..");
                     this.error_message = this.success_message = "";
@@ -33,7 +36,7 @@
                         return;
                     }
                     $.post("/api/login", {
-                        identifier: login_frame.identifier, 
+                        identifier: login_frame.identifier,
                         password: this.md5WithSalt(login_frame.password)
                     }).done(function (ctx) {
                         ctx = JSON.parse(ctx);
@@ -96,8 +99,9 @@
                     <div class="header">成功</div>
                     <p>{[success_message]}</p>
                 </div>
-                <div class="ui green submit button" v-on:click="login">提交</div><a href="/register">注册</a> <a
-                    v-on:click="resetPassword">重置密码</a>
+                <div class="ui green submit button" v-on:click="login">提交</div>
+                <div class="ui blue button" v-on:click="openPage('/register')">注册</div>
+                <a v-on:click="resetPassword">重置密码</a>
             </div>
         </div>
     </div>

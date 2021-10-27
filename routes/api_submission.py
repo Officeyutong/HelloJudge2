@@ -115,7 +115,8 @@ def submit():
             (problem.extra_parameter[i]["parameter"] for i in parameters if i < len(
                 problem.extra_parameter) and re.compile(problem.extra_parameter[i]["lang"]).match(request.form["language"]))
         )
-
+        if len(request.form["code"]) > config.MAX_CODE_LENGTH:
+            return make_response(-1, message="代码过长")
         import datetime
         submit = Submission(uid=user.id,
                             language=request.form["language"],
@@ -167,7 +168,6 @@ def get_submission_info():
             "usePolling":"是否使用轮询",
             "managable":"是否可管理",
             "id":-1,//提交ID
-            "uid":-1,//用户ID
             "language":"qwq",//语言ID
             "language_name":"语言名",
             "submit_time":"提交时间",
@@ -180,7 +180,7 @@ def get_submission_info():
             "code":"代码",
             "judge_result":{
                 "subtask":{"score":100,"status":"WA","testcases":
-                    [{"input":"xxx","output":"xxx","score":0,"status":"WA"}]
+                    [{"input":"xxx","output":"xxx","score":0,"status":"WA","message":"xxx","time_cost":"ms","memory_cost":"byte"}]
                     }
             },
             "status":"状态",
@@ -196,6 +196,9 @@ def get_submission_info():
             "problem":{
                 "id":"题目ID",
                 "title":"题目名",
+                "rawID":"原始ID,非比赛题目ID",
+                "score":"题目总分",
+                "subtasks":"题目子任务"
             },
             "user":{
                 "uid":"提交者ID",
@@ -207,16 +210,22 @@ def get_submission_info():
     """
     if db.session.query(Submission).filter(Submission.id == request.form["submission_id"]).count() == 0:
         return "提交ID不存在", 404
-    submit: Submission = db.session.query(Submission).filter(
-        Submission.id == request.form["submission_id"]).one()
+    submit: Submission = db.session.query(
+        *Submission.__table__.columns,
+        Problem.public.label("problem_public"),
+        Problem.submission_visible.label("problem_submission_visible"),
+        Problem.title.label("problem_title"),
+        Problem.subtasks.label("problem_subtasks"),
+        Problem.problem_type.label("problem_problem_type"),
+        User.username.label("username")
+    ).filter(
+        Submission.id == request.form["submission_id"]).join(Problem, Problem.id == Submission.problem_id).join(User, User.id == Submission.uid).one()
     if not submit.public and not session.get("uid"):
         return "你没有权限查看此提交", 403
     problem: Problem = db.session.query(
         Problem).filter(Problem.id == submit.problem_id).one()
-    # has_perm_to_use_problem = problem.public or ((not problem.public) and permission_manager.has_permission(
-    #     session.get("uid", -1), f"problem.use.{problem.id}")) or permission_manager.has_permission(session.get("uid", -1), "problem.manage")
-    have_permission_to_use_problem = (problem.public or (permission_manager.has_permission(
-        session.get("uid", -1), f"problem.use.{problem.id}") and not problem.public and problem.submission_visible)) and (
+    have_permission_to_use_problem = (submit.problem_public or (permission_manager.has_permission(
+        session.get("uid", -1), f"problem.use.{submit.problem_id}") and not submit.problem_public and submit.problem_submission_visible)) and (
             submit.contest_id < 0
             or (
                 (
@@ -224,10 +233,10 @@ def get_submission_info():
                         "uid", -1), f"contest.use.{submit.contest_id}")
                     or
                     db.session.query(Contest.id).filter(
-                        Contest.id == submit.contest_id, Contest.private_contest == False).count() > 0
+                        Contest.id == submit.contest_id, Contest.private_contest == False).limit(1).count() > 0
                 ) and
                 db.session.query(Contest.id).filter(
-                    Contest.id == submit.contest_id, Contest.closed == True).count() > 0
+                    Contest.id == submit.contest_id, Contest.closed == True).limit(1).count() > 0
             )
     )
     # print("cansee = ", have_permission_to_use_problem)
@@ -236,9 +245,29 @@ def get_submission_info():
             User.id == session.get("uid")).one()
         if not submit.public and not permission_manager.has_permission(user.id, "submission.manage") and not user.id == submit.uid and not have_permission_to_use_problem:
             return make_response(-1, message="你没有权限查看此提交")
-    ret = submit.to_dict()
+    ret = {
+        "id": submit.id,
+        "uid": submit.uid,
+        "problem_id": submit.problem_id,
+        "language": submit.language,
+        "problem_id": submit.problem_id,
+        "submit_time": submit.submit_time,
+        "public": bool(submit.public),
+        "contest_id": submit.contest_id,
+        "virtual_contest_id": submit.virtual_contest_id or -1,
+        "code": submit.code,
+        "judge_result": submit.judge_result,
+        "score": submit.score,
+        "memory_cost": submit.memory_cost,
+        "time_cost": submit.time_cost,
+        "extra_compile_parameter": submit.extra_compile_parameter,
+        "selected_compile_parameters": submit.selected_compile_parameters,
+        "status": submit.status,
+        "message": submit.message,
+        "judger": submit.judger
+    }
 
-    ret["score"] = submit.get_total_score()
+    ret["score"] = Submission.get_total_score(submit)
     ret["submit_time"] = str(ret["submit_time"])
 
     if submit.contest_id != -1:
@@ -257,11 +286,11 @@ def get_submission_info():
             ret["message"] = ""
         for i, x in enumerate(contest.problems):
             if x["id"] == ret["problem_id"]:
-                # ret["problem_id"] = f"contest:{contest.id},{i}"
                 ret["problem"] = {
                     "id": i,
                     "title": db.session.query(
-                        Problem.title).filter(Problem.id == x["id"]).one().title
+                        Problem.title).filter(Problem.id == x["id"]).one().title,
+                    "rawID": x["id"]
                 }
                 break
         ret["contest"] = {
@@ -274,11 +303,12 @@ def get_submission_info():
             "isContest": False
         }
         ret["problem"] = {
-            "id": problem.id,
-            "title": problem.title
+            "id": submit.problem_id,
+            "title": submit.problem_title,
+            "rawID": submit.problem_id
         }
-    ret["problem"]["score"] = problem.get_total_score()
-    ret["problem"]["subtasks"] = problem.subtasks
+    ret["problem"]["score"] = Problem.get_total_score(problem)
+    ret["problem"]["subtasks"] = submit.problem_subtasks
     import importlib
     try:
         try:
@@ -293,18 +323,18 @@ def get_submission_info():
     except Exception as ex:
         import traceback
         traceback.print_exc()
-        ret["ace_mode"] = ret["language_name"] = ""
+        ret["ace_mode"] = ret["language_name"] = ret["hljs_mode"] = ""
 
     ret["managable"] = permission_manager.has_permission(
         session.get("uid", None), "submission.manage")
-    ret["isRemoteSubmission"] = problem.problem_type == "remote_judge"
+    ret["isRemoteSubmission"] = submit.problem_problem_type == "remote_judge"
     ret["user"] = {
         "uid": submit.uid,
-        "username": db.session.query(User.username).filter(User.id == submit.uid).one().username
+        "username": submit.username
     }
     ret["usePolling"] = config.USE_POLLING
-    ret["virtualContestID"] = submit.virtual_contest_id
-    if problem.problem_type == "submit_answer":
+    ret["virtualContestID"] = submit.virtual_contest_id or -1
+    if submit.problem_problem_type == "submit_answer":
         ret["code"] = "提交答案题不提供用户答案下载"
     del ret["problem_id"]
     del ret["uid"]
@@ -339,16 +369,18 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
             "current_page":当前页(根据URL分析)
         }
     """
-    result = None
+    base_query = db.session.query(*Submission.__table__.columns,
+                                  Problem.title.label("problem_title"), Problem.subtasks, Problem.problem_type).join(Problem)
+    result = base_query
     if not session.get("uid"):
-        result = db.session.query(Submission).filter(Submission.public == True)
+        result = result.filter(Submission.public == True)
     else:
         user: User = db.session.query(User).filter(
             User.id == session.get("uid")).one()
         if permission_manager.has_permission(user.id, "submission.manage"):
-            result = db.session.query(Submission)
+            result = result
         else:
-            result = db.session.query(Submission).filter(
+            result = result.filter(
                 or_(Submission.public == True, Submission.uid == user.id))
     filters = {
         "uid": lambda x, y: x.filter(Submission.uid == y) if y.isnumeric() else x.filter(Submission.user.has(User.username == y)),
@@ -376,7 +408,7 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
             print(visible_contests)
             # print("tested")
             result = result.union(
-                db.session.query(Submission).filter(expr.and_(
+                base_query.filter(expr.and_(
                     Submission.problem_id == problem.id,
                     expr.or_(
                         Submission.contest_id == -1,
@@ -408,14 +440,14 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
     import math
     pages = int(math.ceil(count/config.SUBMISSIONS_PER_PAGE))
     result = result.slice(
-        (page-1)*config.SUBMISSIONS_PER_PAGE, (page)*config.SUBMISSIONS_PER_PAGE).all()
+        (page-1)*config.SUBMISSIONS_PER_PAGE, (page)*config.SUBMISSIONS_PER_PAGE)
     ret = []
     for submit in result:
         submit: Submission
         obj = {
             "id": submit.id,
             "status": submit.status,
-            "score": submit.get_total_score(),
+            "score": Submission.get_total_score(submit),
             "contest": submit.contest_id,
             "uid": submit.uid,
             "username": User.by_id(submit.uid).username,
@@ -434,10 +466,10 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
                 if (not contest.ranklist_visible) and virtual_contest.running():
                     obj["status"] = "invisible"
                     obj["score"] = obj["memory_cost"] = obj["time_cost"] = 0
-        problem: Problem = db.session.query(Problem).filter(
-            Problem.id == submit.problem_id).one()
-        obj["problem_id"] = problem.id
-        obj["problem_title"] = problem.title
-        obj["total_score"] = problem.get_total_score()
+        # problem: Problem = db.session.query(Problem).filter(
+        #     Problem.id == submit.problem_id).one()
+        obj["problem_id"] = submit.problem_id
+        obj["problem_title"] = submit.problem_title
+        obj["total_score"] = Problem.get_total_score(submit)
         ret.append(obj)
     return make_response(0, data=ret, page_count=pages, current_page=page)

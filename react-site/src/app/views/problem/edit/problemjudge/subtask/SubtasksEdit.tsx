@@ -1,8 +1,9 @@
 import _ from "lodash";
-import React, { Fragment, useState } from "react";
+import React, { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Button, Divider, Form, Header, Input, Segment } from "semantic-ui-react";
 import { KeyDownEvent } from "../../../../../common/types";
 import { showConfirm } from "../../../../../dialogs/Dialog";
+import { SubtaskEntry } from "../../../client/types";
 import { ProblemDataProps } from "../ProblemJudgeTab";
 import generateSubtasks from "./GenerateSubtasks";
 import GenerateSubtasksWithScript from "./GenerateSubtasksWithScript";
@@ -14,7 +15,8 @@ interface SubtasksEditProps {
     files: ProblemDataProps["files"];
     onUpdate: (d: SubtaskType) => void;
 };
-
+// let arr: any[] = [];
+// (window as any).arr = arr;
 const subtaskToString = (d: SubtaskType): string => {
     const buf: string[] = [];
     for (const item of d) {
@@ -34,9 +36,31 @@ const subtaskToReactNode = (d: SubtaskType): React.ReactNode => {
     </div>
 };
 
+type ActionType = { type: "modify"; index: number; data: SubtaskEntry } |
+{ type: "append"; data: SubtaskEntry } |
+{ type: "remove"; index: number };
+
 const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
-    const { subtasks: data, onUpdate, files } = props;
-    const update = onUpdate;
+    const { onUpdate, files, subtasks: _subtasks } = props;
+    // console.log("init data", props.subtasks);
+    // const update = (d: SubtaskType) => {
+    //     onUpdate(d);
+    // };
+    const dataRef = useRef<typeof _subtasks>(props.subtasks);
+    useEffect(() => { dataRef.current = props.subtasks; }, [props.subtasks]);
+    const applyAction = useCallback((action: ActionType) => {
+        switch (action.type) {
+            case "append":
+                onUpdate([...dataRef.current, action.data]);
+                break;
+            case "modify":
+                onUpdate(_.set([...dataRef.current], action.index, action.data));
+                break;
+            case "remove":
+                onUpdate(dataRef.current.filter((_, j) => j !== action.index));
+        }
+    }, [onUpdate]);
+
     const [showScriptModal, setShowScriptModal] = useState(false);
     const [showConfigModal, setShowConfigModal] = useState(false);
     const generateWithScript = () => {
@@ -45,7 +69,7 @@ const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
     const autoGenerateSubtask = () => {
         const subtasks = generateSubtasks(files);
         showConfirm(subtaskToString(subtasks), () => {
-            update(subtasks);
+            props.onUpdate(subtasks);
         }, "您确定要生成以下子任务吗? (这一操作会清空已有的子任务配置)");
     }
     return <>
@@ -60,7 +84,7 @@ const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
                         <Input onKeyDown={(evt: KeyDownEvent) => {
                             if (evt.key !== "Enter") return;
                             const content = evt.currentTarget.value;
-                            update(data.map(x => ({ ...x, time_limit: parseInt(content) })));
+                            props.onUpdate(props.subtasks.map(x => ({ ...x, time_limit: parseInt(content) })));
                         }} placeholder="按回车键应用"></Input>
                     </Form.Field>
                     <Form.Field>
@@ -68,7 +92,7 @@ const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
                         <Input onKeyDown={(evt: KeyDownEvent) => {
                             if (evt.key !== "Enter") return;
                             const content = evt.currentTarget.value;
-                            update(data.map(x => ({ ...x, memory_limit: parseInt(content) })));
+                            props.onUpdate(props.subtasks.map(x => ({ ...x, memory_limit: parseInt(content) })));
                         }} placeholder="按回车键应用"></Input>
                     </Form.Field>
                     <Form.Field>
@@ -82,40 +106,47 @@ const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
                 </Form.Group>
             </Form>
             <Divider></Divider>
-            {data.map((x, i) => <Fragment key={i}>
-                <SubtaskEntryEdit key={i}
+            {props.subtasks.map((x, i) => <Fragment key={i}>
+                {/* {console.log("binding data",data)} */}
+                <SubtaskEntryEdit
                     files={files}
-                    onUpdate={d => update(_.set([...data], i, d))}
+                    onUpdate={d => {
+                        applyAction({ type: "modify", index: i, data: d });
+                        // arr.push(applyAction);
+                        // console.log(applyAction);
+                    }}
                     subtask={x}
 
                 ></SubtaskEntryEdit>
-                <Button color="red" onClick={() => update(data.filter((y, j) => j !== i))} style={{ marginTop: "10px" }}>
+                <Button color="red" onClick={() => applyAction({ type: "remove", index: i })} style={{ marginTop: "10px" }}>
                     删除该子任务
                 </Button>
                 <Divider></Divider>
             </Fragment>)}
-            <Button onClick={() => update([...data, {
-                comment: "",
-                memory_limit: 512,
-                method: "sum",
-                name: "新建子任务",
-                score: 100 - _.sum(data.map(x => x.score)),
-                testcases: [],
-                time_limit: 1000
-            }])} color="green">
+            <Button onClick={() => applyAction({
+                type: "append", data: {
+                    comment: "",
+                    memory_limit: 512,
+                    method: "sum",
+                    name: "新建子任务",
+                    score: 100 - _.sum(props.subtasks.map(x => x.score)),
+                    testcases: [],
+                    time_limit: 1000
+                }
+            })} color="green">
                 添加子任务
             </Button>
         </Segment>
         {showScriptModal && <GenerateSubtasksWithScript
             files={files}
             onClose={() => setShowScriptModal(false)}
-            update={d => update(d)}
+            update={d => props.onUpdate(d)}
         ></GenerateSubtasksWithScript>}
         {showConfigModal && <SubtaskConfigEdit
-            config={data}
+            config={props.subtasks}
             files={files}
             onClose={() => setShowConfigModal(false)}
-            onUpdate={d => update(d)}
+            onUpdate={d => props.onUpdate(d)}
         ></SubtaskConfigEdit>}
     </>;
 };

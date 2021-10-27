@@ -23,12 +23,11 @@
             mounted() {
                 let token = setInterval(() => {
                     if (this.base.loaded) {
-                        if (this.base.isLogin) window.location.href = "/";
-                        else if (this.base.usePhoneAuth) {
-                            window.open("/phone/register");
-                            window.close();
+                        if (this.base.usePhoneAuth) {
+                            window.location.href = "/phone/register";
                         }
-                        else clearInterval(token);
+                        else
+                            clearInterval(token);
                     }
                 }, 100);
 

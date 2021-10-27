@@ -17,6 +17,7 @@ interface ProgrammingLanguageEntry {
     display: string;
     version: string;
     ace_mode: string;
+    hljs_mode: string;
 };
 interface ProblemTagEntry {
     id: string;

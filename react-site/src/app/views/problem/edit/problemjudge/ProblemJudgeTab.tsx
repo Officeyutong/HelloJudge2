@@ -19,7 +19,6 @@ type DataEntryProps = Pick<ProblemEditReceiveInfo,
     "problem_type"
 > & {
     submitAnswer: boolean;
-
 };
 
 interface ProblemDataProps extends DataEntryProps {
@@ -32,7 +31,12 @@ interface ProblemDataProps extends DataEntryProps {
 
 const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
     const data = _.omit(props, ["onUpdate", "onUpdateSubmitAnswer", "children"]);
-    const update = props.onUpdate;
+    const update = (data: DataEntryProps) => {
+        const { extra_parameter, files, input_file_name, output_file_name, problem_type, spj_filename, submitAnswer, subtasks, using_file_io } = data;
+        props.onUpdate({
+            extra_parameter, files, input_file_name, output_file_name, problem_type, spj_filename, submitAnswer, subtasks, using_file_io
+        });
+    };
     const [loading, setLoading] = useState(false);
     const refreshCache = async () => {
         try {
@@ -95,6 +99,14 @@ const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
                         <Button active={data.problem_type === "remote_judge"} disabled>远程评测题目</Button>
                     </Button.Group>
                 </Form.Field>
+                <Message info>
+                    <Message.Header>
+                        关于SPJ
+                    </Message.Header>
+                    <Message.Content>
+                        <p>SPJ已支持testlib，<a href="https://github.com/Officeyutong/HelloJudge2-Judger/blob/master/docker/testlib.h">点此下载</a>所使用的修改过的testlib.h</p>
+                    </Message.Content>
+                </Message>
                 {data.submitAnswer && <Message info>
                     <Message.Header>
                         提交答案题提示

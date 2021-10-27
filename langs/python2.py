@@ -12,3 +12,5 @@ DISPLAY = "Python 2.7"
 VERSION = "CPython 2.7"
 # Ace.js模式
 ACE_MODE = "python"
+# HighlightJS高亮模式
+HLJS_MODE = "python"

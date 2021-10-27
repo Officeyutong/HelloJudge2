@@ -50,10 +50,10 @@ def view_global_ranklist(id):
 #     return render_template("problem/problems.html")
 
 
-@app.route("/submissions")
-@app.route("/submissions/<int:id>")
-def view_submissions(id=-1):
-    return render_template("submissions.html")
+# @app.route("/submissions")
+# @app.route("/submissions/<int:id>")
+# def view_submissions(id=-1):
+#     return render_template("submissions.html")
 
 
 @app.route("/discussions/<string:path>/<int:page>")
@@ -73,10 +73,10 @@ def view_discussions(path, page):
 #     return render_template("problem/show_problem.html")
 
 
-@app.route("/show_submission/<int:id>")
-def view_show_submission(id):
-    # print(id)
-    return render_template("show_submission.html")
+# @app.route("/show_submission/<int:id>")
+# def view_show_submission(id):
+#     # print(id)
+#     return render_template("show_submission.html")
 
 
 @app.route("/show_discussion/<int:id>")
@@ -106,9 +106,9 @@ def view_show_discussion(id):
 #     return render_template("contest/contests.html")
 
 
-@app.route("/contest/<string:name>/problem/<string:problem>")
-def view_contest_problem(name, problem):
-    return render_template("/contest/problem.html")
+# @app.route("/contest/<string:name>/problem/<string:problem>")
+# def view_contest_problem(name, problem):
+#     return render_template("/contest/problem.html")
 
 
 # @app.route("/contest/edit/<int:id>")
@@ -136,19 +136,19 @@ def view_contest_problem(name, problem):
 #     return render_template("user/auth_email.html")
 
 
-@app.route("/team")
-def view_team_list():
-    return render_template("team/team_list.html")
+# @app.route("/team")
+# def view_team_list():
+#     return render_template("team/team_list.html")
 
 
-@app.route("/team/<int:id>")
-def view_team(id):
-    return render_template("team/team.html")
+# @app.route("/team/<int:id>")
+# def view_team(id):
+#     return render_template("team/team.html")
 
 
-@app.route("/edit_team/<int:id>")
-def view_edit_team(id):
-    return render_template("team/edit_team.html")
+# @app.route("/edit_team/<int:id>")
+# def view_edit_team(id):
+#     return render_template("team/edit_team.html")
 
 
 @app.route("/import_from_syzoj")
@@ -233,9 +233,9 @@ def view_sendsms_card():
     return render_template("card/send_smscode.html")
 
 
-# @app.route("/phoneauth")
-# def view_phoneauth():
-#     return render_template("phoneauth.html")
+@app.route("/phoneauth")
+def view_phoneauth():
+    return render_template("phoneauth.html")
 
 
 # @app.route("/tags/edit")
@@ -268,9 +268,9 @@ def view_sendsms_card():
 #     return render_template("permissionpack/user_packs.html")
 
 
-@app.route("/problemtodo/list")
-def problemtodo_list():
-    return render_template("problemtodo/list.html")
+# @app.route("/problemtodo/list")
+# def problemtodo_list():
+#     return render_template("problemtodo/list.html")
 
 
 # @app.route("/virtualcontest/create/<int:id>")
@@ -319,9 +319,19 @@ def wiki_versions(id=-1):
     return render_template("wiki/versions.html")
 
 
-@app.route("/submit_answer/<int:id>")
-def submit_answer(id: int):
-    return render_template("submit_answer.html")
+@app.route("/preliminary/list")
+def preliminary_list():
+    return render_template("preliminary/list.html")
+
+
+@app.route("/preliminary/<int:id>")
+def premilinary_page(id: int):
+    return render_template("preliminary/page.html")
+
+
+# @app.route("/submit_answer/<int:id>")
+# def submit_answer(id: int):
+#     return render_template("submit_answer.html")
 
 
 # @app.route("/contest/clarification/edit/<int:id>")

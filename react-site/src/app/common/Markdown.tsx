@@ -8,7 +8,10 @@ import _ from "lodash";
 
 const TREMA = String.fromCharCode(168);
 const DOLLARD_CHR = TREMA + "D";
-
+// const htmlDecode = (input: string) => {
+//     let doc = new DOMParser().parseFromString(input, "text/html");
+//     return doc.documentElement.textContent!;
+// };
 const showdownClassMap = {
     h1: 'ui large header',
     h2: 'ui medium header',
@@ -23,7 +26,6 @@ const showdownBindings = Object.keys(showdownClassMap)
         regex: new RegExp(`<${key}(.*)>`, 'g'),
         replace: `<${key} class="${showdownClassMap[key as keyof typeof showdownClassMap]}" $1>`
     }));
-
 const converter = new showdown.Converter({
     extensions: [
         {

@@ -12,3 +12,5 @@ DISPLAY = "Haskell"
 VERSION = "GHC 8.0.2"
 # Ace.js模式
 ACE_MODE = "haskell"
+# HighlightJS高亮模式
+HLJS_MODE = "haskell"

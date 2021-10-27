@@ -42,15 +42,37 @@ class ProblemClient extends GeneralClient {
     async rejudgeAll(problem_id: number) {
         await (await this.client!.post("/api/problem/rejudge_all", { problem_id: problem_id })).data;
     }
-    async submit(problemId: number | string, code: string, language: string, usedParameters: number[], contestId: number = -1): Promise<number> {
+    async submit(problemId: number | string, code: string, language: string, usedParameters: number[], contestId: number = -1, virtualID: number | undefined = undefined): Promise<number> {
         const resp = (await this.unwrapClient!.post("/api/submit", qs.stringify({
             problem_id: problemId,
             code: code,
             language: language,
             contest_id: contestId,
-            usedParameters: JSON.stringify(usedParameters)
+            usedParameters: JSON.stringify(usedParameters),
+            virtualID: virtualID
         }))).data as { code: number; submission_id: number; };
         return resp.submission_id;
+    }
+    async submitWithAnswer(
+        answerData: Blob,
+        problemId: number | string,
+        contestId: number = -1,
+        virtualID: number | undefined = undefined,
+        progressor: (evt: ProgressEvent) => void
+    ): Promise<number> {
+        const data = new FormData();
+        data.append("problem_id", String(problemId));
+        data.append("code", "");
+        data.append("language", "cpp");
+        data.append("contest_id", String(contestId));
+        data.append("usedParameters", "[]");
+        if (virtualID !== undefined)
+            data.append("virtualID", String(virtualID));
+        data.append("answerData", answerData);
+        return (await this.unwrapExtraClient!.post("/api/submit", data, {
+            "headers": { "Content-Type": "multipart/form-data" },
+            onUploadProgress: progressor
+        })).data.submission_id as number;
     }
     async getProblemtags(): Promise<ProblemTagEntry[]> {
         return (await this.client!.post("/api/problemtag/all")).data;

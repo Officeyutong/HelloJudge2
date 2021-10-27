@@ -15,7 +15,7 @@ const JudgeStatusLabel: React.FC<{ status: SubmissionStatus; showText?: boolean 
     const loading = extractedData.icon.includes("loading");
 
     return <Label color={extractedData.color} circular={!willShowText}>
-        <Icon loading={loading} name={extractedData.icon.replaceAll(/((icon)|(loading))/g, "").trim() as SemanticICONS}></Icon>
+        <Icon loading={loading} name={(extractedData.icon || "").replaceAll(/((icon)|(loading))/g, "").trim() as SemanticICONS}></Icon>
         {willShowText ? extractedData.text : null}
     </Label>;
 };

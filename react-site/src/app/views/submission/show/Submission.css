@@ -1,0 +1,16 @@
+.submission-info-table > tbody > tr > td:first-child  {
+    min-width: 70px;
+    width: 100px !important;
+}
+
+.raw-span {
+    font-family: Consolas, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono, Bitstream Vera Sans Mono, Courier New, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+.code-block {
+    font-family: "Sans Mono", "Consolas", "Courier", monospace;
+    font-size: 130% !important;
+    background-color: white !important;
+    line-height: 25px;
+}

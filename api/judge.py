@@ -87,13 +87,13 @@ def update_status(submission_id: int, judge_result: dict, judger: str, message="
     flask_socketio.emit("update", {
         "judge_result": judge_result,
         "status": submit.status,
-        "score": submit.get_total_score(),
+        "score": Submission.get_total_score(submit),
         "judger": submit.judger,
         "message": message
     }, room="judge:"+str(submission_id), namespace="/ws/submission")
     print(
         f"Submission {submission_id} status updated \nmessage {message},judger {judger}")
-    submit.score = submit.get_total_score()
+    submit.score = Submission.get_total_score(submit)
     if submit.status in {"accepted", "unaccepted"}:
         submit.memory_cost, submit.time_cost = submit.get_total_memory_time_cost()
     db.session.commit()

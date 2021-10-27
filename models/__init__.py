@@ -5,7 +5,7 @@ from .discussion import Discussion
 from .mail import Mail
 from .comment import Comment
 from .contest import Contest, Clarification
-from .team import Team, TeamMember
+from .team import Team, TeamMember, TeamFile
 from .permission_group import PermissionGroup
 from .problemset import ProblemSet
 from .challenge import Challenge
@@ -19,3 +19,4 @@ from .wiki import WikiNavigationItem, WikiPage, WikiPageVersion, WikiConfig
 from .preliminary_contest import PreliminaryContest, PreliminaryProblem, PreliminaryProblemType
 from .problem_solution import ProblemSolution
 from .homepage_swiper import HomepageSwiper
+from .file_storage import FileStorage

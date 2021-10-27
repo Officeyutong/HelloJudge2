@@ -72,14 +72,14 @@ const ContestEdit: React.FC<{}> = () => {
                     <Form.Input
                         label="比赛名"
                         value={data.name}
-                        onChange={(_, d) => setData({ ...data, name: d.value })}
+                        onChange={(_, d) => setData(data => ({ ...data!, name: d.value }))}
                         disabled={data.closed}
                     ></Form.Input>
                     <Form.Field>
                         <label>比赛描述</label>
                         <AceEditor
                             value={data.description}
-                            onChange={v => setData({ ...data, description: v })}
+                            onChange={v => setData(data => ({ ...data!, description: v }))}
                             theme={theme}
                             mode="markdown"
                             height="150px"
@@ -92,7 +92,7 @@ const ContestEdit: React.FC<{}> = () => {
                             value={DateTime.fromSeconds(data.start_time).toJSDate()}
                             onChange={v => {
                                 if (typeof v === "string") return;
-                                setData({ ...data, start_time: v.unix() });
+                                setData(data => ({ ...data!, start_time: Math.floor(DateTime.fromSeconds(v.unix()).set({ second: 0 }).toSeconds()) }));
                             }}
                             locale="zh-cn"
 
@@ -104,7 +104,7 @@ const ContestEdit: React.FC<{}> = () => {
                             value={DateTime.fromSeconds(data.end_time).toJSDate()}
                             onChange={v => {
                                 if (typeof v === "string") return;
-                                setData({ ...data, end_time: v.unix() });
+                                setData(data => ({ ...data!, end_time: Math.floor(DateTime.fromSeconds(v.unix()).set({ second: 0 }).toSeconds()) }));
                             }}
                             locale="zh-cn"
                         ></DateTimePickler>
@@ -114,7 +114,7 @@ const ContestEdit: React.FC<{}> = () => {
                         <label>题目列表</label>
                         <ProblemEditArea
                             data={data.problems}
-                            update={d => setData({ ...data, problems: d })}
+                            update={d => setData(data => ({ ...data!, problems: d }))}
                         ></ProblemEditArea>
                     </Form.Field>
                     <Divider></Divider>
@@ -122,39 +122,39 @@ const ContestEdit: React.FC<{}> = () => {
                         <label>排名依据</label>
                         <Button.Group>
                             <Button
-                                onClick={() => setData({ ...data, rank_criterion: "max_score" })}
+                                onClick={() => setData(data => ({ ...data!, rank_criterion: "max_score" }))}
                                 active={data.rank_criterion === "max_score"}
                             >
                                 题目最高得分
                             </Button>
                             <Button
-                                onClick={() => setData({ ...data, rank_criterion: "last_submit" })}
+                                onClick={() => setData(data => ({ ...data!, rank_criterion: "last_submit" }))}
                                 active={data.rank_criterion === "last_submit"}
                             >
                                 题目最后一次提交
                             </Button>
                             <Button
-                                onClick={() => setData({ ...data, rank_criterion: "penalty" })}
+                                onClick={() => setData(data => ({ ...data!, rank_criterion: "penalty" }))}
                                 active={data.rank_criterion === "penalty"}
                             >
                                 罚时
                             </Button>
                         </Button.Group>
                     </Form.Field>
-                    <Form.Checkbox disabled={data.closed} toggle label="比赛时显示排行总榜" checked={data.ranklist_visible} onChange={() => setData({ ...data, ranklist_visible: !data.ranklist_visible })}></Form.Checkbox>
-                    <Form.Checkbox disabled={data.closed} toggle label="比赛时可以得知评测结果" checked={data.judge_result_visible} onChange={() => setData({ ...data, judge_result_visible: !data.judge_result_visible })}></Form.Checkbox>
+                    <Form.Checkbox disabled={data.closed} toggle label="比赛时显示排行总榜" checked={data.ranklist_visible} onChange={() => setData(data => ({ ...data!, ranklist_visible: !data!.ranklist_visible }))}></Form.Checkbox>
+                    <Form.Checkbox disabled={data.closed} toggle label="比赛时可以得知评测结果" checked={data.judge_result_visible} onChange={() => setData(data => ({ ...data!, judge_result_visible: !data!.judge_result_visible }))}></Form.Checkbox>
                     <Divider></Divider>
                     <Form.Field>
                         <label>权限设定</label>
-                        <Checkbox toggle label="私有比赛" checked={data.private_contest} onChange={() => setData({ ...data, private_contest: !data.private_contest })}></Checkbox>
+                        <Checkbox toggle label="私有比赛" checked={data.private_contest} onChange={() => setData(data => ({ ...data!, private_contest: !data!.private_contest }))}></Checkbox>
 
                     </Form.Field>
                     {data.private_contest && <Form.Field>
                         <label>邀请码</label>
                         <Input actionPosition="left" action={{
                             content: "随机生成",
-                            onClick: () => setData({ ...data, invite_code: uuid.v4() })
-                        }} value={data.invite_code} onChange={(e, d) => setData({ ...data, invite_code: d.value })}></Input>
+                            onClick: () => setData(data => ({ ...data!, invite_code: uuid.v4() }))
+                        }} value={data.invite_code} onChange={(e, d) => setData(data => ({ ...data!, invite_code: d.value }))}></Input>
                     </Form.Field>}
                     <Button color="green" onClick={save}>
                         提交

@@ -8,11 +8,13 @@ interface InviteCodeInputModalProps {
     value: string;
     onChange: onChangeType;
     title: string;
+    closeWithoutConfirm?: () => void;
+    allowClose?: boolean;
 };
 
 const InviteCodeInputModal: React.FC<InviteCodeInputModalProps> = ({
-    onChange, onClose, value,title
-}) => <Modal open size="tiny">
+    onChange, onClose, value, title, allowClose, closeWithoutConfirm
+}) => <Modal open size="tiny" closeOnDimmerClick={false}>
         <Modal.Header>
             {title}
         </Modal.Header>
@@ -24,6 +26,8 @@ const InviteCodeInputModal: React.FC<InviteCodeInputModalProps> = ({
                 <Icon name="checkmark"></Icon>
                 确认
             </Button>
+            {allowClose && <Button color="red" onClick={closeWithoutConfirm || (() => { })}>
+                取消</Button>}
         </Modal.Actions>
     </Modal>;
 

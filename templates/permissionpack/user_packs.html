@@ -1,0 +1,91 @@
+{%extends "base.html"%}
+{%block title%}
+我的权限包列表
+{%endblock%}
+{%block body%}
+
+<script>
+    $(document).ready(() => {
+        new Vue({
+            mixins: [baseMixin],
+            el: "#permissionpack",
+            data: {
+                done: false,
+                data: []
+            },
+            methods: {
+                claim(item, evt) {
+                    let elem = evt.target;
+                    elem.classList.add("loading");
+                    axios.post("/api/permissionpack/claim", {
+                        packID: item.id
+                    }).then(resp => {
+                        elem.classList.remove("loading");
+                        let data = resp.data;
+                        if (data.code) {
+                            showErrorModal(data.message);
+                            return;
+                        }
+                        item.claimed = true;
+                        showSuccessModal("领取成功！");
+
+                    });
+                }
+            },
+            mounted() {
+                axios.post("/api/permissionpack/user_packs").then(resp => {
+                    let data = resp.data;
+                    if (data.code) {
+                        showErrorModal(data.message);
+                        return;
+                    }
+                    this.data = data.data;
+                    this.done = true;
+                });
+            }
+        });
+    });
+</script>
+
+
+<div>
+    <div class="ui header">
+        <h1>可用权限包</h1>
+    </div>
+    <div class="ui segment stacked" v-if="done" id="permissionpack">
+        <div v-for="item in data" class="ui form">
+            <div class="ui header">
+                <h3>{[item.name]}</h3>
+            </div>
+            <div v-if="item.description" class="ui field">
+                <label>介绍</label>
+                <div v-html="makeHTML(item.description)"></div>
+            </div>
+            <div class="ui field">
+                <label>权限列表</label>
+                <div class="ui list">
+                    <div v-for="perm in item.permissions" class="ui item">
+                        {[perm]}
+                    </div>
+                </div>
+            </div>
+            <div class="ui container">
+                <div v-if="item.claimed">
+                    <div style="font-size: large;color:red">
+                        您已领取此权限包
+                    </div>
+                    <div class="ui green button" v-on:click="claim(item,$event)">
+                        重新领取
+                    </div>
+                </div>
+                <div v-else class="ui green button" v-if="!item.claimed" v-on:click="claim(item,$event)">
+                    领取
+                </div>
+
+
+            </div>
+            <div class="ui divider"></div>
+        </div>
+    </div>
+</div>
+{%endblock%}

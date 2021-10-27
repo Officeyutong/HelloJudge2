@@ -12,3 +12,5 @@ DISPLAY = "Java 8"
 VERSION = "OpenJDK 8"
 # Ace.js模式
 ACE_MODE = "java"
+# HighlightJS高亮模式
+HLJS_MODE = "java"

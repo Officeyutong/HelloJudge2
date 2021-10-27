@@ -2,6 +2,8 @@ import { GeneralUserEntry, SubmissionStatus } from "../../../common/types";
 import { ExtraParameterEntry, ProblemFileEntry, ProblemStatement, ProblemType } from "../../problem/client/types";
 
 interface ContestRanklist {
+    closed: boolean;
+    refresh_interval: number;
     name: string;
     contest_id: number;
     using_penalty: boolean;
@@ -79,6 +81,7 @@ interface ContestShowProblemResponse {
     accepted_submit: number | -1;
     my_submit: number;
     status: SubmissionStatus;
+    rawID: number;
 };
 interface ContestShowDetailResponse {
     managable: boolean;
@@ -141,6 +144,7 @@ interface ContestProblemShow extends ProblemStatement {
     problem_type: ProblemType;
     last_code: string;
     last_lang: string;
+    usedParameters: number[];
 }
 type ContestSortingOrder = "id" | "start_time";
 const ContestSortingOrderMapping: { [K in ContestSortingOrder]: string } = {

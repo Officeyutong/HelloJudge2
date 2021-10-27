@@ -38,5 +38,5 @@ VISIBLE_SETTINGS = OrderedDict({
     "FAIL_SUBMIT_PENALTY": "比赛失败提交罚时(分钟)",
     "IDE_RUN_COMPILE_PARAMETER_LENGTH_LIMIT": "在线IDE自定义参数长度限制",
     "DISPLAY_DATA_LENGTH_LIMIT": "评测结束后显示的输入\\输出\\用户输出的长度限制,字符",
-    "RANKLIST_UPDATE_INTEVAL": "比赛排行榜更新间隔"
+    "RANKLIST_UPDATE_INTERVAL": "比赛排行榜更新间隔"
 })

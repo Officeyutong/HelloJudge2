@@ -1,4 +1,6 @@
 import typing
+
+from sqlalchemy.sql.functions import func
 from main import db, permission_manager, config
 from main import web_app as app
 from common.permission import require_permission
@@ -68,23 +70,25 @@ def api_problemset_list(page: int):
                                                ProblemSet.problems,
                                                ProblemSet.private,
                                                ProblemSet.create_time,
-                                               ProblemSet.foreign_problems).order_by(ProblemSet.id.desc())
+                                               ProblemSet.foreign_problems,
+                                               User.username
+                                               ).join(User).order_by(ProblemSet.id.desc())
     pages = int(math.ceil(query_object.count()/config.PROBLEMSETS_PER_PAGE))
     query_object = query_object.slice(
         (page-1)*config.PROBLEMSETS_PER_PAGE, (page)*config.PROBLEMSETS_PER_PAGE)
     result = []
     for item in query_object.all():
         item: ProblemSet = item
-        owner: User = db.session.query(User.username, User.id).filter(
-            User.id == item.owner_uid).one()
+        # owner: User = db.session.query(User.username, User.id).filter(
+        #     User.id == item.owner_uid).one()
         accessible = (not item.private) or permission_manager.has_permission(
             session.get("uid"), "problemset.use."+str(item.id))
         result.append({
             "id": item.id,
             "name": item.name,
             "owner": {
-                "uid": owner.id,
-                "username": owner.username
+                "uid": item.owner_uid,
+                "username": item.username
             },
             "problemCount": (len(item.problems)+len(item.foreign_problems)) if accessible else -1,
             "private": item.private,
@@ -298,9 +302,13 @@ def api_problemset_get_public(id: int):
     }
     # problems: typing.List[typing.Dict[str, typing.Any]] = result["problems"]
     # new_problems:  = []
-    for problem_id in problemset.problems:
-        problem_data: Problem = db.session.query(Problem.title).filter(
-            Problem.id == problem_id).one_or_none()
+    query_problems = problemset.problems + [-1]
+    for problem_data in db.session.query(Problem.title, Problem.id).filter(
+        Problem.id.in_(query_problems)
+    ).order_by(func.field(Problem.id, *query_problems)):
+        # problem_data: Problem = db.session.query(Problem.title).filter(
+        #     Problem.id == problem_id).one_or_none()
+        problem_id = problem_data.id
         if not problem_data:
             continue
         problem = {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button, Dimmer, Grid, Header, Loader, Segment, Table } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../App";
 import { Markdown } from "../../common/Markdown";
 import { useDocumentTitle } from "../../common/Utils";
 import { showConfirm, showSuccessModal } from "../../dialogs/Dialog";
@@ -129,7 +130,7 @@ const ProblemsetShow: React.FC<{}> = () => {
                         解锁权限
                     </Button>
                     {data.managable && <>
-                        <Button color="green" as="a" href={`/problemset/edit/${data.id}`}>编辑</Button>
+                        <Button color="green" as={Link} to={`${PUBLIC_URL}/problemset/edit/${data.id}`}>编辑</Button>
                         <Button color="red" onClick={remove}>删除</Button>
                     </>}
                 </Segment>

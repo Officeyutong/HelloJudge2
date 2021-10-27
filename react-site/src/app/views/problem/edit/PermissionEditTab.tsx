@@ -15,7 +15,13 @@ const PermissionEdit: React.FC<PermissionEditProps> = (props) => {
         invite_code: props.invite_code,
         submissionVisible: props.submissionVisible
     };
-    const update = props.onUpdate;
+    const update = (idata: ProblemPermission) => {
+        props.onUpdate({
+            invite_code: idata.invite_code,
+            public: idata.public,
+            submissionVisible: idata.submissionVisible
+        });
+    };
     return <div>
         <Form>
             <Form.Field>

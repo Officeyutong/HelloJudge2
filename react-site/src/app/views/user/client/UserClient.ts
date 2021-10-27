@@ -1,6 +1,6 @@
 import qs from "qs";
 import GeneralClient from "../../../common/GeneralClient";
-import { FolloweeItem, FollowerItem, UserProfileResponse, UserProfileUpdateRequest } from "./types";
+import { FolloweeItem, FollowerItem, GlobalRanklistItem, UserProfileResponse, UserProfileUpdateRequest } from "./types";
 
 class UserClient extends GeneralClient {
     async doLogin(identifier: string, password: string) {
@@ -55,6 +55,11 @@ class UserClient extends GeneralClient {
         return (await this.client!.post("/api/phoneuser/forget_username", {
             phone: phone,
             code: code
+        })).data;
+    }
+    async getGlobalRanklist(page: number, search: string = ""): Promise<{ pageCount: number; ranklist: GlobalRanklistItem[] }> {
+        return (await this.client!.post("/api/ranklist", {
+            page, search
         })).data;
     }
 };

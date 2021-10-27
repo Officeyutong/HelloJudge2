@@ -32,7 +32,7 @@ const ProfileEdit: React.FC<{}> = () => {
             })();
         }
     }, [loaded, uid]);
-    useDocumentTitle(`${data?.username} - 修改个人信息`);
+    useDocumentTitle(`${data?.username || "加载中..."} - 修改个人信息`);
     const baseUid = useCurrentUid();
     const submit = async () => {
         const changed = pwd1.value !== "";

@@ -17,6 +17,9 @@ class GeneralClient {
             this.unwrapExtraClient = store.getState().unwrapExtraClient;
         });
     }
+    public getNormalClient() {
+        return this.client!;
+    }
 
 }
 

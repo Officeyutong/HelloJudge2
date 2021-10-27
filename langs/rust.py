@@ -12,3 +12,5 @@ DISPLAY = "Rust 1.33.0"
 VERSION = "rustc 1.33.0"
 # Ace.js模式
 ACE_MODE = "c_cpp"
+# HighlightJS高亮模式
+HLJS_MODE = "rust"

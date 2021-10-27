@@ -1,7 +1,7 @@
 import QueryString from "qs";
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import { Button, Dimmer, Header, Label, Loader, Segment, Table } from "semantic-ui-react";
+import { Button, Dimmer, Header, Label, Loader, Message, Segment, Table } from "semantic-ui-react";
 import { useDocumentTitle } from "../../common/Utils";
 import contestClient from "./client/ContestClient";
 import { ContestRanklist as ContestRanklistType } from "./client/types";
@@ -113,6 +113,14 @@ const ContestRanklist: React.FC<{}> = () => {
             </Header>
 
             <Segment stacked style={{ overflowX: "scroll" }}>
+                <Message info>
+                    <Message.Header>
+                        提示
+                    </Message.Header>
+                    <Message.Content>
+                        <p>{data.closed && "当前比赛已关闭，"}排行榜每 {data.refresh_interval} 秒刷新一次。</p>
+                    </Message.Content>
+                </Message>
                 <Table className="ranklist-table" basic="very">
                     <Table.Header>
                         <Table.Row>
@@ -120,7 +128,7 @@ const ContestRanklist: React.FC<{}> = () => {
                             <Table.HeaderCell>用户名</Table.HeaderCell>
                             <Table.HeaderCell textAlign="center">总分</Table.HeaderCell>
                             {data.problems.map((x, i) => <Table.HeaderCell textAlign="center" style={{ minWidth: "100px" }} key={i}>
-                                <a href={`/contest/${contestID}/problem/${x.id}`}>#{x.id}. {x.name}</a>
+                                <a href={`/contest/${contestID}/problem/${x.id}`}>#{x.id + 1}. {x.name}</a>
                                 <div>
                                     <span style={{ color: "green" }}>{x.accepted_submit}</span>/{x.total_submit}
                                 </div>

@@ -1,7 +1,8 @@
 import _ from "lodash";
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button, Checkbox, Dimmer, Divider, Form, Header, Icon, Input, Loader, Segment, Table, TextArea } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../App";
 import { ButtonClickEvent } from "../../common/types";
 import { useDocumentTitle } from "../../common/Utils";
 import { showSuccessModal } from "../../dialogs/Dialog";
@@ -186,7 +187,7 @@ const ProblemsetEdit: React.FC<{}> = () => {
                         </Table>
                     </Form.Field>
                     <Button color="green" onClick={save}>保存</Button>
-                    <Button color="green" as="a" href={`/problemset/show/${data.id}`}>返回</Button>
+                    <Button color="green" as={Link} to={`${PUBLIC_URL}/problemset/show/${data.id}`}>返回</Button>
                 </Form>
             </Segment>
         </>}

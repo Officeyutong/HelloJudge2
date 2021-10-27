@@ -13,7 +13,7 @@ import sqlalchemy.sql.expression as expr
 import sqlalchemy.sql.functions as func
 from sqlalchemy.orm.query import Query
 from werkzeug.utils import secure_filename
-from common.utils import unpack_argument
+from common.utils import make_json_response, unpack_argument
 from common.permission import require_permission
 import os
 import importlib
@@ -234,8 +234,10 @@ def get_problem_info():
         USING_KEYS.append("invite_code")
     for item in USING_KEYS:
         result[item] = getattr(problem, item)
-    result["public"] = bool(result["public"])
-    result["using_file_io"] = bool(result["using_file_io"])
+    if "public" in result:
+        result["public"] = bool(result["public"])
+    if "using_file_io" in result:
+        result["using_file_io"] = bool(result["using_file_io"])
     result["hasPermission"] = has_permission
     if has_permission:
         last_submission: Submission = db.session.query(Submission).filter(and_(
@@ -266,7 +268,7 @@ def get_problem_info():
                 if any_submit.count():
                     result["my_submission"], result["my_submission_status"] = any_submit.first(
                     )
-        result["score"] = problem.get_total_score()
+        result["score"] = Problem.get_total_score(problem)
         result["create_time"] = str(result["create_time"])
         result["managable"] = permission_manager.has_permission(
             session.get("uid", None), "problem.manage")
@@ -319,7 +321,7 @@ def upload_file(id):
             "file_list":[{"name":"a.in","size":123456}]//现有的文件列表
         }
     """
-    decompress_zip = bool(request.form.get("decompress_zip","0")=="1")
+    decompress_zip = bool(request.form.get("decompress_zip", "0") == "1")
     print(f"{decompress_zip=}")
     problem = db.session.query(Problem).filter(
         Problem.id == id)
@@ -383,7 +385,8 @@ def download_file(id: int, filename: str):
         flask.abort(404)
     problem: Problem = problem.one()
     # filename = secure_filename(filename)
-    if not problem.public and not session.get("uid"):
+    if not problem.public and not session.get("uid", None):
+        # print("cond387")
         flask.abort(403)
     if not any((x["name"] == filename for x in problem.files)):
         flask.abort(404)
@@ -394,7 +397,10 @@ def download_file(id: int, filename: str):
     if not session.get("uid", None):
         # 只能下载公开题目的公开文件
         if not problem.public or not public_file:
+            # print("cond1")
             flask.abort(403)
+        else:
+            ok = True
     else:
         # 用户已登录
         # 区分是否有题目管理权限
@@ -530,6 +536,8 @@ def update_problem():
                 subtask["testcases"][i]["full_score"] = score
             subtask["testcases"][-1]["full_score"] = subtask["score"] - \
                 score*(len(subtask["testcases"])-1)
+    if len(set(item["name"] for item in data["subtasks"])) != len(data["subtasks"]):
+        return make_json_response(-1, message="不允许存在重名的子任务")
     if not permission_manager.has_any_permission(user.id, "problem.manage", "problem.publicize") and problem.public == False and data["public"] == True:
         return make_response(-1, message="你没有权限公开题目")
     # 更改题目ID
@@ -622,8 +630,13 @@ def problem_list(page: int = 1, filter: typing.Dict[str, typing.Any] = {}):
             "pageCount":"总页数"
         }
     """
-    result: Query = db.session.query(Problem.id, Problem.title, Problem.public,
-                                     Problem.cached_accepted_count, Problem.cached_submit_count)
+    result: Query = db.session.query(
+        Problem.id,
+        Problem.title,
+        Problem.public,
+        Problem.cached_accepted_count,
+        Problem.cached_submit_count,
+    )
     if not session.get("uid"):
         result = result.filter_by(public=True)
     else:
@@ -661,7 +674,7 @@ def problem_list(page: int = 1, filter: typing.Dict[str, typing.Any] = {}):
     pageCount = int(math.ceil(count/config.PROBLEMS_PER_PAGE))
 
     result = result.slice(
-        (page-1)*config.PROBLEMS_PER_PAGE, (page)*config.PROBLEMS_PER_PAGE).all()
+        (page-1)*config.PROBLEMS_PER_PAGE, (page)*config.PROBLEMS_PER_PAGE)
     data = []
     # print("mapping results.")
     for item in result:

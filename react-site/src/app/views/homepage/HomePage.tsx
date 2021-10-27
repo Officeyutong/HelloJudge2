@@ -22,7 +22,7 @@ const HomePage: React.FC<{}> = () => {
     const [homePageData, setHomePageData] = useState<HomePageData | null>(null);
     const [swipers, setSwipers] = useState<HomepageSwiperList>([]);
     const [feed, setFeed] = useState<FeedStreamEntry[]>([]);
-    const [feedLoaded, setFeedLoaded] = useState(false);
+    // const [feedLoaded, setFeedLoaded] = useState(false);
     const alreadyLogin = useSelector((s: StateType) => s.userState.login);
     useEffect(() => {
         if (!loaded) {
@@ -30,7 +30,7 @@ const HomePage: React.FC<{}> = () => {
                 try {
                     setLoading(true);
                     const [d1, d2, d3] = await Promise.all([homepageClient.loadData(), adminClient.getHomepageSwiperList(), feedClient.getFeedStream()]);
-                    setFeedLoaded(alreadyLogin);
+                    // setFeedLoaded(alreadyLogin);
                     setHomePageData(d1);
                     setSwipers(d2);
                     setFeed(d3);
@@ -39,14 +39,14 @@ const HomePage: React.FC<{}> = () => {
             })();
         }
     }, [loaded, alreadyLogin])
-    useEffect(() => {
-        if (!feedLoaded) {
-            (async () => {
-                setFeed(await feedClient.getFeedStream());
-                setFeedLoaded(true);
-            })();
-        }
-    }, [feedLoaded])
+    // useEffect(() => {
+    //     if (!feedLoaded) {
+    //         (async () => {
+    //             setFeed(await feedClient.getFeedStream());
+    //             setFeedLoaded(true);
+    //         })();
+    //     }
+    // }, [feedLoaded])
     return <div>
         <Header as="h1">{appName}</Header>
         <Divider></Divider>

@@ -15,6 +15,7 @@ import { PUBLIC_URL } from "../../../App";
 import { showConfirm } from "../../../dialogs/Dialog";
 import ContestShowProblemList from "./ContestShowProblemList";
 import ClarificationList from "./ClarificationList";
+import CreateProblemsetModal from "./CreateProblemsetModal";
 enum ContestLoadStage {
     INIT = 1,
     PARTIAL_LOADED = 2,
@@ -35,6 +36,8 @@ const ContestShow: React.FC<{}> = () => {
     const [data, setData] = useState<ContestShowDetailResponse | null>(null);
     const [now, setNow] = useState<DateTime>(DateTime.now());
     const [loading, setLoading] = useState(false);
+    const [showCreateProblemsetModal, setShowCreateProblemsetModal] = useState(false);
+
     const baseUid = useCurrentUid();
     const inviteCode = useInputValue();
     const totalSeconds = useMemo(() => Math.max((data?.end_time || 0) - (data?.start_time || 0), 1), [data]);
@@ -138,7 +141,7 @@ const ContestShow: React.FC<{}> = () => {
                 {data.closed && !data.virtual && <Message info >
                     <Message.Header>此比赛已关闭</Message.Header>
                     <Message.Content>
-                        您可以创建虚拟比赛，但不能在此进行提交。
+                        您可以创建虚拟比赛来进行模拟考试，或前往相应的题目进行练习。
                     </Message.Content>
                 </Message>}
                 {data.virtual && <Message info>
@@ -208,8 +211,8 @@ const ContestShow: React.FC<{}> = () => {
                             size="tiny"
                             icon
                             labelPosition="left"
-                            as="a"
-                            href={`/submissions/1?filter=contest%3D${data.id},uid%3D${baseUid}`}
+                            as={Link}
+                            to={`${PUBLIC_URL}/submissions/1?filter=contest%3D${data.id},uid%3D${baseUid}`}
                         >
                             <Icon name="hdd"></Icon>
                             我的提交
@@ -243,8 +246,8 @@ const ContestShow: React.FC<{}> = () => {
                             {(managable && !data.virtual) && <Button
                                 color="blue"
                                 size="tiny"
-                                as="a"
-                                href={`/submissions/1?filter=contest%3D${data.id}`}
+                                as={Link}
+                                to={`${PUBLIC_URL}/submissions/1?filter=contest%3D${data.id}`}
                                 icon
                                 labelPosition="left"
                             >
@@ -271,6 +274,16 @@ const ContestShow: React.FC<{}> = () => {
                                 <Icon name="window close outline"></Icon>
                                 关闭比赛
                             </Button>}
+                            {managable && data.closed && <Button
+                                color="green"
+                                size="tiny"
+                                onClick={() => setShowCreateProblemsetModal(true)}
+                                icon
+                                labelPosition="left"
+                            >
+                                <Icon name="book"></Icon>
+                                创建习题集
+                            </Button>}
                         </Container>
                     </Grid.Column>
                 </Grid>
@@ -284,6 +297,7 @@ const ContestShow: React.FC<{}> = () => {
                 rankCriterion={data.rank_criterion}
                 contestID={data.id}
                 virtualID={virtualID}
+                closed={data.closed}
             ></ContestShowProblemList>
             <ClarificationList
                 closed={data.closed}
@@ -292,6 +306,12 @@ const ContestShow: React.FC<{}> = () => {
                 virtualID={virtualID}
                 status={status}
             ></ClarificationList>
+            {showCreateProblemsetModal && <CreateProblemsetModal
+                contest={data.id}
+                onClose={() => setShowCreateProblemsetModal(false)}
+                open={showCreateProblemsetModal}
+                title={data.name}
+            ></CreateProblemsetModal>}
         </>}
     </>;
 };

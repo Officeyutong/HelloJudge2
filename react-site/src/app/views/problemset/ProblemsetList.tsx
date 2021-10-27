@@ -91,7 +91,7 @@ const ProblemsetList: React.FC<{}> = () => {
                                 setCode("");
                                 setCurrentID(x.id);
                                 setShowModal(true);
-                            } : undefined} href={(x.accessible || !x.private) ? `/problemset/show/${x.id}` : undefined}>{x.name}</a>
+                            } : undefined} href={(x.accessible || !x.private) ? `/problemset/show/${x.id}` : undefined}>#{x.id}. {x.name}</a>
                         </Table.Cell>
                         <Table.Cell textAlign="center"
                             positive={x.accessible || x.private === 0}

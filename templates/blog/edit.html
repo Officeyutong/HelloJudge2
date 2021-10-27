@@ -8,8 +8,8 @@
 {%block body%}
 
 <script>
-    let id = parseInt(window.location.pathname.split("/").pop());
-    let editing = !isNaN(id);
+    let id = parseInt(window.location.pathname.split("/").pop()) || -1;
+    let editing = id !== -1;
     console.log(id);
     $(document).ready(() => {
         new Vue({

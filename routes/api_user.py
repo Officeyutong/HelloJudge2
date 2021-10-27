@@ -1,11 +1,12 @@
 from os import name
+
 from main import web_app as app
-from main import db, config, basedir, permission_manager
+from main import db, config, basedir, permission_manager,user_operation
 from flask import session, request, send_file, send_from_directory
 from utils import *
 
 from models import *
-from models.user import User
+from models.user import CachedAcceptedProblems, User
 from models import Follower
 from sqlalchemy.sql.expression import *
 # from werkzeug.utils import secure_filename
@@ -13,6 +14,7 @@ from typing import Tuple, Set
 from common.utils import unpack_argument
 from common.permission import require_permission
 import sqlalchemy.sql.expression as expr
+from sqlalchemy import func as sqlfunc
 import math
 import argon2
 
@@ -117,7 +119,7 @@ def login():
     session["uid"] = query.one().id
     import time
     session["login_time"] = str(int(time.time()))
-    session.permanment = True
+    session.permanent = True
     return make_response(0)
 
 
@@ -506,9 +508,17 @@ def get_user_profile():
     if user.phone_verified:
         ret["phone_number"] = "*" * \
             (len(user.phone_number)-4)+user.phone_number[-4:]
-    problems = db.session.query(Submission.problem_id).filter(and_(Submission.uid == user.id, Submission.status == "accepted")
-                                                              ).distinct().all()
-    ret["ac_problems"] = [x[0] for x in problems]
+    user_operation.ensure_accepted_problems_for_user(user.id)
+    ret["ac_problems"] = [
+        x.problem_id for x in
+        db.session.query(
+            CachedAcceptedProblems.problem_id
+        ).filter(
+            CachedAcceptedProblems.uid == user.id
+        ).order_by(
+            CachedAcceptedProblems.problem_id.asc()
+        )
+    ]
     ret["joined_teams"] = [
         {
             "id": x.team_id,
@@ -519,13 +529,18 @@ def get_user_profile():
             Team.name
         ).join(Team).filter(TeamMember.uid == user.id)
     ]
-    for item in ret["rating_history"]:
-        contest_name: Tuple[str] = db.session.query(Contest.name).filter(
-            Contest.id == item["contest_id"]).one_or_none()
-        if not contest_name:
-            item["contest_name"] = "比赛不存在"
-        else:
-            item["contest_name"] = contest_name.name
+    if len(ret["rating_history"]) != 0:
+        from sqlalchemy import union
+        # print("qwq", )
+        for item, contest_name in zip(
+                ret["rating_history"],
+                db.session.execute(
+                    union(*[expr.select(sqlfunc.ifnull(expr.select(Contest.name).where(
+                        Contest.id == entry["contest_id"]).scalar_subquery(), "比赛不存在")) for entry in ret["rating_history"]])
+                )
+        ):
+            print(contest_name)
+            item["contest_name"] = contest_name[0]
     group: PermissionGroup = db.session.query(PermissionGroup).filter(
         PermissionGroup.id == user.permission_group).one()
     ret["group_name"] = group.name

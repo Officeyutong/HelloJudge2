@@ -103,7 +103,7 @@ const ShowProblem: React.FC<{}> = () => {
         }
 
     };
-    const managable = baseUid === data?.uploader.uid || data?.managable || false;
+    const managable = baseUid === data?.uploader?.uid || data?.managable || false;
 
     return <>
         {!loaded && <Dimmer active>

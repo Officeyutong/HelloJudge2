@@ -33,15 +33,17 @@ const UserEditTab: React.FC<{ id: number }> = ({ id }) => {
             loadPage(1);
         }
     }, [loaded, loadPage]);
-    const remove = async (phone: string) => {
-        try {
-            setLoading(true);
-            await permissionPackClient.removePermissionPackUsers(id, [phone], false);
-            await loadPage(page);
-            showSuccessPopup("删除成功");
-        } catch { } finally {
-            setLoading(false);
-        }
+    const remove = (phone: string) => {
+        showConfirm("您确定要从权限包中删除该用户吗？如果您想要取消此用户使用相关题目、比赛、习题集的权限，请再在团队中删除此用户。", async () => {
+            try {
+                setLoading(true);
+                await permissionPackClient.removePermissionPackUsers(id, [phone], false);
+                await loadPage(page);
+                showSuccessPopup("删除成功");
+            } catch { } finally {
+                setLoading(false);
+            }
+        })
     };
     const dropAll = () => showConfirm("您确定要删除所有记录吗?", async () => {
         try {

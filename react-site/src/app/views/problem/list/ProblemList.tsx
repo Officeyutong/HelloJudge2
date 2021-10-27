@@ -3,7 +3,7 @@ import QueryString, { ParsedQs } from "qs";
 import React, { useEffect, useMemo, useState } from "react";
 import { useHistory, useLocation, useParams } from "react-router";
 import { Link } from "react-router-dom";
-import { Button, Container, Dimmer, Divider, Grid, Header, Icon, Loader, Pagination, Segment, Table } from "semantic-ui-react";
+import { Button, Container, Dimmer, Divider, Header, Icon, Loader, Pagination, Segment, Table } from "semantic-ui-react";
 import { PUBLIC_URL } from "../../../App";
 import { ButtonClickEvent, ProblemTagEntry } from "../../../common/types";
 import { useDocumentTitle } from "../../../common/Utils";
@@ -166,6 +166,7 @@ const ProblemList: React.FC<{}> = () => {
                         <Table.Cell>
                             <div style={{ maxWidth: "300px", overflowWrap: "break-word" }}>
                                 {x.tags.map(y => <ProblemTagLabel
+                                    key={y}
                                     data={tagMapping.has(y) ? tagMapping.get(y)! : { color: "black", display: y }}
                                 ></ProblemTagLabel>)}
                             </div>
@@ -190,16 +191,13 @@ const ProblemList: React.FC<{}> = () => {
                     </Table.Row>)}
                 </Table.Body>
             </Table>
-            <Grid columns="3" centered>
-                <Grid.Column
-                >
-                    <Pagination
-                        totalPages={pageCount}
-                        activePage={numberPage}
-                        onPageChange={(e, d) => history.push(`${PUBLIC_URL}/problems/${d.activePage}?${encodeFilter(filter)}`)}
-                    ></Pagination>
-                </Grid.Column>
-            </Grid>
+            <Container textAlign="center">
+                <Pagination
+                    totalPages={pageCount}
+                    activePage={numberPage}
+                    onPageChange={(e, d) => history.push(`${PUBLIC_URL}/problems/${d.activePage}?${encodeFilter(filter)}`)}
+                ></Pagination>
+            </Container>
         </Segment>
     </div>;
 };

@@ -14,28 +14,9 @@ import ProblemsetRouter from "./views/problemset/Router";
 import VirtualContestRouter from "./views/virtualcontest/Router";
 import { useSelector } from "react-redux";
 import { StateType } from "./states/Manager";
-
-// type RequireDataLoadingRouteProps = { loaded: boolean };
-// const RequireDataLoadingRoute = connect(
-//     (state: StateType): RequireDataLoadingRouteProps => ({ loaded: state.dataState.loaded })
-// )(
-//     (
-//         (props) => {
-//             const { loaded } = props;
-//             if (!loaded) {
-//                 return <Route render={() => <>
-//                     <Segment stacked>
-//                         <Dimmer active>
-//                             <Loader>加载数据中...</Loader>
-//                         </Dimmer>
-//                         <div style={{ height: "300px" }}></div>
-//                     </Segment></>}></Route>
-//             } else {
-//                 return <Route {...props}></Route>
-//             }
-//         }
-//     ) as React.FC<RouteProps & RequireDataLoadingRouteProps>
-// );
+import SubmissionRouter from "./views/submission/Router";
+import TeamRouter from "./views/team/Router";
+import ProblemtodoRouter from "./views/problemtodo/Router";
 
 const SubRoutes = withRouter(({ match }: RouteComponentProps) => {
     return <>
@@ -47,6 +28,9 @@ const SubRoutes = withRouter(({ match }: RouteComponentProps) => {
         <Route path={`${match.path}/problemset`}>
             <ProblemsetRouter></ProblemsetRouter>
         </Route>
+        <Route path={`${match.path}/problemtodo`}>
+            <ProblemtodoRouter></ProblemtodoRouter>
+        </Route>
         <Route path={`${match.path}/virtualcontest`}>
             <VirtualContestRouter></VirtualContestRouter>
         </Route>
@@ -54,13 +38,13 @@ const SubRoutes = withRouter(({ match }: RouteComponentProps) => {
         <ProblemRouter></ProblemRouter>
         <UserRouter></UserRouter>
         <ContestRouter></ContestRouter>
+        <SubmissionRouter></SubmissionRouter>
+        <TeamRouter></TeamRouter>
         <Route path={`${match.path}/permissionpack`} component={PermissionPackRouter}></Route>
     </>;
 });
 const MyRouter: React.FC<{}> = () => {
     const clientLoaded = useSelector((s: StateType) => s.generalClient !== null && s.unwrapClient !== null && s.unwrapExtraClient !== null);
-    console.log(clientLoaded);
-    console.log(useSelector((s: StateType) => s));
     return <Router>
         <BaseView>
             {clientLoaded && <Switch>

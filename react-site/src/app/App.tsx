@@ -11,7 +11,6 @@ import "katex/dist/katex.min.css";
 import "./App.css";
 import axios from "axios";
 import "./LinkButton.css";
-console.debug(process.env);
 const PUBLIC_URL = process.env.PUBLIC_URL;
 const MIXED_FRONTEND = PUBLIC_URL === "rs";
 const BACKEND_BASE_URL = process.env.REACT_APP_BASE_URL;

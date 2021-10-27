@@ -11,19 +11,21 @@ PORT = 8080
 # 监听地址
 HOST = "0.0.0.0"
 # 应用程序名称
-APP_NAME = "HelloJudge2"
+APP_NAME = "QBXTOJ"
 # 用于密码的盐
 PASSWORD_SALT = "qeiduew9odpjh8q9uohr8"
 # 用户名正则
 USERNAME_REGEX = r"^[a-zA-Z0-9_-]+$"
-# Redis地址
+# Redis地址 (评测队列)
 REDIS_URI = "redis://localhost:6379/1"
 # 用于缓存的Redis数据库
 CACHE_URL = "redis://localhost:6379/2"
 # 用于执行后台任务的队列
-BACKGROUNDTASK_URI = "redis://localhost/3"
+BACKGROUNDTASK_URI = "redis://localhost:6379/3"
 # 用于存储短信验证码的数据库
-REDIS_PHONEAUTH_URI = "redis://localhost/4"
+REDIS_PHONEAUTH_URI = "redis://localhost:6379/4"
+# 用于分布式锁的REDIS_URL
+REDIS_LOCK_URI = "redis://localhost:6379/5"
 # 评测机列表
 JUDGERS = {
     "UUID": "评测机名"
@@ -32,8 +34,11 @@ JUDGERS = {
 # 比赛失败提交罚时(分钟)
 FAIL_SUBMIT_PENALTY = 20
 # 比赛排行榜更新间隔
-RANKLIST_UPDATE_INTEVAL = 60
-
+RANKLIST_UPDATE_INTERVAL = 60
+# 已关闭的比赛排行榜的更新间隔(s)
+RANKLIST_UPDATE_INTERVAL_CLOSED_CONTESTS = 60*30
+# 通过题目列表刷新间隔(秒)
+ACCEPTED_PROBLEMS_REFRESH_INTERVAL = 5*60
 ENABLE_CSRF_TOKEN = True
 
 # 评测状态
@@ -69,5 +74,3 @@ MAX_PROBLEMTODO_COUNT = 50
 
 # Gravatar URL前缀
 GRAVATAR_URL_PREFIX = "https://www.gravatar.com/avatar/"
-# 禁止注册
-DISABLE_REGISTER = False

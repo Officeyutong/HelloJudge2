@@ -1,23 +1,31 @@
+
+import os
+from common.exceptions import APIException
 from models.problemset import ProblemSet
+from models.permission_group import PermissionGroup
+from models.file_storage import FileStorage
 from common.permission import require_permission
-from common.utils import unpack_argument
+from common.utils import make_json_response, unpack_argument
 from main import web_app as app
-from main import db, config, basedir, permission_manager
-from flask import session, request, send_file, send_from_directory
+from main import db, config, basedir, permission_manager, user_operation, file_storage
+from flask import session, request, send_file, send_from_directory, Blueprint
 from utils import *
 from models.user import User
 from models.problem import Problem
 from models.submission import Submission
 from models.contest import Contest
-from models.team import Team, TeamMember
+from models.team import Team, TeamFile, TeamMember
 from sqlalchemy.sql.expression import *
-from werkzeug.utils import secure_filename
-from typing import Tuple
+from typing import List, Tuple
 from datetime import datetime
 import typing
+from sqlalchemy.sql import expression as expr
+from sqlalchemy.sql import functions as func
+import flask
+router = Blueprint("team", __name__)
 
 
-@app.route("/api/team/unlock_problems_and_contests_and_problemsets", methods=["POST"])
+@router.route("/unlock_problems_and_contests_and_problemsets", methods=["POST"])
 @unpack_argument
 def api_team_unlock_problems_and_contests(teamID: int):
     """
@@ -38,16 +46,13 @@ def api_team_unlock_problems_and_contests(teamID: int):
         return make_response(-1, message="你不是团队成员")
     permissions = set((f"problem.use.{id}" for id in team.team_problems)) | set(
         (f"contest.use.{id}" for id in team.team_contests)) | set(f"problemset.use.{id}" for id in team.team_problemsets)
-
-    # user.permissions = [
-    #     item for item in user.permissions if item not in permissions] + list(permissions)
     db.session.commit()
     permission_manager.refresh_user(user.id)
 
     return make_response(0, message="操作完成")
 
 
-@app.route("/api/team/add_problem_or_contest_or_problemset", methods=["POST"])
+@router.route("/add_problem_or_contest_or_problemset", methods=["POST"])
 @unpack_argument
 def api_team_add_problem_or_contest(teamID: int, problems: typing.List[int], contests: typing.List[int], problemsets: typing.List[int]):
     """
@@ -94,7 +99,7 @@ def api_team_add_problem_or_contest(teamID: int, problems: typing.List[int], con
     return make_response(0, message="操作完成")
 
 
-@app.route("/api/team/list", methods=["POST"])
+@router.route("/list", methods=["POST"])
 def team_list():
     """
     参数
@@ -118,23 +123,32 @@ def team_list():
     }
     """
     teams = db.session.query(
-        Team.id, Team.name, Team.owner_id,  Team.private).all()
+        Team.id,
+        Team.name,
+        Team.owner_id,
+        Team.private,
+        User.username,
+        expr.select(func.count(TeamMember.uid)).where(
+            TeamMember.team_id == Team.id).scalar_subquery().label("member_count")
+        # functions.count().label("member_count")
+    ).join(User).order_by(Team.id.desc()).all()
     result = []
     for item in teams:
-        owner = User.by_id(item.owner_id)
+        # print(item)
+        # owner = User.by_id(item.owner_id)
         result.append({
             "name": item.name,
             "id": item.id,
-            "owner_id": owner.id,
-            "owner_username": owner.username,
-            "member_count": db.session.query(TeamMember).filter_by(team_id=item.id).count(),
-            "private": item.private,
-            "accessible": permission_manager.has_permission(session.get("uid", None), f"team.use.{item.id}")
+            "owner_id": item.owner_id,
+            "owner_username": item.username,
+            "member_count": item.member_count,
+            "private": bool(item.private),
+            "accessible": (not bool(item.private)) or permission_manager.has_permission(session.get("uid", None), f"team.use.{item.id}")
         })
     return make_response(0, data=result)
 
 
-@app.route("/api/team/create", methods=["POST"])
+@router.route("/create", methods=["POST"])
 @require_permission(permission="team.create", manager=permission_manager)
 def create_team():
     """
@@ -164,7 +178,7 @@ def create_team():
     return make_response(0, team_id=team.id)
 
 
-@app.route("/api/team/join", methods=["POST"])
+@router.route("/join", methods=["POST"])
 def join_team():
     """
     参数
@@ -202,10 +216,11 @@ def join_team():
         is_admin=False
     ))
     db.session.commit()
+    permission_manager.refresh_user(session.get("uid", -1))
     return make_response(0, message="加入成功")
 
 
-@app.route("/api/team/quit", methods=["POST"])
+@router.route("/quit", methods=["POST"])
 def quit_team():
     """
     退出团队并清空相应权限
@@ -233,29 +248,13 @@ def quit_team():
         return make_response(-1, message="您不在此团队内")
     if user.id == team.owner_id:
         return make_response(-1, message="此用户不可被移出团队")
-
-    # def remove_and_return(a, val):
-    #     a = a.copy()
-    #     a.remove(val)
-    #     return a
-    # # print(team.members)
-    # team.members = remove_and_return(team.members, user.id)
-    # user.joined_teams = remove_and_return(user.joined_teams, team.id)
-    # if user.id in team.admins:
-    #     team.admins = remove_and_return(team.admins, user.id)
-    # print(team.members)
     db.session.delete(relation)
-    db.session.commit()
-    perms = set((f"contest.use.{item}" for item in team.team_contests)) | set(
-        (f"problem.use.{item}" for item in team.team_problems)) | set(
-        (f"problemset.use.{item}" for item in team.team_problemsets))
-    user.permissions = [item for item in user.permissions if item not in perms]
     db.session.commit()
     permission_manager.refresh_user(user.id)
     return make_response(0, message="操作完成")
 
 
-@app.route("/api/team/set_admin", methods=["POST"])
+@router.route("/set_admin", methods=["POST"])
 def set_admin():
     """
     此操作只可由团队主进行
@@ -289,22 +288,11 @@ def set_admin():
     if team.owner_id != operator.id and not operator_relationship.is_admin and not permission_manager.has_permission(session.get("uid", -1), "team.manage"):
         return make_response(-1, message="你没有权限执行此操作")
     to_modify_relationship.is_admin = value
-
-    # def remove_and_return(a, val):
-    #     a = a.copy()
-    #     a.remove(val)
-    #     return a
-    # if value:
-    #     if user.id not in team.admins:
-    #         team.admins = [*team.admins, user.id]
-    # else:
-    #     if user.id in team.admins:
-    #         team.admins = remove_and_return(team.admins, user.id)
     db.session.commit()
     return make_response(0, message="操作完成")
 
 
-@app.route("/api/team/show", methods=["POST"])
+@router.route("/show", methods=["POST"])
 def show_team():
     """
     参数
@@ -322,16 +310,16 @@ def show_team():
             "owner_id":"所有者ID",
             "owner_username":"所有者用户名",
             "admins":[],//管理员列表[1,2,3]
-            "members":[],//用户列表{"username":"xxx","uid":xxx}
+            "members":[],//用户列表{"username":"xxx","uid":xxx,"email":xxx,"group_name":"权限组名"}
             "create_time":"创建时间",
             "hasPermission":"是否有权限查看详情",
-            "problems":[ // 团队题目列表
+            "team_problems":[ // 团队题目列表
                 {"id":"题目ID","title":"题目名"}
             ],
-            "contests":[ // 团队题目列表
+            "team_contests":[ // 团队题目列表
                 {"id":"比赛ID","name":"比赛名"}
             ],
-            "problemsets":[ // 团队题目列表
+            "team_problemsets":[ // 团队题目列表
                 {"id":"习题集ID","name":"习题集名"}
             ],
             "tasks":[
@@ -364,13 +352,16 @@ def show_team():
     user_relationship: TeamMember = db.session.query(
         TeamMember).filter_by(uid=user.id, team_id=team.id).one_or_none()
     has_permission = permission_manager.has_permission(
-        user.id, f"team.use.{team.id}") or (not team.private) or user.id == team.owner_id or (user_relationship)
+        user.id, f"team.use.{team.id}") or (not team.private) or user.id == team.owner_id or (user_relationship is not None)
     # result = team.as_dict()
     members = db.session.query(
         TeamMember.uid,
         TeamMember.is_admin,
-        User.username
-    ).join(User).filter(TeamMember.team_id == team.id).order_by(TeamMember.is_admin.desc()).order_by(User.username.asc()).all()
+        User.username,
+        User.email,
+        User.permission_group,
+        PermissionGroup.name.label("group_name")
+    ).join(User).join(PermissionGroup, PermissionGroup.id == User.permission_group).filter(TeamMember.team_id == team.id).order_by(TeamMember.is_admin.desc()).order_by(User.username.asc()).all()
     result = {
         "id": team.id,
         "name": team.name,
@@ -386,52 +377,22 @@ def show_team():
     }
     result["owner_username"] = User.by_id(result["owner_id"]).username
     result["hasPermission"] = has_permission
+
     result["team_problems"] = [{
-        "id": item,
-        "title": db.session.query(Problem.title).filter_by(id=item).one().title
-    } for item in result["team_problems"]]
+        "id": item.id,
+        "title": item.title
+    } for item in db.session.query(Problem.title, Problem.id).filter(Problem.id.in_(result["team_problems"])).all()]
     result["team_contests"] = [{
-        "id": item,
-        "name": db.session.query(Contest.name).filter_by(id=item).one().name
-    } for item in result["team_contests"]]
+        "id": item.id,
+        "name": item.name,
+        "start_time": int(item.start_time.timestamp())
+    } for item in db.session.query(Contest.name, Contest.id, Contest.start_time).filter(Contest.id.in_(result["team_contests"])).all()]
     result["team_problemsets"] = [{
-        "id": item,
-        "name": db.session.query(ProblemSet.name).filter_by(id=item).one().name
-    } for item in result["team_problemsets"]]
+        "id": item.id,
+        "name": item.name
+    } for item in db.session.query(ProblemSet.name, ProblemSet.id).filter(ProblemSet.id.in_(result["team_problemsets"])).all()]
 
     if has_permission:
-        for item in result["tasks"]:
-            problems = []
-            for problem in item["problems"]:
-                current: Problem = Problem.by_id(problem)
-                last = {
-                    "id": current.id, "name": current.title,
-                    "scores": []
-                }
-                for user_ in members:
-                    user = user_.uid
-                    submit: Submission = db.session.query(Submission).filter(Submission.uid == user).filter(
-                        Submission.problem_id == current.id).order_by(Submission.status.asc()).order_by(Submission.submit_time.desc())
-                    if submit.count() == 0:
-                        submit = None
-                    else:
-                        submit = submit.first()
-                    if submit:
-                        last["scores"].append({
-                            "uid": user,
-                            "username": User.by_id(user).username,
-                            "score": submit.get_total_score(),
-                            "status": submit.status,
-                            "submit_id": submit.id
-                        })
-                    else:
-                        last["scores"].append({
-                            "uid": user, "username": User.by_id(user).username,
-                            "score": 0, "status": "unsubmitted"
-                        })
-
-                problems.append(last)
-            item["problems"] = problems
 
         result["create_time"] = str(result["create_time"])
 
@@ -441,12 +402,12 @@ def show_team():
         for x in members:
             result["members"].append({
                 "username": x.username,
-                "uid": x.uid
+                "uid": x.uid,
+                "email": x.email,
+                "group_name": x.group_name
             })
             if x.is_admin:
                 result["admins"].append(x.uid)
-        # result["members"] = list(map(lambda x: {"username": User.by_id(
-        #     x).username, "uid": x}, result["members"]))
     else:
         result["description"] = ""
         result["admins"] = []
@@ -457,7 +418,7 @@ def show_team():
     return make_response(0, message="操作完成", data=result)
 
 
-@app.route("/api/team/raw_data", methods=["POST"])
+@router.route("/raw_data", methods=["POST"])
 def team_raw_data():
     """
     获取团队原始信息
@@ -474,7 +435,10 @@ def team_raw_data():
                 {"name":"任务名","problems":[1,2,3]}
             ],
             "private":"是否为私有团队",
-            "invite_code":"邀请码"
+            "invite_code":"邀请码",
+            "team_problems":number[],
+            "team_contests":number[],
+            "team_problemsets":number[],
         }
     }
     """
@@ -486,7 +450,10 @@ def team_raw_data():
         Team.tasks,
         Team.private,
         Team.invite_code,
-        Team.owner_id
+        Team.owner_id,
+        Team.team_problemsets,
+        Team.team_contests,
+        Team.team_problems
     ).filter_by(id=request.form["team_id"]).one_or_none()
     if not team:
         return make_response(-1, message="团队ID不存在")
@@ -500,12 +467,15 @@ def team_raw_data():
         "name": team.name,
         "description": team.description,
         "tasks": team.tasks,
-        "private": team.private,
-        "invite_code": team.invite_code
+        "private": bool(team.private),
+        "invite_code": team.invite_code,
+        "team_problems": team.team_problems,
+        "team_contests": team.team_contests,
+        "team_problemsets": team.team_problemsets
     })
 
 
-@app.route("/api/team/update", methods=["POST"])
+@router.route("/update", methods=["POST"])
 def team_update():
     """
     更新团队信息
@@ -519,7 +489,10 @@ def team_update():
                 {"name":"任务名","problems":[1,2,3]}
             ],
             "private":"是否为私有团队",
-            "invite_code":"邀请码"
+            "invite_code":"邀请码",
+            "team_problems":number[],
+            "team_contests":number[],
+            "team_problemsets":number[]
         }
     }
 
@@ -533,6 +506,16 @@ def team_update():
     if user.id != team.owner_id and not relationship and not permission_manager.has_permission(user, "team.manage"):
         return make_response(-1, message="你没有权限进行此操作")
     data: dict = decode_json(request.form["data"])
+
+    def check_stuff(keyname: str, model):
+        team_stuff = data[keyname]
+        if db.session.query(model).filter(model.id.in_(team_stuff)).count() != len(team_stuff):
+            raise APIException(f"{keyname}中存在非法ID", -1)
+        setattr(team, keyname, team_stuff)
+    check_stuff("team_problems", Problem)
+    check_stuff("team_contests", Contest)
+    check_stuff("team_problemsets", ProblemSet)
+
     team.name = data["name"]
     team.description = data["description"]
     team.tasks = data["tasks"]
@@ -542,11 +525,12 @@ def team_update():
         for problem in task["problems"]:
             if not Problem.has(problem):
                 return make_response(-1, message=f"任务 {task['name']} 中的题目 {problem}不存在！")
+
     db.session.commit()
     return make_response(0, message="保存成功")
 
 
-@app.route("/api/team/send_team_notification", methods=["POST"])
+@router.route("/send_team_notification", methods=["POST"])
 @unpack_argument
 def api_team_send_team_notification(team_id: int, content: str):
     """
@@ -567,3 +551,129 @@ def api_team_send_team_notification(team_id: int, content: str):
     for item in members:
         send_feed(item.uid, False, content)
     return make_response(0, message="操作完成")
+
+
+@router.route("/invite", methods=["POST"])
+@unpack_argument
+@require_permission(manager=permission_manager, permission="team.manage")
+def api_team_invitemembers(team: int, uid: List[int], setAdmin: bool):
+    teamobj = db.session.query(Team).filter(Team.id == team).count()
+    if not teamobj:
+        return make_json_response(-1, message="题目ID错误")
+    db.session.add_all([
+        TeamMember(uid=user, team_id=team, is_admin=setAdmin) for user in uid
+    ])
+    db.session.commit()
+    return make_json_response(0, message="操作完成")
+
+
+@router.route("/get_files", methods=["POST"])
+@unpack_argument
+def api_get_team_files(teamID: int):
+    uid = user_operation.ensure_login()
+    if not user_operation.ensure_in_team(uid, teamID):
+        return make_json_response("请先加入该团队!")
+    files = db.session.query(
+        TeamFile.file_id,
+        FileStorage.filename,
+        FileStorage.filesize,
+        FileStorage.upload_time,
+        User.username,
+        User.email,
+        TeamFile.uid
+    ).join(FileStorage).join(User).filter(TeamFile.team_id == teamID)
+    return make_json_response(0, data=[
+        {
+            "file_id": item.file_id,
+            "filename": item.filename,
+            "filesize": item.filesize,
+            "upload_time": int(item.upload_time.timestamp()),
+            "uploader": {
+                "uid": item.uid,
+                "username": item.username,
+                "email": item.email
+            }
+        } for item in files
+    ])
+
+
+@router.route("/remove_file", methods=["POST"])
+@unpack_argument
+def remove_teamfile(teamID: int, fileID: str):
+    uid = user_operation.ensure_login()
+    if not user_operation.ensure_in_team(uid, teamID):
+        return make_json_response("请先加入该团队!")
+    has_file = bool(db.session.query(TeamFile).filter_by(
+        team_id=teamID, file_id=fileID).one_or_none())
+    if not has_file:
+        return make_json_response(-1, message="文件不存在!")
+    file_storage.remove_file(fileID)
+    return make_json_response(0, message="操作完成!")
+
+
+@router.route("/upload_file", methods=["POST"])
+def upload_file():
+    """
+    上传题目文件
+    URL query:
+        teamID: int 团队ID
+    FormData:
+        文件
+    """
+    import uuid
+    import os
+    uid = user_operation.ensure_login()
+    team_id = flask.request.args.get("teamID", type=int, default=-1)
+    if not user_operation.ensure_in_team(uid, team_id):
+        return make_json_response(-1, message="你没有权限进行此操作")
+    if not user_operation.ensure_team_admin(uid, team_id, True, False):
+        return make_json_response(-1, message="你不是团队管理!")
+    file_storage.ensure_datadir()
+    files_store = []
+    for filename, file in request.files.items():
+        curr_id = str(uuid.uuid4())
+        save_path = file_storage.get_filepath(curr_id)
+        file.save(save_path)
+        files_store.append({
+            "filename": filename,
+            "uuid": curr_id,
+            "filesize": os.path.getsize(save_path),
+            "upload_time": datetime.now()
+        })
+    new_names = [item["filename"] for item in files_store]
+    uuid_query = db.session.query(TeamFile.file_id).join(FileStorage).filter(
+        expr.and_(
+            FileStorage.filename.in_(new_names),
+            TeamFile.team_id == team_id
+        )
+    )
+    correspond_uuids = [item.file_id for item in uuid_query.all()]
+    for item in correspond_uuids:
+        os.remove(file_storage.get_filepath(item))
+    db.session.query(FileStorage).filter(
+        FileStorage.uuid.in_(correspond_uuids)).delete()
+    db.session.commit()
+    db.session.add_all(
+        FileStorage(**entry) for entry in files_store
+    )
+    db.session.commit()
+    db.session.add_all(TeamFile(
+        team_id=team_id,
+        file_id=entry["uuid"],
+        uid=uid
+    ) for entry in files_store)
+    db.session.commit()
+    return make_json_response(0)
+
+
+@router.route("/download_file", methods=["GET", "POST"])
+def download_file():
+    uid = user_operation.ensure_login()
+    team_id = flask.request.args.get("teamID", type=int, default=-1)
+    file_id = flask.request.args.get("fileID", type=str, default="")
+    if not user_operation.ensure_in_team(uid, team_id):
+        flask.abort(403)
+    file_storage.ensure_datadir()
+    if db.session.query(TeamFile).filter_by(team_id=team_id, file_id=file_id).count() == 0:
+        return make_json_response(-1, message="文件不存在!")
+    return file_storage.get_flask_sendfile(file_id, True)

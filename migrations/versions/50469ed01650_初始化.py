@@ -324,7 +324,7 @@ def upgrade():
             id="default",
             name="普通用户",
             permissions=["challenge.use", "problemset.use.public",
-                         "remote_judge.use", "blog.use", "virtualcontest.use"]
+                         "remote_judge.use", "blog.use", "virtualcontest.use", "[provider:allteams]"]
         ),
 
     ])

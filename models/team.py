@@ -60,3 +60,13 @@ class TeamMember(db.Model):
     # 是否是管理
     is_admin = Column(mysql.TINYINT(display_width=1),
                       default=False, index=True)
+
+
+class TeamFile(db.Model):
+    __tablename__ = "team_file"
+    team_id = Column(Integer, ForeignKey(
+        "team.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    file_id = Column(String(128), ForeignKey(
+        "file_storage.uuid", ondelete="CASCADE"), nullable=False, primary_key=True)
+    uid = Column(Integer, ForeignKey(
+        "user.id", ondelete="CASCADE"), nullable=False, index=True)

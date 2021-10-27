@@ -12,3 +12,5 @@ DISPLAY = "Python 3.8"
 VERSION = "CPython 3.8"
 # Ace.js模式
 ACE_MODE = "python"
+# HighlightJS高亮模式
+HLJS_MODE = "python"

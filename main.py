@@ -1,6 +1,8 @@
 
 import flask
 from flask_sqlalchemy import SQLAlchemy
+
+from common.user_operation import UserOperation
 try:
     import config as config
 except:
@@ -13,12 +15,14 @@ from flask_socketio import SocketIO
 from common.permission import PermissionManager
 from common.log import LogManager
 from redis import ConnectionPool
-from typing import Set, NoReturn, Union
+from typing import Optional, Set, NoReturn, Union
 import os
 import celery
 from flask_cors import CORS
 from flask_migrate import Migrate
 from api.model_api import ModelAPI
+from common.file_storage import FileStorage
+import redis_lock
 web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
@@ -52,6 +56,7 @@ background_task_queue = celery.Celery(
     web_app.name, broker=config.BACKGROUNDTASK_URI)
 redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
+lock_conn_pool = ConnectionPool.from_url(config.REDIS_LOCK_URI)
 
 def get_permissions(uid: Union[int, str]) -> Set[str]:
     from models import User, PermissionGroup
@@ -83,6 +88,10 @@ permission_manager: PermissionManager = PermissionManager(
 log_manager: LogManager = LogManager(
     redis_connection_pool, config.DEFAULT_LOG_EXPIRE)
 
+file_storage = FileStorage(db)
+
+user_operation = UserOperation(db, permission_manager)
+
 
 def _import_routes():
     import routes
@@ -97,7 +106,9 @@ def _import_routes():
     from routes.api_phoneutil import router as phoneutil
     from routes.api_phoneuser import router as phoneuser
     from routes.api_misc import router as misc
+    from routes.api_solution import router as solution
     from routes.api_permission import router as permission
+    from routes.api_team import router as team
     web_app.register_blueprint(
         contest, url_prefix="/api/contest")
     web_app.register_blueprint(
@@ -121,7 +132,11 @@ def _import_routes():
     web_app.register_blueprint(
         misc, url_prefix="/api/misc")
     web_app.register_blueprint(
+        solution, url_prefix="/api/solution")
+    web_app.register_blueprint(
         permission, url_prefix="/api/permission")
+    web_app.register_blueprint(
+        team, url_prefix="/api/team")
 
 
 def _init_web_app():
@@ -135,6 +150,8 @@ def _init_web_app():
         "permissionpack", provider.get_permissionpack_permissions)
     permission_manager.add_provider(
         "contest", provider.get_contest_permissions)
-
+    permission_manager.add_provider(
+        "allteams", provider.get_allteams_permissions
+    )
 
 _init_web_app()

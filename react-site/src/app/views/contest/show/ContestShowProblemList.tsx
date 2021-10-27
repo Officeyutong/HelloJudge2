@@ -1,5 +1,7 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Header, Segment, Table } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../../App";
 import JudgeStatusLabel from "../../utils/JudgeStatusLabel";
 import { ContestShowDetailResponse, RankCriterion } from "../client/types";
 
@@ -8,13 +10,15 @@ interface ContestShowProblemListProps {
     rankCriterion: RankCriterion;
     contestID: number;
     virtualID: number;
+    closed: boolean;
 };
 
 const ContestShowProblemList: React.FC<ContestShowProblemListProps> = ({
     problems,
     rankCriterion,
     contestID,
-    virtualID
+    virtualID,
+    closed
 }) => {
     const showWeightColumn = (rankCriterion === "last_submit" || rankCriterion === "max_score");
     return <>
@@ -42,9 +46,9 @@ const ContestShowProblemList: React.FC<ContestShowProblemListProps> = ({
                             </a>
                         </Table.Cell>
                         <Table.Cell>
-                            <a href={`/contest/${contestID}/problem/${x.id}?virtual_contest=${virtualID}`}>
+                            <Link to={closed ? `${PUBLIC_URL}/show_problem/${x.rawID}` : `${PUBLIC_URL}/contest/${contestID}/problem/${x.id}?virtual_contest=${virtualID}`}>
                                 #{parseInt(x.id as unknown as string) + 1}. {x.title}
-                            </a>
+                            </Link>
                         </Table.Cell>
                         {showWeightColumn && <Table.Cell>{x.weight}</Table.Cell>}
                         <Table.Cell>
