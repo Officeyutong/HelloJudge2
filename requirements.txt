@@ -24,3 +24,5 @@ aiofiles
 bs4
 aiohttp
 lxml
+sqlalchemy>=1.4.20
+python-redis-lock
