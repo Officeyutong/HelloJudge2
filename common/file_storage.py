@@ -20,6 +20,7 @@ class FileStorage:
             os.mkdir(BASE_DIR)
 
     def get_flask_sendfile(self, file_id: str, as_attach: bool = False):
+        self.ensure_datadir()
         from models.file_storage import FileStorage as model_FileStorage
         target_file = BASE_DIR/file_id
         entry: model_FileStorage = self.db.session.query(
@@ -29,6 +30,7 @@ class FileStorage:
         return flask.send_file(target_file, as_attachment=as_attach, attachment_filename=entry.filename, conditional=True)
 
     def store_file_into_db(self, file_id: str, filename: str, filesize: int):
+        self.ensure_datadir()
         from models.file_storage import FileStorage as model_FileStorage
         self.db.session.add(model_FileStorage(
             uuid=file_id,
