@@ -233,7 +233,7 @@ def get_discussion_list(path: str, page: int, countLimit: int = 10**8):
         "message":-1,
         "page_count":10,//总页数
         "current_page":10,//当前页 
-        "managable":"可否删除\编辑",
+        "managable":"可否删除/编辑",
         "data":[
                 {
                 "uid":"用户ID",
@@ -268,7 +268,7 @@ def get_discussion_list(path: str, page: int, countLimit: int = 10**8):
                     Discussion.uid == session.get("uid")
                 )
             )
-    result = result.order_by(Discussion.id.desc()).order_by(Discussion.top.desc()).slice((page-1)*config.DISCUSSIONS_PER_PAGE,
+    result = result.order_by(Discussion.top.desc()).order_by(Discussion.id.desc()).slice((page-1)*config.DISCUSSIONS_PER_PAGE,
                                                                                          min(page*config.DISCUSSIONS_PER_PAGE, (page-1)*config.DISCUSSIONS_PER_PAGE+int(countLimit)))
     for item in result:
         user: User = User.by_id(item.uid)
@@ -280,10 +280,10 @@ def get_discussion_list(path: str, page: int, countLimit: int = 10**8):
             "uid": user.id,
             "username": user.username,
             "email": user.email,
-            "time": str(item.time),
+            "time": item.time.timestamp(),
             "title": item.title,
             "comment_count": comments.count(),
-            "last_comment_time": str(comments.first().time) if (comments.count() != 0) else None,
+            "last_comment_time": comments.first().time.timestamp() if (comments.count() != 0) else None,
             "id": item.id,
             "private": item.private
         })
@@ -331,7 +331,7 @@ def get_comments():
             "username": user.username,
             "uid": user.id,
             "content": item.content,
-            "time": str(item.time),
+            "time": (item.time.timestamp()),
             "email": user.email
         })
     return make_response(0, **ret)
@@ -355,8 +355,18 @@ def get_discussion(id: int):
         }
     }
     """
-    discussion: Discussion = db.session.query(Discussion.id, Discussion.uid, Discussion.private).filter_by(
-        id=id).one_or_none()
+    discussion: Discussion = db.session.query(
+        Discussion.id,
+        Discussion.path,
+        Discussion.title,
+        Discussion.content,
+        Discussion.uid,
+        Discussion.top,
+        Discussion.time,
+        Discussion.private,
+        User.email,
+        User.username
+    ).filter(Discussion.id == id).join(User).one_or_none()
 
     import flask
     if not discussion:
@@ -364,11 +374,17 @@ def get_discussion(id: int):
     if discussion.private and session.get("uid") != discussion.uid and not permission_manager.has_permission(session.get("uid"), "discussion.manage"):
         return make_response(-1, message="你不能查看私有讨论")
     ret = {
-        "data": db.session.query(Discussion).filter(Discussion.id == id).one().as_dict()
+        "data": {
+            "id": discussion.id,
+            "path": discussion.path,
+            "title": discussion.title,
+            "content": discussion.content,
+            "uid": discussion.uid,
+            "top": bool(discussion.top),
+            "time": discussion.time.timestamp(),
+            "private": bool(discussion.private),
+            "email": discussion.email,
+            "username": discussion.username
+        }
     }
-    user = User.by_id(ret["data"]["uid"])
-    ret["data"]["email"] = user.email
-    ret["data"]["username"] = user.username
-
-    ret["data"]["time"] = str(ret["data"]["time"])
     return make_response(0, **ret)

@@ -414,6 +414,7 @@ def show_team():
         result["members"] = []
         result["create_time"] = ""
         result["tasks"] = []
+        result["team_problems"] = result["team_contests"] = result["team_problemsets"] = []
 
     return make_response(0, message="操作完成", data=result)
 

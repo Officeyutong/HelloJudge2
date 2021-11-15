@@ -20,6 +20,7 @@ export interface UserStateType {
         registerURL: string;
         gravatarURL: string;
         usePhoneAuth: boolean;
+        canUseImageStore: boolean;
     }
 }
 
@@ -31,6 +32,7 @@ export interface StateType {
     userConfig: {
         aceTheme: string;
     };
+    displayBaseView: boolean;
 };
 
 const defaultState: StateType = {
@@ -49,7 +51,8 @@ const defaultState: StateType = {
             usePolling: true,//使用轮询
             registerURL: "",//注册页面URL
             gravatarURL: "",//gravatar前缀,
-            usePhoneAuth: false
+            usePhoneAuth: false,
+            canUseImageStore: false
         }
     },
     generalClient: null,
@@ -57,7 +60,8 @@ const defaultState: StateType = {
     unwrapExtraClient: null,
     userConfig: {
         aceTheme: "github"
-    }
+    },
+    displayBaseView: true
 };
 
 export interface SimpleAction extends Action<string> {
@@ -102,6 +106,15 @@ export function makeClientUpdateAction(generalClient: AxiosInstance | null, unwr
             generalClient: generalClient,
             unwrapClient: unwrapClient,
             unwrapExtraClient: unwrapExtraClient
+        })
+    } as SimpleAction;
+}
+export function makeDisplayBaseViewUpdateAction(display: boolean) {
+    return {
+        type: "BASEVIEW_DISPLAY_UPDATE",
+        modify: (state: StateType) => ({
+            ...state,
+            displayBaseView: display
         })
     } as SimpleAction;
 }

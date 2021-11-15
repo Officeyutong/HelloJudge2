@@ -9,7 +9,7 @@ RUN = 'sh -c "python3 {program} {redirect}"'
 # 显示名
 DISPLAY = "Python 3.8"
 # 版本
-VERSION = "CPython 3.8"
+VERSION = "CPython 3.8.5"
 # Ace.js模式
 ACE_MODE = "python"
 # HighlightJS高亮模式

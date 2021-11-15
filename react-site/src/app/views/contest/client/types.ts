@@ -3,10 +3,12 @@ import { ExtraParameterEntry, ProblemFileEntry, ProblemStatement, ProblemType } 
 
 interface ContestRanklist {
     closed: boolean;
+    running: boolean;
     refresh_interval: number;
     name: string;
     contest_id: number;
     using_penalty: boolean;
+    managable: boolean;
     ranklist: {
         rank: number;
         uid: number;

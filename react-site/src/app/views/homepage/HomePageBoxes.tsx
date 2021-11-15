@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { useHistory } from "react-router";
 import { Button, Dimmer, Divider, Grid, Header, Icon, Input, List, Loader, Segment } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../App";
 import { StateType } from "../../states/Manager";
 import discussionClient from "../discussion/client/DiscussionClient";
 import { DiscussionEntry } from "../discussion/client/types";
@@ -116,11 +118,12 @@ const ToolBox: React.FC<{ data: ToolBoxEntry[] }> = ({ data }) => {
 };
 const ProblemSearchBox: React.FC<{}> = () => {
     const [text, setText] = useState("");
+    const history = useHistory();
     const doSearch = useCallback(() => {
         if (text) {
-            window.localStorage.setItem("hj2-home-search", text);
-            window.open("/problems/1");
+            history.push(`${PUBLIC_URL}/problems/1?filter=${encodeURIComponent(JSON.stringify({ searchKeyword: text }))}`);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [text]);
     return <Segment stacked>
         <Header as="h3">题目搜索</Header>

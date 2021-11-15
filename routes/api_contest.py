@@ -19,7 +19,7 @@ import sqlalchemy.sql.expression as expr
 from sqlalchemy import distinct, alias
 import datetime
 import json
-
+import redis_lock
 router = Blueprint("contest", __name__)
 
 
@@ -515,7 +515,7 @@ def show_contest(contestID: int, virtualID: int = -1):
                 ).order_by(func.field(Problem.id, *problem_raw_ids))
             ),
                 contest.problems):
-            print(problem)
+            # print(problem)
             # problem: Problem = Problem.by_id(problem_data["id"])
             current = {
                 "title": problem.title,
@@ -659,6 +659,8 @@ def contest_update(contestID: int, data: dict):
     contest.end_time = data["end_time"]
     contest.problems = data["problems"]
     contest.ranklist_visible = data["ranklist_visible"]
+    if data["ranklist_visible"] or data["judge_result_visible"]:
+        return make_json_response(-1, message="当前暂时禁止比赛设置为赛时公开排行榜或提交结果")
     contest.judge_result_visible = data["judge_result_visible"]
     contest.rank_criterion = data["rank_criterion"]
     if contest.private_contest and not data["private_contest"]:
@@ -845,10 +847,15 @@ def get_contest_rank_list(contest: Contest, virtual_id: int = -1) -> dict:
         # print(item)
         if using_virtual:
             virtual_contest: VirtualContest = db.session.query(
-                VirtualContest.start_time).filter_by(id=virtual_contest_id).one()
+                VirtualContest.start_time,
+                VirtualContest.end_time
+            ).filter_by(id=virtual_contest_id).one()
             extra_conditions = [
                 Submission.submit_time <= virtual_contest.start_time+time_delta
             ]
+            # 对于进行中的虚拟比赛，只在相应的虚拟比赛排行榜里显示排名(防止选手通过其他方法知道评测结果)
+            if virtual_contest_id != virtual_id and Contest.running(virtual_contest):
+                continue
         else:
             extra_conditions = [
                 Submission.submit_time <= contest.start_time+time_delta
@@ -862,6 +869,9 @@ def get_contest_rank_list(contest: Contest, virtual_id: int = -1) -> dict:
         )).count() == 0:
             # 因为虚拟比赛的提交时间限制而啥都没搞到的
             continue
+
+        # if using_virtual and virtual_contest_id != virtual_id and :
+        #     continue
         current = {
             "uid": user.id,
             "username": user.username,
@@ -1106,21 +1116,35 @@ def contest_ranklist(contestID: int, virtualID: int = -1):
     from json import JSONEncoder, JSONDecoder
     key = f"hj2-contest-ranklist-{contest.id}-virtual-{virtualID}"
     client = redis.Redis(connection_pool=redis_connection_pool)
-    if not client.exists(key):
-        print(f"Ranklist for {key} not found, generating..")
-        # if show_all_submissions_when_using_virtual_contest:
+    with redis_lock.Lock(client, name=f"hj2-refresh-lock-contest-ranklist-{contest.id}|{virtualID}", expire=3, auto_renewal=True):
+        if not client.exists(key):
+            print(f"Ranklist for {key} not found, generating..")
+            refresh_interval = config.RANKLIST_UPDATE_INTERVAL if not contest.closed else config.RANKLIST_UPDATE_INTERVAL_CLOSED_CONTESTS
+            if VirtualContest.running(virtual_contest or contest):
+                refresh_interval = config.RANKLIST_UPDATE_INTERVAL
+            else:
+                refresh_interval = config.RANKLIST_UPDATE_INTERVAL_CLOSED_CONTESTS
+            ranklist_data = {
+                **get_contest_rank_list(contest, virtualID),
+                "refresh_interval": refresh_interval,
+                "closed": bool(contest.closed),
+                "running": VirtualContest.running(virtual_contest) if virtual_contest else Contest.running(contest)
+            }
+            client.set(key, JSONEncoder().encode(ranklist_data),
+                       ex=refresh_interval)
+        else:
+            ranklist_data = json.loads(client.get(key).decode())
+    return make_response(0, data={**ranklist_data, "managable": permission_manager.has_permission(session.get("uid", -1), "contest.manage")})
 
-        #     ranklist_data = get_contest_rank_list(contest, -1)
-        # else:
-        refresh_interval = config.RANKLIST_UPDATE_INTERVAL if not contest.closed else config.RANKLIST_UPDATE_INTERVAL_CLOSED_CONTESTS
-        ranklist_data = {
-            **get_contest_rank_list(contest, virtualID),
-            "refresh_interval": refresh_interval,
-            "closed": bool(contest.closed)
-        }
-        client.set(key, JSONEncoder().encode(ranklist_data),
-                   ex=refresh_interval)
-        # print(ranklist_data)
-    else:
-        ranklist_data = json.loads(client.get(key).decode())
-    return make_response(0, data=ranklist_data)
+
+@app.route("/api/contest/refresh_ranklist", methods=["POST"])
+@unpack_argument
+@require_permission(permission_manager, "contest.manage")
+def contest_refresh_ranklist(contestID: int, virtualID: int = -1):
+    key = f"hj2-contest-ranklist-{contestID}-virtual-{virtualID}"
+    import redis
+    from main import redis_connection_pool
+    client = redis.Redis(connection_pool=redis_connection_pool)
+    with redis_lock.Lock(client, name=f"hj2-refresh-lock-contest-ranklist-{contestID}|{virtualID}", expire=3, auto_renewal=True):
+        client.delete(key)
+    return make_json_response(0)

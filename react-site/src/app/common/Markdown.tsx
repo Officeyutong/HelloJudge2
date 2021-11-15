@@ -42,7 +42,7 @@ const converter = new showdown.Converter({
             type: "output",
             regex: /!!!problem-card: ?([0-9]+)!!!/g,
             replace: (str: string, problemID: string) => {
-                return `<iframe src="/card/problem/${problemID}" frameborder="0" style="min-width:400px;height:75px"> </iframe>`;
+                return `<iframe src="/card/problem/${problemID}" frameborder="0" style="height:75px"> </iframe>`;
             }
         },
         ...showdownBindings

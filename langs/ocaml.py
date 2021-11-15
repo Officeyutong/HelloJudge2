@@ -9,7 +9,7 @@ RUN = 'sh -c "./{program} {redirect}"'
 # 显示名
 DISPLAY = "OCaml"
 # 版本
-VERSION = "OCamlc 4.05.0"
+VERSION = "OCamlc 4.08.1"
 # Ace.js模式
 ACE_MODE = "ocaml"
 # HighlightJS高亮模式

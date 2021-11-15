@@ -47,6 +47,7 @@ interface GlobalRanklistItem {
     username: string;
     uid: number;
     rating: number;
+    description: string;
 };
 
 export type {

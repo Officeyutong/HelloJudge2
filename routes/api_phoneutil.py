@@ -31,15 +31,17 @@ def api_sendcode(phone: str, client_response: Any, must_not_use: bool = False):
     # 不需要登录就能发验证码
     # if not session.get("uid", None):
     #     return make_response(-1, message="请先登录")
+
+    if must_not_use:
+        if db.session.query(User).filter_by(phone_number=phone).count():
+            return make_response(-1, message="该手机号已被使用")
     resp = requests.post("https://www.recaptcha.net/recaptcha/api/siteverify", data={
         "secret": config.RECAPTCHA_SECRET,
         "response": client_response
     }).json()
     import time
     ok = resp["success"]
-    if must_not_use:
-        if db.session.query(User).filter_by(phone_number=phone).count():
-            return make_response(-1, message="该手机号已被使用")
+
     if not ok:
         print(f"reCaptcha auth error {phone=}: {resp['error-codes']}")
         return make_response(-1, message=f"请完成验证")

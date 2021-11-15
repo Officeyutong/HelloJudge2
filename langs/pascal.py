@@ -9,7 +9,7 @@ RUN = 'sh -c "./{program} {redirect}"'
 # 显示名
 DISPLAY = "Pascal"
 # 版本
-VERSION = "FreePascal"
+VERSION = "FreePascal 3.0.4"
 # Ace.js模式
 ACE_MODE = "pascal"
 # HighlightJS高亮模式

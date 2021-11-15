@@ -72,5 +72,8 @@ FEED_STREAM_REFRESH_INTERVAL = 30
 # 用户待做题目最大数量
 MAX_PROBLEMTODO_COUNT = 50
 
+# 图床展示页每页数量
+IMAGES_PER_PAGE = 20
+
 # Gravatar URL前缀
 GRAVATAR_URL_PREFIX = "https://www.gravatar.com/avatar/"

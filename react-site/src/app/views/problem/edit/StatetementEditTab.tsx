@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React, { Fragment } from "react";
-import { Button, Divider, Form, Grid, Input } from "semantic-ui-react";
+import { Button, Divider, Form, Grid, Input, Message } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../../App";
 import SimpleAceWrapper from "../../utils/SimpleAceWrapper";
 import { ProblemEditStatement } from "../client/types";
 import ProblemStatementView from "../ProblemStatementView";
@@ -116,6 +117,12 @@ const StatementEditTab: React.FC<StatementEditProps> = (props) => {
                     </Form.Field>
                 </Form>
                 <Divider></Divider>
+                <Message info>
+                    <Message.Header>提示</Message.Header>
+                    <Message.Content>
+                        <p>如果要在题面中显示图片，可以使用<a target="_blank" rel="noreferrer" href={`${PUBLIC_URL}/imagestore/list`}>OJ内置的图床</a>。</p>
+                    </Message.Content>
+                </Message>
             </Grid.Column>
             <Grid.Column width="8">
                 <ProblemStatementView

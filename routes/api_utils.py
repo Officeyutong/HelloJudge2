@@ -44,7 +44,8 @@ def api_home_page():
                 "name":"显示名",
                 "url":"跳转链接"
             }],
-            "swiperInterval":"轮播切换间隔(ms)"
+            "swiperInterval":"轮播切换间隔(ms)",
+            "showRanklist":false
         }
     }
     """
@@ -53,7 +54,8 @@ def api_home_page():
         "friendLinks": config.FRIEND_LINKS,
         "swipers": config.HOMEPAGE_SWIPER,
         "toolbox": config.HOMEPAGE_TOOLBOX,
-        "swiperInterval": config.SWIPER_SWITCH_INTERVAL
+        "swiperInterval": config.SWIPER_SWITCH_INTERVAL,
+        "showRanklist": config.SHOW_RANKLIST_ON_HOMEPAGE
     }
 
     return make_response(0, data=result)

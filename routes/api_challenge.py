@@ -1,3 +1,5 @@
+from sqlalchemy.sql.functions import user
+from models.challenge import ChallengeRecord
 from models.submission import Submission
 import typing
 
@@ -37,7 +39,7 @@ def api_get_challenge_list():
         result.append({
             "id": item.id,
             "name": item.name,
-            "description": item.description,
+            "description": item.description or "",
             "problemsetList": item.problemset_list,
             "accessible": permission_manager.has_permission(session.get("uid", None), f"challenge.access.{item.id}"),
             "hasFinished": permission_manager.has_permission(session.get("uid", None), f"challenge.finish.{item.id}.all"),
@@ -64,11 +66,20 @@ def api_unlock_challenge(id: int):
         if not permission_manager.has_permission(session.get("uid"), f"challenge.finish.{item.id}.all"):
             print(f"{item.id=} not finished yet")
             return make_response(-1, message=f"你还有至少一个等级低于当前挑战的挑战尚未完成")
-    permission_manager.add_permission(session.get(
-        "uid"), f"challenge.access.{current_challenge.id}")
-    for problemset in current_challenge.problemset_list:
-        permission_manager.add_permission(
-            session.get("uid"), f"problemset.use.{problemset}")
+    from main import user_operation
+    uid = user_operation.ensure_login()
+    if db.session.query(db.session.query(ChallengeRecord).filter_by(uid=uid, challenge_id=id).exists()).one()[0]:
+        return make_response(-1, message="你已解锁此挑战!")
+    db.session.add_all([
+        ChallengeRecord(uid=uid, challenge_id=id, problemset_id=item, finished=False) for item in current_challenge.problemset_list
+    ])
+    db.session.commit()
+    permission_manager.refresh_user(uid)
+    # permission_manager.add_permission(session.get(
+    #     "uid"), f"[provider:challenge-access.{current_challenge.id}]")
+    # for problemset in current_challenge.problemset_list:
+    #     permission_manager.add_permission(
+    #         session.get("uid"), f"problemset.use.{problemset}")
     return make_response(0, message="操作完成")
 
 
@@ -100,32 +111,39 @@ def api_finish_problemset(challengeID: int, problemsetID: int):
         )).one_or_none()
         if not submission:
             return make_response(-1, message="在该习题集之下，你尚存题目未完成.")
-    permission_manager.add_permission(session.get(
-        "uid"), f"challenge.finish.{challengeID}.{problemsetID}")
+    # permission_manager.add_permission(session.get(
+    #     "uid"), f"challenge.finish.{challengeID}.{problemsetID}")
+    from main import user_operation
+    uid = user_operation.ensure_login()
+    record: ChallengeRecord = db.session.query(ChallengeRecord).filter_by(
+        uid=uid, challenge_id=challengeID, problemset_id=problemsetID).one()
+    record.finished = True
+    db.session.commit()
+    permission_manager.refresh_user(uid)
     return make_response(0, message="操作完成")
 
 
-@app.route("/api/challenge/finish_challenge", methods=["POST"])
-@require_permission(manager=permission_manager, permission="challenge.use")
-@unpack_argument
-def api_finish_challenge(challengeID: int):
-    """
-    申请完成一个挑战
-    challengeID 挑战ID
-    """
+# @app.route("/api/challenge/finish_challenge", methods=["POST"])
+# @require_permission(manager=permission_manager, permission="challenge.use")
+# @unpack_argument
+# def api_finish_challenge(challengeID: int):
+#     """
+#     申请完成一个挑战
+#     challengeID 挑战ID
+#     """
 
-    if not permission_manager.has_permission(session.get("uid"), f"challenge.access.{challengeID}"):
-        return make_response(-1, message="你没有权限访问该挑战")
-    challenge: Challenge = db.session.query(Challenge.problemset_list).filter(
-        Challenge.id == challengeID).one_or_none()
-    if not challenge:
-        return make_response(-1, message="该挑战不存在")
-    for problemset in challenge.problemset_list:
-        if not permission_manager.has_permission(session.get("uid"), f"challenge.finish.{challengeID}.{problemset}"):
-            return make_response(-1, message="该挑战之下存在未完成的习题集")
-    permission_manager.add_permission(session.get(
-        "uid"), f"challenge.finish.{challengeID}.all")
-    return make_response(0, message="操作完成")
+#     if not permission_manager.has_permission(session.get("uid"), f"challenge.access.{challengeID}"):
+#         return make_response(-1, message="你没有权限访问该挑战")
+#     challenge: Challenge = db.session.query(Challenge.problemset_list).filter(
+#         Challenge.id == challengeID).one_or_none()
+#     if not challenge:
+#         return make_response(-1, message="该挑战不存在")
+#     for problemset in challenge.problemset_list:
+#         if not permission_manager.has_permission(session.get("uid"), f"challenge.finish.{challengeID}.{problemset}"):
+#             return make_response(-1, message="该挑战之下存在未完成的习题集")
+#     permission_manager.add_permission(session.get(
+#         "uid"), f"challenge.finish.{challengeID}.all")
+#     return make_response(0, message="操作完成")
 
 
 @app.route("/api/challenge/detail_raw", methods=["POST"])
@@ -150,7 +168,7 @@ def api_get_challenge_detail_raw(id: int):
         "id": challenge.id,
         "name": challenge.name,
         "level": challenge.level,
-        "description": challenge.description,
+        "description": challenge.description or "",
         "problemsetList": challenge.problemset_list
     })
 
@@ -226,7 +244,8 @@ def api_get_challenge_detail(challengeID: int):
         "id":ID,
         "description":描述,
         "level":等级,
-        "hasFinished":是否完成
+        "hasFinished":是否完成,
+        "accessible":"是否可访问",
         "problemsetList":[
             {
                 "name":"名称",
@@ -247,10 +266,11 @@ def api_get_challenge_detail(challengeID: int):
     result = {
         "name": challenge.name,
         "id": challenge.id,
-        "description": challenge.description,
+        "description": challenge.description or "",
         "hasFinished": permission_manager.has_permission(session.get("uid"), f"challenge.finish.{challengeID}.all"),
         "level": challenge.level,
-        "problemsetList": []
+        "problemsetList": [],
+        "accessible": permission_manager.has_permission(session.get("uid", None), f"challenge.access.{challengeID}"),
     }
     for problemset in challenge.problemset_list:
         current = db.session.query(ProblemSet.id, ProblemSet.name).filter(

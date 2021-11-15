@@ -59,6 +59,9 @@ class ContestClient extends GeneralClient {
     async getContestProblemDetail(problemID: number, contestID: number, virtualID: number): Promise<ContestProblemShow> {
         return (await this.client!.post("/api/contest/problem/show", { problemID, contestID, virtualID })).data;
     }
+    async refreshRanklist(contestID: number, virtualID: number) {
+        await this.client!.post("/api/contest/refresh_ranklist", { contestID, virtualID });
+    }
 };
 
 

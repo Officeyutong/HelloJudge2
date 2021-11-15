@@ -58,6 +58,7 @@ redis_connection_pool = ConnectionPool.from_url(config.CACHE_URL)
 
 lock_conn_pool = ConnectionPool.from_url(config.REDIS_LOCK_URI)
 
+
 def get_permissions(uid: Union[int, str]) -> Set[str]:
     from models import User, PermissionGroup
     user: User = db.session.query(
@@ -109,6 +110,7 @@ def _import_routes():
     from routes.api_solution import router as solution
     from routes.api_permission import router as permission
     from routes.api_team import router as team
+    from routes.api_imagestore import router as imagestore
     web_app.register_blueprint(
         contest, url_prefix="/api/contest")
     web_app.register_blueprint(
@@ -137,6 +139,9 @@ def _import_routes():
         permission, url_prefix="/api/permission")
     web_app.register_blueprint(
         team, url_prefix="/api/team")
+    web_app.register_blueprint(
+        imagestore, url_prefix="/api/imagestore")
+    
 
 
 def _init_web_app():
@@ -153,5 +158,13 @@ def _init_web_app():
     permission_manager.add_provider(
         "allteams", provider.get_allteams_permissions
     )
+    permission_manager.add_provider(
+        "challenge-access", provider.get_challenge_access)
+    permission_manager.add_provider(
+        "all-challenge", provider.get_all_challenge_access)
+    permission_manager.add_provider(
+        "challenge-finish", provider.get_challenge_finish)    
+    
+
 
 _init_web_app()

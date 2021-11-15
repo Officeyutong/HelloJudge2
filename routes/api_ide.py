@@ -22,7 +22,7 @@ def submit_ide_run():
     """
     if not session.get("uid"):
         return make_response(-1, message="请先登录")
-    user: User = User.by_id(session.get("uid"))
+    # user: User = User.by_id(session.get("uid"))
     code, input, lang, parameter = request.form["code"], request.form[
         "input"], request.form["lang"], request.form["parameter"]
     if len(code) > config.MAX_CODE_LENGTH:

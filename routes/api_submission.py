@@ -384,7 +384,8 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
                 or_(Submission.public == True, Submission.uid == user.id))
     filters = {
         "uid": lambda x, y: x.filter(Submission.uid == y) if y.isnumeric() else x.filter(Submission.user.has(User.username == y)),
-        "status": lambda x, y: x.filter(Submission.status == y),
+        # 不管虚拟比赛了
+        "status": lambda x, y: x.filter(Submission.status == y).filter(Submission.virtual_contest_id.is_(None)),
         "min_score": lambda x, y: x.filter(Submission.score >= int(y)),
         "max_score": lambda x, y: x.filter(Submission.score <= int(y)),
         "problem": lambda x, y: x.filter(Submission.problem_id == y),
@@ -405,7 +406,7 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
                 for contest in db.session.query(Contest.id, Contest.private_contest).filter(Contest.closed == True).all()
                 if not contest.private_contest or permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}")
             }
-            print(visible_contests)
+            # print(visible_contests)
             # print("tested")
             result = result.union(
                 base_query.filter(expr.and_(
@@ -432,9 +433,22 @@ def submission_list(page: int = 1, filter: Dict[str, Any] = {}):
                     continue
                 if (not permission_manager.has_permission(session.get("uid", -1), "contest.manage")) and curr_contest.running():
                     return make_response(-1, message="比赛进行时不可筛选分数边界或提交状态")
-
+            else:
+                # 不刻意筛比赛提交：只显示已关闭了的和有权限访问的比赛的提交
+                if not permission_manager.has_permission(session.get("uid", -1), "contest.manage"):
+                    visible_contests = {
+                        contest.id
+                        for contest in db.session.query(Contest.id, Contest.private_contest).filter(Contest.closed == True).all()
+                        if not contest.private_contest or permission_manager.has_permission(session.get("uid", -1), f"contest.use.{contest.id}")
+                    } | {-1}
+                    result = result.filter(
+                        Submission.contest_id.in_(visible_contests))
         result = filters[key](result, value)
-
+    
+    # import pdb
+    # pdb.set_trace()
+    # print(result)
+    # 不刻意筛比赛的情况下，只考虑已关闭的比赛的提交
     result = result.order_by(Submission.id.desc())
     count = result.count()
     import math

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Card, Grid, Loader, Modal, Image, Button, Header, Segment, Table, Tab } from "semantic-ui-react";
+import { PUBLIC_URL } from "../../../App";
 import { useCurrentUid, useDocumentTitle, useProfileImageMaker } from "../../../common/Utils";
 import { UserProfileResponse } from "../client/types";
 import userClient from "../client/UserClient";
@@ -72,7 +73,7 @@ const Profile: React.FC<{}> = () => {
                     </Card.Content>}
                     <Card.Content extra>
                         {(data.managable || currUser === data.id) && <Button size="tiny" as="a" target="_blank" href={`/profile_edit/${data.id}`}>设置</Button>}
-                        <Button size="tiny" as="a" href={`/blog/list/${data.id}`}>博客</Button>
+                        <Button size="tiny" as={Link} to={`${PUBLIC_URL}/blog/list/${data.id}`}>博客</Button>
                         <Button loading={toggling} size="tiny" color={data.following ? "blue" : undefined} onClick={toggleFollowStateToThis}>{data.following ? "已关注" : "未关注"}</Button>
                     </Card.Content>
                 </Card>

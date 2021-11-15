@@ -13,6 +13,7 @@ interface HomePageData {
     appName: string;
     friendLinks: FriendLinkEntry[];
     toolbox: ToolBoxEntry[];
+    showRanklist: boolean;
 };
 
 export type {

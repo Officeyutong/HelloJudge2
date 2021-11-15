@@ -9,7 +9,7 @@ RUN = 'sh -c "./{program} {redirect}"'
 # 显示名
 DISPLAY = "Haskell"
 # 版本
-VERSION = "GHC 8.0.2"
+VERSION = "GHC 8.6.5"
 # Ace.js模式
 ACE_MODE = "haskell"
 # HighlightJS高亮模式

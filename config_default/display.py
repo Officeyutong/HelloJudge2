@@ -78,3 +78,5 @@ HOMEPAGE_TOOLBOX = [
     },
 
 ]
+
+SHOW_RANKLIST_ON_HOMEPAGE = False

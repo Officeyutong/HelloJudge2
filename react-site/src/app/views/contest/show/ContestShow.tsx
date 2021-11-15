@@ -298,6 +298,8 @@ const ContestShow: React.FC<{}> = () => {
                 contestID={data.id}
                 virtualID={virtualID}
                 closed={data.closed}
+                running={status === 0}
+                status={status}
             ></ContestShowProblemList>
             <ClarificationList
                 closed={data.closed}

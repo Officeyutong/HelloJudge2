@@ -8,19 +8,20 @@ import { ContestRanklist as ContestRanklistType } from "./client/types";
 // import XLSX from "xlsx";
 import XLSX from "xlsx-js-style";
 import { DateTime } from "luxon";
+import { ButtonClickEvent } from "../../common/types";
 (window as (typeof window) & { qwq: any }).qwq = DateTime;
 const ContestRanklist: React.FC<{}> = () => {
     const { contestID } = useParams<{ contestID: string }>();
     const { search } = useLocation();
     const queryArgs = QueryString.parse(search.substr(1));
-    const virtualID = queryArgs.virtual_contest || -1;
+    const virtualID = parseInt(queryArgs.virtual_contest as (string | undefined) || "-1");
     const [loaded, setLoaded] = useState(false);
     const [data, setData] = useState<ContestRanklistType | null>(null);
     useEffect(() => {
         if (!loaded) {
             (async () => {
                 try {
-                    const resp = await contestClient.getContestRanklist(parseInt(contestID), parseInt(virtualID as string));
+                    const resp = await contestClient.getContestRanklist(parseInt(contestID), virtualID);
                     setData(resp);
                     setLoaded(true);
                 } catch { } finally {
@@ -30,6 +31,16 @@ const ContestRanklist: React.FC<{}> = () => {
         }
     }, [contestID, loaded, virtualID]);
     useDocumentTitle(`${data?.name} - ${contestID} - 排行榜`);
+    const refreshRanklist = async (evt: ButtonClickEvent) => {
+        const target = evt.currentTarget;
+        try {
+            target.classList.add("loading");
+            await contestClient.refreshRanklist(parseInt(contestID), virtualID);
+            setLoaded(false);
+        } catch { } finally {
+            target.classList.remove("loading");
+        }
+    };
     const exportToExcel = (evt: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if (data === null) return;
         const target = evt.currentTarget;
@@ -118,7 +129,10 @@ const ContestRanklist: React.FC<{}> = () => {
                         提示
                     </Message.Header>
                     <Message.Content>
-                        <p>{data.closed && "当前比赛已关闭，"}排行榜每 {data.refresh_interval} 秒刷新一次。</p>
+                        <p>{!data.running && "当前比赛已结束，"}排行榜每 {data.refresh_interval} 秒刷新一次。</p>
+                        {virtualID !== -1 && <p>
+                            当前显示的为虚拟比赛的排行榜。
+                        </p>}
                     </Message.Content>
                 </Message>
                 <Table className="ranklist-table" basic="very">
@@ -186,6 +200,7 @@ const ContestRanklist: React.FC<{}> = () => {
             <div>
                 <Segment style={{ width: "max-content" }} >
                     <Button size="tiny" color="green" onClick={exportToExcel}>导出为Excel文档</Button>
+                    {data.managable && <Button size="tiny" color="green" onClick={refreshRanklist}>刷新排行榜</Button>}
                 </Segment>
             </div>
         </div>}

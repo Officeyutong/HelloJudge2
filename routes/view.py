@@ -19,9 +19,9 @@ def handler_404(exc):
     return redirect(f"/error?message={quote(f'页面未找到!')}&title={quote('404')}")
 
 
-@app.route("/")
-def view_index():
-    return render_template("main.html")
+# @app.route("/")
+# def view_index():
+#     return render_template("main.html")
 
 
 # @app.route("/login")
@@ -39,9 +39,9 @@ def view_index():
 #     return render_template("user/register.html")
 
 
-@app.route("/ranklist/<int:id>")
-def view_global_ranklist(id):
-    return render_template("ranklist.html")
+# @app.route("/ranklist/<int:id>")
+# def view_global_ranklist(id):
+#     return render_template("ranklist.html")
 
 
 # @app.route("/problems")
@@ -56,9 +56,9 @@ def view_global_ranklist(id):
 #     return render_template("submissions.html")
 
 
-@app.route("/discussions/<string:path>/<int:page>")
-def view_discussions(path, page):
-    return render_template("discussions.html")
+# @app.route("/discussions/<string:path>/<int:page>")
+# def view_discussions(path, page):
+#     return render_template("discussions.html")
 
 
 # @app.route("/problem_edit/<int:id>")
@@ -79,10 +79,10 @@ def view_discussions(path, page):
 #     return render_template("show_submission.html")
 
 
-@app.route("/show_discussion/<int:id>")
-def view_show_discussion(id):
-    # print(id)
-    return render_template("show_discussion.html")
+# @app.route("/show_discussion/<int:id>")
+# def view_show_discussion(id):
+#     # print(id)
+#     return render_template("show_discussion.html")
 
 
 # @app.route("/profile/<int:id>")
@@ -151,14 +151,14 @@ def view_show_discussion(id):
 #     return render_template("team/edit_team.html")
 
 
-@app.route("/import_from_syzoj")
-def view_import_from_syzoj():
-    return render_template("import_from_syzoj.html")
+# @app.route("/import_from_syzoj")
+# def view_import_from_syzoj():
+#     return render_template("import_from_syzoj.html")
 
 
-@app.route("/help")
-def view_help():
-    return render_template("help.html")
+# @app.route("/help")
+# def view_help():
+#     return render_template("help.html")
 
 
 # @app.route("/admin")
@@ -166,9 +166,9 @@ def view_help():
 #     return render_template("admin.html")
 
 
-@app.route("/ide")
-def view_ide():
-    return render_template("ide.html")
+# @app.route("/ide")
+# def view_ide():
+#     return render_template("ide.html")
 
 
 # @app.route("/remote_judge/accounts")
@@ -203,39 +203,39 @@ def view_ide():
 #     return render_template("problemset/edit.html")
 
 
-@app.route("/challenge/list")
-def view_challenge_list():
-    return render_template("/challenge/list.html")
+# @app.route("/challenge/list")
+# def view_challenge_list():
+#     return render_template("/challenge/list.html")
 
 
-@app.route("/challenge/edit/<int:id>")
-def view_challenge_edit(id: int):
-    return render_template("/challenge/edit.html")
+# @app.route("/challenge/edit/<int:id>")
+# def view_challenge_edit(id: int):
+#     return render_template("/challenge/edit.html")
 
 
-@app.route("/error")
-def view_error_page():
-    return render_template("error.html")
+# @app.route("/error")
+# def view_error_page():
+#     return render_template("error.html")
 
 
-@app.route("/success")
-def view_success_page():
-    return render_template("success.html")
+# @app.route("/success")
+# def view_success_page():
+#     return render_template("success.html")
 
 
-@app.route("/card/problem/<int:id>")
-def view_problem_card(id: int):
-    return render_template("card/problem.html")
+# @app.route("/card/problem/<int:id>")
+# def view_problem_card(id: int):
+#     return render_template("card/problem.html")
 
 
-@app.route("/card/sendsms")
-def view_sendsms_card():
-    return render_template("card/send_smscode.html")
+# @app.route("/card/sendsms")
+# def view_sendsms_card():
+#     return render_template("card/send_smscode.html")
 
 
-@app.route("/phoneauth")
-def view_phoneauth():
-    return render_template("phoneauth.html")
+# @app.route("/phoneauth")
+# def view_phoneauth():
+#     return render_template("phoneauth.html")
 
 
 # @app.route("/tags/edit")
@@ -283,15 +283,15 @@ def view_phoneauth():
 #     return render_template("virtualcontest/list.html")
 
 
-@app.route("/blog/list/<int:id>")
-def blog_list(id: int = 1):
-    return render_template("blog/list.html")
+# @app.route("/blog/list/<int:id>")
+# def blog_list(id: int = 1):
+#     return render_template("blog/list.html")
 
 
-@app.route("/blog/edit/")
-@app.route("/blog/edit/<int:id>")
-def blog_edit(id: int = 1):
-    return render_template("blog/edit.html")
+# @app.route("/blog/edit/")
+# @app.route("/blog/edit/<int:id>")
+# def blog_edit(id: int = 1):
+#     return render_template("blog/edit.html")
 
 
 @app.route("/wiki/config")

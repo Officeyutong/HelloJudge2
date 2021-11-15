@@ -87,11 +87,11 @@ def blog_list(uid: int = 1, page: int = 1):
         current = {
             "id": item.id,
             "title": item.title,
-            "time": str(item.time),
+            "time": (item.time.timestamp()),
             "commentCount": db.session.query(Comment).filter_by(discussion_id=item.id).count(),
-            "lastCommentAt": last_comment.time if last_comment else None,
+            "lastCommentAt": last_comment.time.timestamp() if last_comment else None,
             "summary": item.content[:config.BLOG_SUMMARY_LENGTH],
-            "private": item.private
+            "private": bool(item.private)
 
         }
         result.append(current)

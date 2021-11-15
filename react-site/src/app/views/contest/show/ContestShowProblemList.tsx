@@ -11,6 +11,8 @@ interface ContestShowProblemListProps {
     contestID: number;
     virtualID: number;
     closed: boolean;
+    running: boolean;
+    status: number;
 };
 
 const ContestShowProblemList: React.FC<ContestShowProblemListProps> = ({
@@ -18,7 +20,9 @@ const ContestShowProblemList: React.FC<ContestShowProblemListProps> = ({
     rankCriterion,
     contestID,
     virtualID,
-    closed
+    closed,
+    running,
+    status
 }) => {
     const showWeightColumn = (rankCriterion === "last_submit" || rankCriterion === "max_score");
     return <>
@@ -46,7 +50,7 @@ const ContestShowProblemList: React.FC<ContestShowProblemListProps> = ({
                             </a>
                         </Table.Cell>
                         <Table.Cell>
-                            <Link to={closed ? `${PUBLIC_URL}/show_problem/${x.rawID}` : `${PUBLIC_URL}/contest/${contestID}/problem/${x.id}?virtual_contest=${virtualID}`}>
+                            <Link to={(status >= 1) ? `${PUBLIC_URL}/show_problem/${x.rawID}` : `${PUBLIC_URL}/contest/${contestID}/problem/${x.id}?virtual_contest=${virtualID}`}>
                                 #{parseInt(x.id as unknown as string) + 1}. {x.title}
                             </Link>
                         </Table.Cell>

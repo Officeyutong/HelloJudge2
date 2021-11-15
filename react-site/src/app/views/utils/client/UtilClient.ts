@@ -12,6 +12,12 @@ class UtilClient extends GeneralClient {
         const resp = await (await this.client!.post("/api/get_supported_langs")).data;
         return resp;
     }
+    async importFromSYZOJ2(url: string, willPublic: boolean): Promise<{ problem_id: number }> {
+        return (await this.unwrapExtraClient!.post("/api/import_from_syzoj", { url, willPublic })).data;
+    }
+    async importFromSYZOJNG(api_server: string, problem_id: number, willPublic: boolean): Promise<{ problem_id: number }> {
+        return (await this.unwrapExtraClient!.post("/api/utils/import_from_syzoj_ng", { api_server, problem_id, "public": willPublic })).data;
+    }
 };
 
 const utilClient = new UtilClient();

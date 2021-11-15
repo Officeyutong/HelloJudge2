@@ -62,6 +62,9 @@ class UserClient extends GeneralClient {
             page, search
         })).data;
     }
+    async doPhoneAuth(code: string, phone: string) {
+        await this.client!.post("/api/phoneauth/auth", { code, phone });
+    }
 };
 
 const userClient = new UserClient();

@@ -45,7 +45,7 @@ def api_card_problem(problemID: int):
         "title": problem.title,
         "acceptedCount": problem.cached_accepted_count,
         "submitCount": problem.cached_submit_count,
-        "myStatus": {}
+        "myStatus": None
     }
     my_submission: Submission = db.session.query(
         Submission.id,

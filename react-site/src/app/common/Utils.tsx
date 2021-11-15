@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { StateType } from "../states/Manager";
 import { sprintf } from "sprintf-js";
 import createPersistedState from "use-persisted-state";
+import { DateTime } from "luxon";
 
 export const usePreferredMemoryUnit = createPersistedState("hj2-preferred-memory-unit");
 
@@ -59,6 +60,9 @@ export function secondsToString(totSecond: number): string {
     const hours = Math.floor(totSecond / 3600);
     return sprintf("%2d小时 %2d分钟 %2d秒", hours, minutes, seconds);
 };
+export function toLocalTime(seconds: number): string {
+    return DateTime.fromSeconds(seconds).toJSDate().toLocaleString();
+}
 export {
     useDocumentTitle,
     useInputValue,

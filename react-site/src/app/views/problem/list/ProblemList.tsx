@@ -110,7 +110,7 @@ const ProblemList: React.FC<{}> = () => {
                 <Button as={Link} color="green" icon to={`${PUBLIC_URL}/tags/edit`} >
                     <Icon name="plus"></Icon>题目标签编辑
                 </Button>
-                <Button as="a" color="blue" icon href="/import_from_syzoj">
+                <Button as={Link} color="blue" icon to={`${PUBLIC_URL}/import_from_syzoj`}>
                     <Icon name="plus"></Icon> 从SYZOJ导入题目
                 </Button>
                 <Button onClick={createProblem} icon color="green">

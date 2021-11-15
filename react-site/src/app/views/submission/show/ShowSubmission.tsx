@@ -122,7 +122,6 @@ const ShowSubmission = () => {
     useDocumentTitle(data === null ? "加载中..." : `${data.id} - ${data.problem.title} - 查看提交`);
     useLayoutEffect(() => {
         return () => {
-            console.log("cancelled");
             if (trackerTokenRef.current !== null) clearInterval(trackerTokenRef.current);
             if (socketRef.current !== null) socketRef.current.close();
         };
@@ -270,7 +269,8 @@ const ShowSubmission = () => {
                     子任务得分
                 </Header>}
                 {Object.entries(data.judge_result).map(([name, item]) => <div key={name}>
-                    <Header as="h4">
+                    <Divider></Divider>
+                    <Header as="h3">
                         {name}
                     </Header>
                     <Table basic="very" celled>

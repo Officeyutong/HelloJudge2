@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { show, showErrorModal } from "./dialogs/Dialog";
 import Router from "./Router";
 // import { store } from './states/Manager';
@@ -82,12 +82,19 @@ axios.post("/api/query_login_state").then(resp => {
     store.dispatch(makeUserStateUpdateAction(result.result, result));
 });
 const App: React.FC<{}> = () => {
-
-    return <Container style={{ marginTop: "70px", marginBottom: "70px" }}>
+    const [displayBaseView, setDisplayBaseView] = useState(store.getState().displayBaseView);
+    useEffect(() => {
+        const unsubscribe = store.subscribe(() => setDisplayBaseView(store.getState().displayBaseView));
+        return unsubscribe;
+    }, []);
+    const inner = <>
         <Provider store={store} >
             <Router></Router>
         </Provider>
-    </Container>;
+    </>
+    return displayBaseView ? <Container style={{ marginTop: "70px", marginBottom: "70px" }}>
+        {inner}
+    </Container> : inner;
 
 };
 

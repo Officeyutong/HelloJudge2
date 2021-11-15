@@ -1,8 +1,10 @@
+from sqlalchemy.sql.expression import null
+from sqlalchemy.sql.sqltypes import Boolean
 from main import db
 
 from ormtypes.json_pickle import JsonPickle
 
-from sqlalchemy import Column, Integer, Text, String
+from sqlalchemy import Column, Integer, Text, String, ForeignKey
 
 
 class Challenge(db.Model):
@@ -21,3 +23,19 @@ class Challenge(db.Model):
     description = Column(Text, nullable=True)
     # 挑战包括的习题集列表
     problemset_list = Column(JsonPickle, nullable=False, default=[])
+
+
+class ChallengeRecord(db.Model):
+    __tablename__ = "challenge_record"
+    # 用户ID
+    uid = Column(Integer, ForeignKey(
+        "user.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    # 挑战ID
+    challenge_id = Column(Integer, ForeignKey(
+        "challenge.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    # 习题集
+    problemset_id = Column(Integer, ForeignKey(
+        "problem_set.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+    
+    # False表示已解锁未完成，True表示已完成
+    finished = Column(Boolean, default=False, index=True)

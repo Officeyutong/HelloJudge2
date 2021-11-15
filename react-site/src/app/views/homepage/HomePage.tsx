@@ -12,6 +12,7 @@ import HomepageSwiper from "../utils/HomepageSwiper";
 import homepageClient from "./client/HomePageClient";
 import { HomePageData } from "./client/types";
 import { BroadcastBox, FriendLinkBox, ProblemQuickAccessBox, ProblemSearchBox, ProblemtodoBox, ToolBox } from "./HomePageBoxes";
+import HomepageRanklistArea from "./HomePageRanklistArea";
 
 const HomePage: React.FC<{}> = () => {
     useDocumentTitle("主页");
@@ -39,14 +40,7 @@ const HomePage: React.FC<{}> = () => {
             })();
         }
     }, [loaded, alreadyLogin])
-    // useEffect(() => {
-    //     if (!feedLoaded) {
-    //         (async () => {
-    //             setFeed(await feedClient.getFeedStream());
-    //             setFeedLoaded(true);
-    //         })();
-    //     }
-    // }, [feedLoaded])
+
     return <div>
         <Header as="h1">{appName}</Header>
         <Divider></Divider>
@@ -60,6 +54,10 @@ const HomePage: React.FC<{}> = () => {
                         <HomepageSwiper data={swipers}></HomepageSwiper>
                         <Divider></Divider>
                         <FeedArea data={feed}></FeedArea>
+                        {homePageData !== null && homePageData.showRanklist && <>
+                            <Divider></Divider>
+                            <HomepageRanklistArea></HomepageRanklistArea>
+                        </>}
                     </div>
                     <Rail position="right" >
                         <Sticky context={contextRef}>

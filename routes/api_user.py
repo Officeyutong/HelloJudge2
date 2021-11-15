@@ -1,7 +1,7 @@
 from os import name
 
 from main import web_app as app
-from main import db, config, basedir, permission_manager,user_operation
+from main import db, config, basedir, permission_manager, user_operation
 from flask import session, request, send_file, send_from_directory
 from utils import *
 
@@ -45,7 +45,8 @@ def query_login_state(withPermission: bool = False):
             "usePolling":"是否使用轮询",
             "registerURL":"注册页面的URL",
             "gravatarURL":"gravatarURL前缀"
-            "permissions":["用户权限列表"]
+            "permissions":["用户权限列表"],
+            "canUseImageStore":"是否可以使用图床服务"
         }
 
     """
@@ -59,6 +60,7 @@ def query_login_state(withPermission: bool = False):
         "usePhoneAuth": use_phone_auth,
         "registerURL": "/phone/register" if use_phone_auth else "/register",
         "gravatarURL": config.GRAVATAR_URL_PREFIX,
+        "canUseImageStore": False
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(
@@ -66,9 +68,16 @@ def query_login_state(withPermission: bool = False):
         result["uid"] = user.id
         group: PermissionGroup = db.session.query(PermissionGroup.name).filter(
             PermissionGroup.id == user.permission_group).one()
-        result.update(group=user.permission_group, group_name=group.name,
-                      backend_managable=permission_manager.has_permission(user.id, "backend.manage"))
-        result.update(username=user.username, email=user.email)
+        result.update(
+            group=user.permission_group,
+            group_name=group.name,
+            backend_managable=permission_manager.has_permission(
+                user.id, "backend.manage"),
+            canUseImageStore=permission_manager.has_permission(user.id, "imagestore.use"))
+        result.update(
+            username=user.username,
+            email=user.email
+        )
         if withPermission:
             result.update(
                 permissions=permission_manager.get_all_permissions(user.id))

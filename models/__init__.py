@@ -8,7 +8,7 @@ from .contest import Contest, Clarification
 from .team import Team, TeamMember, TeamFile
 from .permission_group import PermissionGroup
 from .problemset import ProblemSet
-from .challenge import Challenge
+from .challenge import Challenge, ChallengeRecord
 from .feed import Feed
 from .follower import Follower
 from .tag import Tag, ProblemTag
@@ -20,3 +20,4 @@ from .preliminary_contest import PreliminaryContest, PreliminaryProblem, Prelimi
 from .problem_solution import ProblemSolution
 from .homepage_swiper import HomepageSwiper
 from .file_storage import FileStorage
+from .imagestore import ImageStoreFile
