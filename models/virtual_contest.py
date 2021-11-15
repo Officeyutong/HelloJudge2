@@ -14,10 +14,10 @@ class VirtualContest(db.Model):
     id = Column(Integer, primary_key=True)
     # 创建者ID
     owner_id = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 对应的实际比赛ID
     contest_id = Column(Integer, ForeignKey(
-        "contest.id", ondelete="CASCADE"), nullable=False, index=True)
+        "contest.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 开始时间
     start_time = Column(DateTime, nullable=False)
     # 结束时间

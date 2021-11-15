@@ -22,7 +22,7 @@ class Discussion(db.Model):
     content = Column(Text, nullable=False)
     # 用户ID
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     # 是否置顶
     top = Column(mysql.TINYINT(display_width=1),
                  default=0, nullable=False, index=True)

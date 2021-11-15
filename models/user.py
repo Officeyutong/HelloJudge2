@@ -83,6 +83,6 @@ class User(db.Model):
 class CachedAcceptedProblems(db.Model):
     __tablename__ = "cached_accepted_problems"
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), primary_key=True, nullable=False)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True, nullable=False)
     problem_id = Column(Integer, ForeignKey(
-        "problem.id", ondelete="CASCADE"), primary_key=True, nullable=False)
+        "problem.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True, nullable=False)

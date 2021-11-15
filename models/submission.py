@@ -14,13 +14,13 @@ class Submission(db.Model):
     id = Column(Integer, primary_key=True)
     # 用户ID
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     user = relationship("User", backref="submissions")
     # 语言ID
     language = Column(String(20))
     # 题目ID
     problem_id = Column(Integer, ForeignKey(
-        "problem.id", ondelete="CASCADE"), index=True)
+        "problem.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     problem = relationship("Problem", backref="submissions")
     # 提交时间
     submit_time = Column(DateTime)
@@ -31,7 +31,7 @@ class Submission(db.Model):
                         default=-1, index=True)
     # 所属的虚拟比赛ID
     virtual_contest_id = Column(Integer, ForeignKey(
-        "virtual_contest.id", ondelete="CASCADE"), nullable=True, index=True)
+        "virtual_contest.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=True, index=True)
 
     # 代码
     code = Column(mysql.LONGTEXT)

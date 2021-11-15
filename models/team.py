@@ -18,7 +18,7 @@ class Team(db.Model):
     description = Column(mysql.LONGTEXT, nullable=True, default="")
     # 所有者ID
     owner_id = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     # 成员列表，list[int]
     # members = Column(JsonPickle, default=[], nullable=False)
     # 除了创建者之外的管理员列表
@@ -53,10 +53,10 @@ class TeamMember(db.Model):
     # 表示一条用户的团队关系
     __tablename__ = "team_member"
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     # 团队
     team_id = Column(Integer, ForeignKey(
-        "team.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "team.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     # 是否是管理
     is_admin = Column(mysql.TINYINT(display_width=1),
                       default=False, index=True)
@@ -65,8 +65,8 @@ class TeamMember(db.Model):
 class TeamFile(db.Model):
     __tablename__ = "team_file"
     team_id = Column(Integer, ForeignKey(
-        "team.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "team.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     file_id = Column(String(128), ForeignKey(
-        "file_storage.uuid", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "file_storage.uuid", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)

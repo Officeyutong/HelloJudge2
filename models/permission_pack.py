@@ -17,7 +17,7 @@ class PermissionPack(db.Model):
 class PermissionPackUser(db.Model):
     __tablename__ = "permission_pack_user"
     pack_id = Column(Integer, ForeignKey(
-        "permission_pack.id", ondelete="CASCADE"), primary_key=True)
+        "permission_pack.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
     phone = Column(String(20), primary_key=True)
     claimed = Column(mysql.TINYINT(display_width=1),
                      nullable=False, default=False)

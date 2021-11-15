@@ -9,7 +9,7 @@ class Feed(db.Model):
     id = Column(Integer, primary_key=True)
     # 发送者用户ID
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 发送时间
     time = Column(DateTime, nullable=False,
                   default=datetime.datetime.now, index=True)

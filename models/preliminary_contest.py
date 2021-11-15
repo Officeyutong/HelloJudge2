@@ -22,7 +22,7 @@ class PreliminaryContest(db.Model):
     description = Column(mysql.LONGTEXT, default="", nullable=True)
     # 比赛提供者
     uploader = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 比赛时长，秒
     duration = Column(Integer, nullable=False)
     # 上传时间
@@ -35,7 +35,7 @@ class PreliminaryProblem(db.Model):
     id = Column(Integer, primary_key=True)
     # 比赛
     contest = Column(Integer, ForeignKey(
-        "preliminary_contest.id", ondelete="CASCADE"))
+        "preliminary_contest.id", ondelete="CASCADE", onupdate="CASCADE"))
     # 题目种类
     problem_type = Column(Enum(PreliminaryProblemType), index=True)
     # 题号

@@ -29,13 +29,13 @@ class ChallengeRecord(db.Model):
     __tablename__ = "challenge_record"
     # 用户ID
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     # 挑战ID
     challenge_id = Column(Integer, ForeignKey(
-        "challenge.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "challenge.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     # 习题集
     problemset_id = Column(Integer, ForeignKey(
-        "problem_set.id", ondelete="CASCADE"), nullable=False, primary_key=True)
+        "problem_set.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, primary_key=True)
     
     # False表示已解锁未完成，True表示已完成
     finished = Column(Boolean, default=False, index=True)

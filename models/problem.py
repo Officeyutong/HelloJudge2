@@ -18,7 +18,7 @@ class Problem(db.Model):
     __tablename__ = "problem"
     # 题目ID
     id = Column(Integer, primary_key=True)
-    uploader_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    uploader_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"))
     # 题目名
     title = Column(String(100), default="新建题目")
     # 背景
@@ -97,7 +97,7 @@ class Problem(db.Model):
     # 此题目所属的团队ID
     # null表示不属于团队
     team_id = Column(Integer, ForeignKey(
-        "team.id", ondelete="CASCADE"), nullable=True)
+        "team.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=True)
 
     def as_dict(self):
         ret = dict(filter(lambda x: not x[0].startswith(

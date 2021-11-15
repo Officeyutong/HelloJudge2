@@ -9,9 +9,9 @@ class Comment(db.Model):
     # 内容
     content = Column(Text, nullable=False)
     # 用户ID
-    uid = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    uid = Column(Integer, ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 发送时间
     time = Column(DateTime, nullable=False)
     # 讨论ID
     discussion_id = Column(Integer, ForeignKey(
-        "discussion.id", ondelete="CASCADE"), nullable=False, index=True)
+        "discussion.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)

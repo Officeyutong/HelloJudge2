@@ -12,10 +12,10 @@ class WikiPageVersion(db.Model):
     id = Column(Integer, primary_key=True)
     # 对应的wikipage ID
     wikipage_id = Column(Integer, ForeignKey(
-        "wikipage.id", ondelete="CASCADE"), nullable=False, index=True)
+        "wikipage.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 发布用户
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False, index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True)
     # 标题
     title = Column(mysql.TEXT, nullable=True)
     # 内容
@@ -31,7 +31,7 @@ class WikiPageVersion(db.Model):
     base = Column(mysql.INTEGER, default=-1, nullable=True, index=True)
     # 这个页面对应的导航页的ID
     navigation_id = Column(Integer, ForeignKey(
-        "wiki_navigation_item.id", ondelete="CASCADE"), nullable=True, index=True)
+        "wiki_navigation_item.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=True, index=True)
     comment = Column(mysql.LONGTEXT, nullable=True)
 
 
@@ -92,7 +92,7 @@ class WikiPage(db.Model):
     cached_newest_version = Column(Integer, index=True)
     # cached_last_modified_time = Column(DateTime, nullable=True)
     # cached_last_modified_user = Column(Integer, ForeignKey(
-    #     "user.id", ondelete="CASCADE"), nullable=True)
+    #     "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=True)
 
 
 class WikiConfig(db.Model):

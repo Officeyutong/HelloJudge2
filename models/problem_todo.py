@@ -9,12 +9,12 @@ class ProblemTodo(db.Model):
     __tablename__ = "problem_todo"
     uid = Column(
         Integer,
-        ForeignKey("user.id", ondelete="CASCADE"),
+        ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True
     )
     problem_id = Column(
         Integer,
-        ForeignKey("problem.id", ondelete="CASCADE"),
+        ForeignKey("problem.id", ondelete="CASCADE", onupdate="CASCADE"),
         primary_key=True
     )
     join_time = Column(DateTime, default=datetime.datetime.now, index=True)

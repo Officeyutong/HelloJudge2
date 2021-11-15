@@ -17,6 +17,6 @@ class Tag(db.Model):
 class ProblemTag(db.Model):
     __tablename__ = "problemtag"
     problem_id = Column(Integer, ForeignKey(
-        "problem.id", ondelete="CASCADE"), primary_key=True)
+        "problem.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)
     tag_id = Column(String(20), ForeignKey(
-        "tag.id", ondelete="CASCADE"), primary_key=True)
+        "tag.id", ondelete="CASCADE", onupdate="CASCADE"), primary_key=True)

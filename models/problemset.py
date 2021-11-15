@@ -12,7 +12,7 @@ class ProblemSet(db.Model):
     id = Column(Integer, primary_key=True)
     # 所有者用户ID
     owner_uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=False)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
     # 名称
     name = Column(String(100), nullable=False, default="新建习题集")
     # 是否私有

@@ -18,7 +18,7 @@ class Contest(db.Model):
     # 所有者ID
     owner_id = Column(
         Integer,
-        ForeignKey("user.id", ondelete="CASCADE"),
+        ForeignKey("user.id", ondelete="CASCADE", onupdate="CASCADE"),
         nullable=False)
     # 比赛名称
     name = Column(String(128), nullable=False, default="新建比赛")
@@ -90,10 +90,10 @@ class Clarification(db.Model):
     id = Column(Integer, primary_key=True)
     # 这个Clarification对应的比赛
     contest = Column(Integer, ForeignKey(
-        "contest.id", ondelete="CASCADE"), index=True)
+        "contest.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     # 发送者
     sender = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     # 发送时间
     send_time = Column(DateTime, default=datetime.datetime.now,
                        index=True, nullable=False)
@@ -103,7 +103,7 @@ class Clarification(db.Model):
     replied = Column(mysql.TINYINT(display_width=1), index=True, default=False)
     # 回复者
     replier = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), index=True, nullable=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), index=True, nullable=True)
     # 回复内容
     reply_content = Column(mysql.LONGTEXT, default="")
     # 回复时间

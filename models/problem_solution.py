@@ -11,11 +11,11 @@ class ProblemSolution(db.Model):
     id = Column(Integer, primary_key=True)
     # 提交者ID
     uid = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), index=True)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     user = relationship("User", backref="problem_solutions", foreign_keys=[uid])
     # 题目ID
     problem_id = Column(Integer, ForeignKey(
-        "problem.id", ondelete="CASCADE"), index=True)
+        "problem.id", ondelete="CASCADE", onupdate="CASCADE"), index=True)
     problem = relationship("Problem", backref="solutions",
                            foreign_keys=[problem_id])
     # 题解内容
@@ -28,7 +28,7 @@ class ProblemSolution(db.Model):
     verified = Column(TINYINT(1), nullable=False, default=False, index=True)
     # 审核者
     verifier = Column(Integer, ForeignKey(
-        "user.id", ondelete="CASCADE"), nullable=True, default=None)
+        "user.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=True, default=None)
     # 审核时间
     verify_time = Column(DateTime, default=None, nullable=True)
     # 审核评语
