@@ -21,6 +21,7 @@ export interface UserStateType {
         gravatarURL: string;
         usePhoneAuth: boolean;
         canUseImageStore: boolean;
+        displayRepoInFooter: boolean;
     }
 }
 
@@ -52,7 +53,8 @@ const defaultState: StateType = {
             registerURL: "",//注册页面URL
             gravatarURL: "",//gravatar前缀,
             usePhoneAuth: false,
-            canUseImageStore: false
+            canUseImageStore: false,
+            displayRepoInFooter: false
         }
     },
     generalClient: null,

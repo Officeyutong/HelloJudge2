@@ -40,7 +40,7 @@ const BaseView: React.FC<{}> = ({ children }) => {
         window.addEventListener("resize", listener);
         return () => window.removeEventListener("resize", listener);
     });
-    const sideMenu = <Menu vertical icon="labeled"> 
+    const sideMenu = <Menu vertical icon="labeled">
         <Menu.Item as={Link} to={`${PUBLIC_URL}/`}>
             <Icon name="home"></Icon>
             主页
@@ -163,7 +163,13 @@ const BaseView: React.FC<{}> = ({ children }) => {
         </SMContainer>
         <SMContainer textAlign="center">
             <div style={{ color: "darkgrey" }} >
-                {userState.userData.appName} by <a href="https://github.com/Officeyutong">MikuNotFoundException</a>
+                {userState.userData.displayRepoInFooter ? <>
+                    {userState.userData.appName} powered by <a href="https://github.com/Officeyutong/HelloJudge2">HelloJudge2</a>
+                </> : <>
+                    {userState.userData.appName} by <a href="https://github.com/Officeyutong">MikuNotFoundException</a>
+                </>
+                }
+
             </div>
         </SMContainer>
     </>;

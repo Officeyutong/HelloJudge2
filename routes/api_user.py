@@ -46,7 +46,8 @@ def query_login_state(withPermission: bool = False):
             "registerURL":"注册页面的URL",
             "gravatarURL":"gravatarURL前缀"
             "permissions":["用户权限列表"],
-            "canUseImageStore":"是否可以使用图床服务"
+            "canUseImageStore":"是否可以使用图床服务",
+            "displayRepoInFooter":是否在页脚显示仓库地址
         }
 
     """
@@ -60,7 +61,8 @@ def query_login_state(withPermission: bool = False):
         "usePhoneAuth": use_phone_auth,
         "registerURL": "/phone/register" if use_phone_auth else "/register",
         "gravatarURL": config.GRAVATAR_URL_PREFIX,
-        "canUseImageStore": False
+        "canUseImageStore": False,
+        "displayRepoInFooter": config.DISPLAY_REPO_IN_FOOTER
     }
     if session.get("uid"):
         user: User = db.session.query(User.id, User.permission_group, User.email, User.username).filter(
