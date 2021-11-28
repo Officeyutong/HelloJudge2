@@ -86,7 +86,7 @@ def upgrade():
     op.create_foreign_key(None, 'problemtag', 'problem', ['problem_id'], ['id'], onupdate='CASCADE', ondelete='CASCADE')
     op.create_foreign_key(None, 'problemtag', 'tag', ['tag_id'], ['id'], onupdate='CASCADE', ondelete='CASCADE')
     op.drop_constraint('submission_ibfk_5', 'submission', type_='foreignkey')
-    op.drop_constraint('submission_ibfk_6', 'submission', type_='foreignkey')
+    # op.drop_constraint('submission_ibfk_6', 'submission', type_='foreignkey')
     op.create_foreign_key(None, 'submission', 'virtual_contest', ['virtual_contest_id'], ['id'], onupdate='CASCADE', ondelete='CASCADE')
     op.create_foreign_key(None, 'submission', 'user', ['uid'], ['id'], onupdate='CASCADE', ondelete='CASCADE')
     op.create_foreign_key(None, 'submission', 'problem', ['problem_id'], ['id'], onupdate='CASCADE', ondelete='CASCADE')
