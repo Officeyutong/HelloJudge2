@@ -125,6 +125,7 @@ def api_utils_import_from_syzoj_ng(api_server: str, problem_id: str, public: boo
         "judgeInfoToBePreprocessed": True
     }).json()
     print(problem_data)
+    real_problem_id = problem_data["meta"]["id"]
     stmt = StringIO()
     examples = []
     for item in problem_data["localizedContentsOfLocale"]["contentSections"]:
@@ -182,10 +183,10 @@ def api_utils_import_from_syzoj_ng(api_server: str, problem_id: str, public: boo
     db.session.commit()
     working_dir = pathlib.Path(config.UPLOAD_DIR)/str(problem.id)
     shutil.rmtree(working_dir, ignore_errors=True)
-    os.mkdir(working_dir)
+    os.mkdir(working_dir) 
     file_links = requests.post(make_url("/api/problem/downloadProblemFiles"), json={
         "filenameList": [item["filename"] for item in problem_data["testData"]],
-        "problemId": problem_id,
+        "problemId": real_problem_id,
         "type": "TestData"
     }).json()
     print(file_links)
