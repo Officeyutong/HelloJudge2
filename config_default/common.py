@@ -77,3 +77,5 @@ IMAGES_PER_PAGE = 20
 
 # Gravatar URL前缀
 GRAVATAR_URL_PREFIX = "https://www.gravatar.com/avatar/"
+
+DISABLE_IOI_CONTEST = False

@@ -659,7 +659,7 @@ def contest_update(contestID: int, data: dict):
     contest.end_time = data["end_time"]
     contest.problems = data["problems"]
     contest.ranklist_visible = data["ranklist_visible"]
-    if data["ranklist_visible"] or data["judge_result_visible"]:
+    if (data["ranklist_visible"] or data["judge_result_visible"]) and config.DISABLE_IOI_CONTEST:
         return make_json_response(-1, message="当前暂时禁止比赛设置为赛时公开排行榜或提交结果")
     contest.judge_result_visible = data["judge_result_visible"]
     contest.rank_criterion = data["rank_criterion"]

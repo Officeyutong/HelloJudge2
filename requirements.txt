@@ -26,3 +26,4 @@ aiohttp
 lxml
 sqlalchemy>=1.4.20
 python-redis-lock
+opencv-python
