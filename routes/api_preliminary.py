@@ -66,7 +66,7 @@ def preliminary_contest_detail(id: int):
             "username": contest.username
         },
         "duration": contest.duration,
-        "upload_time": str(contest.upload_time),
+        "upload_time": contest.upload_time.timestamp(),
         "problems": []
     }
     problems = db.session.query(PreliminaryProblem).filter_by(

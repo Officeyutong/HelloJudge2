@@ -319,14 +319,14 @@ def wiki_versions(id=-1):
     return render_template("wiki/versions.html")
 
 
-@app.route("/preliminary/list")
-def preliminary_list():
-    return render_template("preliminary/list.html")
+# @app.route("/preliminary/list")
+# def preliminary_list():
+#     return render_template("preliminary/list.html")
 
 
-@app.route("/preliminary/<int:id>")
-def premilinary_page(id: int):
-    return render_template("preliminary/page.html")
+# @app.route("/preliminary/<int:id>")
+# def premilinary_page(id: int):
+#     return render_template("preliminary/page.html")
 
 
 # @app.route("/submit_answer/<int:id>")

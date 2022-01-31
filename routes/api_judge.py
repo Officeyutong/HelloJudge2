@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir, csrf
+from main import db, config, basedir, csrf, limiter
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models.user import *
@@ -11,6 +11,7 @@ from main import socket
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/judge/get_file_list", methods=["POST"])
 def judge_get_file_list():
     """
@@ -37,6 +38,7 @@ def judge_get_file_list():
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/judge/download_file", methods=["POST"])
 def judge_download_file():
     """
@@ -65,6 +67,7 @@ def judge_download_file():
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/judge/get_problem_info", methods=["POST"])
 def judge_get_problem_info():
     """
@@ -94,6 +97,7 @@ def judge_get_problem_info():
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/judge/update", methods=["POST"])
 def judge_update():
     """
@@ -143,6 +147,7 @@ def judge_update():
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/judge/get_lang_config", methods=["POST"])
 def get_lang_config():
     """

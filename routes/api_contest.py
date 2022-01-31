@@ -120,6 +120,27 @@ def contest_clarification_reply(clarification_id: int, content: str):
     db.session.commit()
     return make_response(0, message="操作完成")
 
+@router.route("/clarification/remove", methods=["POST"])
+@unpack_argument
+def contest_clarification_remove(clarification_id: int):
+    """
+    删除Clarification
+    """
+    clar: Clarification = db.session.query(
+        Clarification).filter_by(id=clarification_id).one_or_none()
+    if not clar:
+        return make_response(-1, message="提问不存在")
+    contest_inst: Contest = db.session.query(
+        Contest
+    ).filter_by(id=clar.contest).one_or_none()
+    has_permission = (
+        session.get("uid", -1) == contest_inst.owner_id or permission_manager.has_permission(session.get("uid"), "contest.manage"))
+    if not has_permission:
+        return make_response(-1, message="你没有权限进行此操作")
+    db.session.delete(clar)
+    db.session.commit()
+    return make_response(0, message="操作完成")
+
 
 @router.route("/clarification/send", methods=["POST"])
 @unpack_argument

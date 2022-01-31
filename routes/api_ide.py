@@ -1,5 +1,5 @@
 from main import web_app as app
-from main import db, config, basedir, csrf, redis_connection_pool
+from main import db, config, basedir, csrf, redis_connection_pool,limiter
 from flask import session, request, send_file, send_from_directory
 from utils import *
 from models import *
@@ -40,6 +40,7 @@ def submit_ide_run():
 
 
 @csrf.exempt
+@limiter.exempt
 @app.route("/api/ide/update", methods=["POST"])
 def iderun_update():
     """
