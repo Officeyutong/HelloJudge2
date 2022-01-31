@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Dimmer, Grid, Header, Loader, Segment, Pagination, Divider } from "semantic-ui-react";
-import { showErrorModal } from "../../../dialogs/Dialog";
+import { showConfirm, showErrorModal } from "../../../dialogs/Dialog";
 import contestClient from "../client/ContestClient";
 import { ClarificationDetailResponse } from "../client/types";
 import ClarificationArea from "./ClarificationArea";
@@ -47,6 +47,19 @@ const ClarificationList: React.FC<ClarificationListProps> = ({
             loadPage(1);
         }
     }, [loadPage, loaded]);
+    const removeClar = (id: number) => {
+        showConfirm("您确定要删除此条回复吗?", async () => {
+            try {
+                setLoading(true);
+                await contestClient.removeClarification(id);
+                setLoading(false);
+                await loadPage(page);
+            } catch { } finally {
+                setLoading(false);
+
+            }
+        });
+    };
     return <>
         {data.length !== 0 && <><Header as="h3">
             提问
@@ -59,6 +72,7 @@ const ClarificationList: React.FC<ClarificationListProps> = ({
                         {...x}
                         managable={managable}
                         showEditReply={true}
+                        removeCallback={() => removeClar(x.id)}
                     ></ClarificationArea>
                 </div>)}
                 <Grid columns="3" centered>

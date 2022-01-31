@@ -12,6 +12,9 @@ class ContestClient extends GeneralClient {
     async getContestClarificationDetail(clarification_id: number): Promise<ClarificationDetailResponse> {
         return (await this.client!.post("/api/contest/clarification/detail", { clarification_id })).data;
     }
+    async removeClarification(clarification_id: number) {
+        await this.client!.post("/api/contest/clarification/remove", { clarification_id });
+    }
     async replyClarification(clarification_id: number, content: string) {
         await this.client!.post("/api/contest/clarification/reply", { clarification_id, content });
     }

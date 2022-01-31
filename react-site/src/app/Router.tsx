@@ -27,6 +27,8 @@ import BlogRouter from "./views/blog/Router";
 import ErrorAndSuccess from "./views/ErrorAndSuccess";
 import CardRouter from "./views/card/Router";
 import { useBaseViewDisplay } from "./states/StateUtils";
+import PreliminaryRouter from "./views/preliminary/Router";
+import WikiRouter from "./views/wiki/Router";
 
 const SubRoutes = withRouter(({ match }: RouteComponentProps) => {
     const [displayBaseView,] = useBaseViewDisplay();
@@ -74,6 +76,12 @@ const SubRoutes = withRouter(({ match }: RouteComponentProps) => {
         </Route>
         <Route path={`${match.path}/card`}>
             <CardRouter></CardRouter>
+        </Route>
+        <Route path={`${match.path}/preliminary`}>
+            <PreliminaryRouter></PreliminaryRouter>
+        </Route>
+        <Route path={`${match.path}/wiki`}>
+            <WikiRouter></WikiRouter>
         </Route>
         <Route path={`${match.path}/error`}>
             <ErrorAndSuccess error={true}></ErrorAndSuccess>

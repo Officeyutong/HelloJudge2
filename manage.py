@@ -15,7 +15,6 @@ def db():
 @manager.command
 def setadmin(userid):
     """设置管理员"""
-    from main import db
     user: User = db.session.query(User).filter(User.id == userid).one()
     from redis import Redis
     Redis(connection_pool=redis_connection_pool).delete(f"hj2-perm-{user.id}")

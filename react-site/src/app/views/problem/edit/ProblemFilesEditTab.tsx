@@ -202,7 +202,4 @@ const ProblemFilesEditTab: React.FC<ProblemFilesEditProps> = (props) => {
     </div>;
 };
 
-export default React.memo(ProblemFilesEditTab, (prev, next) => {
-
-    return (prev.downloads === next.downloads) && (prev.files === next.files) && (prev.id === next.id) && (prev.provides === next.provides);
-});
+export default ProblemFilesEditTab;

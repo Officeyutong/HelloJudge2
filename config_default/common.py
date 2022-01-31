@@ -79,3 +79,5 @@ IMAGES_PER_PAGE = 20
 GRAVATAR_URL_PREFIX = "https://www.gravatar.com/avatar/"
 
 DISABLE_IOI_CONTEST = False
+# 访问限制
+RATE_LIMIT = ["20 per second"]

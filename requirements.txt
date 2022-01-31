@@ -27,3 +27,4 @@ lxml
 sqlalchemy>=1.4.20
 python-redis-lock
 opencv-python
+flask-limiter<2.0

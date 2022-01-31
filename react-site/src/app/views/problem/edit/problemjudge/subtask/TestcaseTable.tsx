@@ -81,6 +81,4 @@ const TestcaseTable: React.FC<TestcaseTableProps> = ({
 };
 
 
-export default React.memo(TestcaseTable, (prev, next) => {
-    return prev.files === next.files && prev.testcases === next.testcases;
-});
+export default TestcaseTable;

@@ -136,18 +136,3 @@ const StatementEditTab: React.FC<StatementEditProps> = (props) => {
     </div>;
 };
 export default StatementEditTab;
-
-// const mapData = (d: ProblemEditStatement): any[] => {
-//     return [
-//         d.background, d.content, d.example, d.hint, d.input_format, d.output_format, d.title
-//     ];
-// };
-
-// export default React.memo(StatementEditTab, (prev, next) => {
-//     const a1 = mapData(prev.data);
-//     const a2 = mapData(next.data);
-//     for (let i = 0; i < a1.length; i++) {
-//         if (a1[i] !== a2[i]) return false;
-//     }
-//     return true;
-// });

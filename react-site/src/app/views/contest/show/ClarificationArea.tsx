@@ -7,6 +7,7 @@ import { ClarificationDetailResponse } from "../client/types";
 interface ClarificationAreaProps extends ClarificationDetailResponse {
     showEditReply: boolean;
     managable: boolean;
+    removeCallback: () => void;
 };
 
 const ClarificationArea: React.FC<ClarificationAreaProps> = (props) => {
@@ -37,6 +38,10 @@ const ClarificationArea: React.FC<ClarificationAreaProps> = (props) => {
                             <Grid.Column>
                                 <Container textAlign="right">
                                     {managable && props.showEditReply && <a target="_blank" rel="noreferrer" href={`/contest/clarification/edit/${props.id}`}>编辑回复</a>}
+                                    |
+                                    {// eslint-disable-next-line jsx-a11y/anchor-is-valid
+                                        managable && props.showEditReply && <a style={{ cursor: "pointer" }} onClick={props.removeCallback}>删除本条</a>
+                                    }
                                 </Container>
                             </Grid.Column>
                         </Grid>

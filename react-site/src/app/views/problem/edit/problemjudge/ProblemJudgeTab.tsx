@@ -1,5 +1,4 @@
-import _ from "lodash";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Button, Checkbox, Dimmer, Form, Header, Input, Loader, Message, Segment } from "semantic-ui-react";
 import { showConfirm, showSuccessModal } from "../../../../dialogs/Dialog";
 import { showSuccessPopup } from "../../../../dialogs/Utils";
@@ -29,14 +28,24 @@ interface ProblemDataProps extends DataEntryProps {
 
 
 
-const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
-    const data = _.omit(props, ["onUpdate", "onUpdateSubmitAnswer", "children"]);
-    const update = (data: DataEntryProps) => {
-        const { extra_parameter, files, input_file_name, output_file_name, problem_type, spj_filename, submitAnswer, subtasks, using_file_io } = data;
-        props.onUpdate({
+const ProblemJudgeTab: React.FC<ProblemDataProps> = (data) => {
+    const update = useCallback((localData: Partial<DataEntryProps>) => {
+        const { extra_parameter, files, input_file_name, output_file_name, problem_type, spj_filename, submitAnswer, subtasks, using_file_io } = {
+            extra_parameter: data.extra_parameter,
+            files: data.files,
+            input_file_name: data.input_file_name,
+            output_file_name: data.output_file_name,
+            problem_type: data.problem_type,
+            spj_filename: data.spj_filename,
+            submitAnswer: data.submitAnswer,
+            subtasks: data.subtasks,
+            using_file_io: data.using_file_io,
+            ...localData
+        };
+        data.onUpdate({
             extra_parameter, files, input_file_name, output_file_name, problem_type, spj_filename, submitAnswer, subtasks, using_file_io
         });
-    };
+    }, [data]);
     const [loading, setLoading] = useState(false);
     const refreshCache = async () => {
         try {
@@ -58,6 +67,8 @@ const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
             }
         });
     };
+    const updateExtraParameter = useCallback(d => update({ extra_parameter: d }), [update]);
+    const updateSubtasks = useCallback(d => update({ subtasks: d }), [update]);
     return <div>
         {loading && <Dimmer active>
             <Loader></Loader>
@@ -94,8 +105,8 @@ const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
                 <Form.Field>
                     <label>题目类型</label>
                     <Button.Group>
-                        <Button onClick={() => props.onUpdateSubmitAnswer(false)} active={!data.submitAnswer} disabled={data.problem_type === "remote_judge"}>传统题</Button>
-                        <Button onClick={() => props.onUpdateSubmitAnswer(true)} active={data.submitAnswer} disabled={data.problem_type === "remote_judge"}>提交答案题</Button>
+                        <Button onClick={() => data.onUpdateSubmitAnswer(false)} active={!data.submitAnswer} disabled={data.problem_type === "remote_judge"}>传统题</Button>
+                        <Button onClick={() => data.onUpdateSubmitAnswer(true)} active={data.submitAnswer} disabled={data.problem_type === "remote_judge"}>提交答案题</Button>
                         <Button active={data.problem_type === "remote_judge"} disabled>远程评测题目</Button>
                     </Button.Group>
                 </Form.Field>
@@ -121,29 +132,17 @@ const ProblemJudgeTab: React.FC<ProblemDataProps> = (props) => {
         </Segment>
         <ExtraParameterConfig
             data={data.extra_parameter}
-            onUpdate={d => update({ ...data, extra_parameter: d })}
+            onUpdate={updateExtraParameter}
         ></ExtraParameterConfig>
         <SubtaskEdit
             subtasks={data.subtasks}
             files={data.files}
-            onUpdate={d => update({ ...data, subtasks: d })}
+            onUpdate={updateSubtasks}
         ></SubtaskEdit>
     </div>;
 };
 
-export default React.memo(ProblemJudgeTab, (prev, next) => {
-    return (
-        prev.extra_parameter === next.extra_parameter &&
-        prev.input_file_name === next.input_file_name &&
-        prev.output_file_name === next.output_file_name &&
-        prev.spj_filename === next.spj_filename &&
-        prev.subtasks === next.subtasks &&
-        prev.using_file_io === next.using_file_io &&
-        prev.files === next.files &&
-        prev.problem_type === next.problem_type &&
-        prev.id === next.id &&
-        prev.submitAnswer === next.submitAnswer);
-});
+export default ProblemJudgeTab;
 
 export type {
     DataEntryProps,

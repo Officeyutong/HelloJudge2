@@ -58,6 +58,7 @@ const ClarificationEdit: React.FC<{}> = () => {
                     {...data}
                     managable={true}
                     showEditReply={false}
+                    removeCallback={() => { }}
                 ></ClarificationArea>
 
             </Segment>

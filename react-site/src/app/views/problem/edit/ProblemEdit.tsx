@@ -78,7 +78,9 @@ const ProblemEdit: React.FC<{}> = () => {
             savingRef.current = false;
         }
     };
-    const onProblemDataUpdate = (d: any) => setData(c => ({ ...c, ...d }));
+    const onProblemDataUpdate = (d: any) => {
+        setData({ ...data, ...d });
+    };
     return <div>
 
         {loaded && data !== null ? <>
@@ -139,7 +141,15 @@ const ProblemEdit: React.FC<{}> = () => {
                         pane: <Tab.Pane key={4}>
                             <Suspense fallback={<GeneralDimmedLoader />}>
                                 <ProblemJudgeTab
-                                    {...data}
+                                    extra_parameter={data.extra_parameter}
+                                    files={data.files}
+                                    id={data.id}
+                                    input_file_name={data.input_file_name}
+                                    output_file_name={data.output_file_name}
+                                    problem_type={data.problem_type}
+                                    spj_filename={data.spj_filename}
+                                    subtasks={data.subtasks}
+                                    using_file_io={data.using_file_io}
                                     submitAnswer={submitAnswer}
                                     onUpdateSubmitAnswer={setSubmitAnswer}
                                     onUpdate={onProblemDataUpdate}

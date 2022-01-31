@@ -151,9 +151,7 @@ const SubtaskEdit: React.FC<SubtasksEditProps> = (props) => {
     </>;
 };
 
-export default React.memo(SubtaskEdit, (prev, next) => {
-    return prev.files === next.files && prev.subtasks === next.subtasks;
-});
+export default SubtaskEdit;
 
 export {
     subtaskToString,

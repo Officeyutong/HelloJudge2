@@ -23,6 +23,8 @@ from flask_migrate import Migrate
 from api.model_api import ModelAPI
 from common.file_storage import FileStorage
 import redis_lock
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 web_app = flask.Flask("HelloJudge2")
 web_app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
 web_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
@@ -34,6 +36,11 @@ csrf = CSRFProtect()
 # csrf.
 if config.ENABLE_CSRF_TOKEN:
     csrf.init_app(web_app)
+limiter = Limiter(
+    web_app,
+    key_func=get_remote_address,
+    default_limits=config.RATE_LIMIT,
+)
 if config.DEBUG:
     import logging
     logging.getLogger('flask_cors').level = logging.DEBUG

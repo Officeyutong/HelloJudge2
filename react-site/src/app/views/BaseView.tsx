@@ -14,7 +14,6 @@ const useSize = (target: RefObject<HTMLElement>) => {
         setSize(target.current!.getBoundingClientRect())
     }, [target])
 
-    // Where the magic happens
     useResizeObserver(target, (entry) => setSize(entry.contentRect))
     return size
 }
@@ -120,7 +119,10 @@ const BaseView: React.FC<{}> = ({ children }) => {
                         <Icon name="address card"></Icon>
                         博客
                     </Menu.Item>
-
+                    <Menu.Item as={Link} to={`${PUBLIC_URL}/preliminary/list`}>
+                        <Icon name="clipboard outline"></Icon>
+                        笔试题库
+                    </Menu.Item>
                 </Menu>
 
             </Popup>
