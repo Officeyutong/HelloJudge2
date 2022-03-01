@@ -1,10 +1,11 @@
-# 如果您在使用2021年前的版本，更新后务必参考migrate.md进行数据迁移。
-
 # HelloJudge2
 
 ## 简介
 用于算法竞赛的评测系统。
 
+此仓库为API服务器，可能需要配合以下两个项目使用
+- https://github.com/Officeyutong/HelloJudge3-WebApp （前端WebApp）
+- https://github.com/Officeyutong/HelloJudge3-Judger （评测客户端）
 ## Demo
 http://yt2soj.top/ YT2SOJ
 
@@ -22,10 +23,11 @@ Web端采取前后端分离，客户端渲染，后端只提供API接口。
 每次更新后执行```python3 manage.py db upgrade```即可。
 
 ## 架设
+
 ### Web端
 #### 前置需求
 - Python3.7或者以上版本
-- MySQL(可选)
+- MySQL
 - Redis
 - git
 #### 部署指南
