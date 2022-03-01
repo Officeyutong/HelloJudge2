@@ -162,3 +162,34 @@ def get_lang_config():
     if request.form['uuid'] not in config.JUDGERS:
         return make_response(-1, message="该评测机未认证")
     return send_file(os.path.join(basedir, "langs", request.form["lang_id"]+".py"))
+
+
+@csrf.exempt
+@limiter.exempt
+@app.route("/api/judge/get_lang_config_as_json", methods=["POST"])
+def get_lang_config_json():
+    """
+    获取语言配置文件
+    参数:
+    lang_id:str 语言ID
+    uuid:str 评测机uuid
+    返回
+    对应的文件
+    """
+    import os
+    import importlib
+    if request.form['uuid'] not in config.JUDGERS:
+        return make_response(-1, message="该评测机未认证")
+    lang_id = request.form["lang_id"]
+    lang_module = importlib.import_module(f"langs.{lang_id}")
+    # return send_file(os.path.join(basedir, "langs", request.form["lang_id"]+".py"))
+    return make_response(0, data={
+        "source_file": lang_module.SOURCE_FILE,
+        "output_file": lang_module.OUTPUT_FILE,
+        "compile": lang_module.COMPILE,
+        "run": lang_module.RUN,
+        "display": lang_module.DISPLAY,
+        "version": lang_module.VERSION,
+        "ace_mode": lang_module.ACE_MODE,
+        "hljs_mode": lang_module.HLJS_MODE
+    })

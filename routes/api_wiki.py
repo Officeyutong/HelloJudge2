@@ -69,6 +69,7 @@ def wiki_config_navigation_create():
 
 @router.route("/config/navigation/remove", methods=["POST"])
 @require_permission(permission_manager, "wiki.manage")
+@unpack_argument
 def wiki_config_navigation_remove(id: int):
     """
     移除导航栏物品
@@ -133,7 +134,7 @@ def wiki_config_get(menu_as_text: bool = True):
                         ]
                     }
                 ]
-            }s
+            }
         ]
     }
     """
@@ -267,7 +268,7 @@ def wiki_page(page: int = -1, version: int = -1, editing=False):
     return make_response(0, data={
         "content": page_version.content,
         "title": page_version.title,
-        "time": str(page_version.time),
+        "time": page_version.time.timestamp(),
         "verified": bool(page_version.verified),
         "menu": menu,
         "user": {
@@ -413,7 +414,7 @@ def wiki_versions(pageID: int, page: int = 1):
         {
             "id": item.id,
             "title": item.title,
-            "time": str(item.time),
+            "time": item.time.timestamp(),
             "user": {
                 "uid": item.uid,
                 "username": item.username,
