@@ -11,7 +11,7 @@ PORT = 8080
 # 监听地址
 HOST = "0.0.0.0"
 # 应用程序名称
-APP_NAME = "QBXTOJ"
+APP_NAME = "HelloJudge2"
 # 用于密码的盐
 PASSWORD_SALT = "qeiduew9odpjh8q9uohr8"
 # 用户名正则
