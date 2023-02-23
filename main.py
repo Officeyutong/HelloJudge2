@@ -171,6 +171,8 @@ def _init_web_app():
         "all-challenge", provider.get_all_challenge_access)
     permission_manager.add_provider(
         "challenge-finish", provider.get_challenge_finish)    
+    permission_manager.add_provider(
+        "public-problemset", provider.get_public_problemset)    
     
 
 

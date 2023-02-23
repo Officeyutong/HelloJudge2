@@ -28,7 +28,7 @@ class DefaultPermissionProvider:
                     f"challenge.finish.{item.challenge_id}.{item.problemset_id}")
             else:
                 exists_unfinished.add(item.challenge_id)
-        
+
         for item in all_challenges:
             ret.add(f"[provider:challenge-access.{item}]")
             # 习题集都完成了的，加挑战完成标记
@@ -80,3 +80,8 @@ class DefaultPermissionProvider:
         if not permpack:
             return set()
         return {f"permissionpack.claimed.{permpack_id}"} | {x for x in permpack.permissions}
+
+    def get_public_problemset(self, uid: int, data: Optional[str]) -> Set[str]:
+        problem_sets = self.db.session.query_property(
+            ProblemSet.id).filter(ProblemSet.private == False).all()
+        return {f"[provider:problemset.{s.id}]" for s in problem_sets}
