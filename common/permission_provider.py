@@ -82,6 +82,6 @@ class DefaultPermissionProvider:
         return {f"permissionpack.claimed.{permpack_id}"} | {x for x in permpack.permissions}
 
     def get_public_problemset(self, uid: int, data: Optional[str]) -> Set[str]:
-        problem_sets = self.db.session.query_property(
+        problem_sets = self.db.session.query(
             ProblemSet.id).filter(ProblemSet.private == False).all()
         return {f"[provider:problemset.{s.id}]" for s in problem_sets}
